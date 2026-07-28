@@ -21,7 +21,7 @@ header{
 
 }
 
-nav{
+nav ul {
     list-style: none;
     display: flex;
     gap: 30px;
@@ -35,5 +35,57 @@ nav a{
 }
 nav a:hover {
     color: #e94560;
-    
+
+}
+
+#inicio{
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    padding: 60px 20px;
+
+}
+
+#inicio img {
+    width: 200px;
+    height: 200px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 4px solid #1a1a2e;
+    margin-bottom: 20px;
+}
+
+#inicio h2 {
+    font-size: 2rem;
+    margin-bottom: 10px;
+
+}
+
+#inicio p {
+    font-size: 1.2rem;
+    color: #555;
+
+
+}
+
+#sobre-mi{
+    max-width: 800px;
+    margin: 0 auto;
+    padding: 60px 20px;
+
+}
+
+#sobre-mi h2 {
+    font-size: 2rem;
+    margin-bottom: 20px;
+    text-align: center;
+
+}
+
+#sobre-mi p {
+    font-size: 1.1rem;
+    margin-bottom: 15px;
+    text-align: justify;
+
 }
