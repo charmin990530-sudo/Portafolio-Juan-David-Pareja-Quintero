@@ -163,4 +163,43 @@ nav a:hover {
     text-decoration: underline;
 
  }
- 
+
+ footer {
+    background-color: #1a1a2e;
+    color: white;
+    text-align: center;
+    padding: 20px;
+
+ }
+  html {
+    scroll-behavior: smooth;
+
+  }
+
+  header {
+    position: sticky;
+    top: 0;
+    z-index: 100;
+
+  }
+   
+  @media (max-width: 768px) {
+    header {
+        flex-direction: column;
+        gap: 15px;
+
+    }
+
+    nav ul {
+        flex-wrap: wrap;
+        justify-content: center;
+        gap: 15px;
+
+    }
+
+    #inicio h2 {
+        font-size: 1.5rem;
+
+    }
+  }
+  
