@@ -89,3 +89,78 @@ nav a:hover {
     text-align: justify;
 
 }
+
+#proyectos {
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 60px 20px;
+
+}
+
+#proyectos h2 {
+    font-size: 2rem;
+    margin-bottom: 30px;
+    text-align: center;
+
+}
+
+.proyecto {
+    background-color: #f5f5f5;
+    border-radius: 10px;
+    padding: 25px;
+    margin-bottom: 20px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    transition: transform 0.3 ease, box-shadow 0.3 ease;
+
+}
+
+.proyecto:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 6px 16px rgba(0,0,0,0.15);
+
+}
+
+.proyecto h3 {
+    color: #1a1a2e;
+    margin-bottom: 10px;
+
+}
+
+#contacto{
+    max-width: 800px;
+    margin: 0 auto;
+    padding: 60px 20px;
+    text-align: center;
+
+}
+
+#contacto h2{
+    font-size: 2rem;
+    margin-bottom: 20px;
+
+}
+
+#contacto ul {
+    list-style: none;
+    margin-top: 20px;
+
+}
+ #contacto li {
+    margin-bottom: 15px;
+    font-size: 1.1rem;
+
+ }
+ #contacto a {
+    color: #e94560;
+    text-decoration: none;
+    font-weight: bold;
+    transition: color 0.3s ease;
+
+ }
+
+ #contacto a:hover {
+    color: #1a1a2e;
+    text-decoration: underline;
+
+ }
+ 
