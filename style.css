@@ -21,9 +21,15 @@ header {
     display: flex;
     justify-content: space-between;
     align-items: center;
+    flex-wrap: wrap;
     padding: 20px 40px;
     background-color: var(--color-oscuro);
     color: white;
+}
+
+.logo h1 {
+    font-size: clamp(1.1rem, 3vw, 1.8rem);
+
 }
 
 nav ul {
@@ -175,6 +181,8 @@ header {
     header {
         flex-direction: column;
         gap: 15px;
+        padding: 20px;
+        text-align: center;
     }
 
     nav ul {
@@ -257,3 +265,83 @@ header {
 #form-contacto button:hover {
     background-color: var(--color-oscuro);
 }
+
+#galeria {
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 80px 20px;
+    text-align: center;
+
+}
+
+#galeria h2 {
+    font-size: 2rem;
+    margin-bottom: 10px;
+    position: relative;
+    padding-bottom: 15px;
+    display: inline-block;
+
+}
+
+#galeria h2::after {
+    content:'';
+    position: absolute;
+    bottom: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 60px;
+    height: 3px;
+    background-color: var(--color-acento);
+}
+
+#galeria > p {
+    margin-bottom: 40px;
+    color: #666;
+
+}
+
+.carrusel-contenedor {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+
+}
+
+.carrusel {
+    display: flex;
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;
+    scroll-behavior: smooth;
+    gap: 20px;
+    padding: 10px;
+    flex: 1;
+
+}
+
+.carrusel::-webkit-scrollbar-thumb {
+    background-color: var(--color-acento);
+    border-radius: 10px;
+
+}
+
+.carrusel-item {
+    flex: 0 0 auto;
+    scroll-snap-align: center;
+    width: 280px;
+    height: 350px;
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.12);
+    transition: transform 0.3s ease;
+
+}
+
+.carrusel-item:hover{
+    transform: scale(1.03);
+
+}
+
+
+
+
+
