@@ -11,6 +11,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="style.css">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>💻</text></svg>">
 </head>
 
 <body>
@@ -19,12 +20,12 @@
         <div class="logo">
             <h1>Juan David Pareja Quintero</h1>
         </div>
-
         <nav>
             <ul>
-                <li><a href="#inicio">Inicio</a></li>
-                <li><a href="#sobre-mi">Acerca de mi</a></li>
-                <li><a href="#proyectos">Proyectos</a></li>
+                <li><a href="index.html#inicio">Inicio</a></li>
+                <li><a href="index.html#sobre-mi">Acerca de mi</a></li>
+                <li><a href="index.html#habilidades">Habilidades</a></li>
+                <li><a href="index.html#proyectos">Proyectos</a></li>
                 <li><a href="galeria.html">Galería</a></li>
                 <li><a href="formulario.html">Contacto</a></li>
                 <li><button id="toggle-tema" class="tema-btn">🌙</button></li>
@@ -57,6 +58,39 @@
                 quiero tener.
             </p>
         </section>
+        <section id="habilidades">
+            <h2>Habilidades</h2>
+
+            <div class="habilidad">
+                <div class="habilidad-info">
+                    <span>HTML</span>
+                    <span>50%</span>
+                </div>
+                <div class="barra-fondo">
+                    <div class="barra-relleno" data-nivel="50"></div>
+                </div>
+            </div>
+
+            <div class="habilidad">
+                <div class="habilidad-info">
+                    <span>CSS</span>
+                    <span>50%</span>
+                </div>
+                <div class="barra-fondo">
+                    <div class="barra-relleno" data-nivel="50"></div>
+                </div>
+            </div>
+
+            <div class="habilidad">
+                <div class="habilidad-info">
+                    <span>JavaScript</span>
+                    <span>15%</span>
+                </div>
+                <div class="barra-fondo">
+                    <div class="barra-relleno" data-nivel="15"></div>
+                </div>
+            </div>
+        </section>
 
         <section id="proyectos">
             <h2>Proyectos</h2>
@@ -67,6 +101,11 @@
                     BIT. Lo contrui desde cero usando HTML Y CSS, aplicando lo aprendido en las primeras clases del
                     curso: estructura semantica, estilos, diseño responsivo y buenas practicas de codigo.
                 </p>
+                <div class="etiquetas">
+                    <span class="etiqueta">HTML</span>
+                    <span class="etiqueta">CSS</span>
+                    <span class="etiqueta">JavaScript</span>
+                </div>
             </div>
         </section>
 
@@ -76,7 +115,8 @@
             <ul>
                 <li>Email <a href="mailto:charmin990530@gmail.com">charmin990530@gmail.com</a></li>
                 <li>Whatsapp <a href="https://wa.me/57311433561" target="_blank">Escribeme por Whatsapp</a></li>
-                <li>GitHub <a href="https://github.com/charmin990530-sudo" target="_blank">github.com/charmin990530-sudo</a></li>
+                <li>GitHub <a href="https://github.com/charmin990530-sudo"
+                        target="_blank">github.com/charmin990530-sudo</a></li>
             </ul>
         </section>
     </main>
