@@ -99,6 +99,7 @@ nav a:hover {
     max-width: 900px;
     margin: 0 auto;
     padding: 80px 20px;
+    perspective: 1000px;
 }
 
 #proyectos h2 {
@@ -113,11 +114,12 @@ nav a:hover {
     padding: 30px;
     margin-bottom: 20px;
     box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
-    transition: transform 0.3s ease, box-shadow 0.3s ease;
+    transition: transform 0.15s ease-out, box-shadow 0.3s ease;
+    will-change: transform;
 }
 
+
 .proyecto:hover {
-    transform: translateY(-8px);
     box-shadow: 0 12px 30px rgba(0, 0, 0, 0.15);
 }
 
@@ -374,6 +376,24 @@ header {
         width: 220px;
         height: 280px;
     }
+}
+
+.tema-btn {
+    background: transparent;
+    border: 2px solid white;
+    color: white;
+    border-radius: 50%;
+    width: 36px;
+    height: 36px;
+    cursor: pointer;
+    font-size: 1rem;
+    transition: transform 0.3s ease, background-color 0.3s ease;
+}
+
+.tema-btn:hover {
+    background-color: var(--color-acento);
+    border-color: var(--color-acento);
+    transform: rotate(20deg);
 }
 
 
