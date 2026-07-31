@@ -317,6 +317,9 @@ header {
     flex: 1;
 
 }
+.carrusel::-webkit-scrollbar {
+    height: 8px;
+}
 
 .carrusel::-webkit-scrollbar-thumb {
     background-color: var(--color-acento);
@@ -340,6 +343,40 @@ header {
     transform: scale(1.03);
 
 }
+
+.carrusel-item img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+
+}
+
+.carrusel-btn {
+    background-color: var(--color-oscuro);
+    color: white;
+    border: none;
+    width: 45px;
+    height: 45px;
+    border-radius: 50%;
+    font-size: 1.2rem;
+    cursor: pointer;
+    flex-shrink: 0;
+    transition: background-color 0.3s ease;
+}
+
+.carrusel-btn:hover {
+    background-color: var(--color-acento);
+
+}
+
+@media (max-width: 600px) {
+    .carrusel-item {
+        width: 220px;
+        height: 280px;
+    }
+}
+
+
 
 
 
