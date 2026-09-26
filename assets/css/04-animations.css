@@ -1,0 +1,147 @@
+/* =============================================================
+   04 · ANIMACIONES
+   Keyframes del sistema. Todas se desactivan bajo
+   `prefers-reduced-motion` (regla global en 02-base.css).
+   ============================================================= */
+
+/* ---------- Latido de indicador ---------- */
+@keyframes latido {
+  0%,
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.35;
+    transform: scale(0.72);
+  }
+}
+
+/* ---------- Marquesina ---------- */
+@keyframes marquesina {
+  from {
+    transform: translate3d(0, 0, 0);
+  }
+  to {
+    transform: translate3d(-50%, 0, 0);
+  }
+}
+
+/* ---------- Rotaciones ---------- */
+@keyframes girar {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes girar-contrario {
+  to {
+    transform: rotate(-360deg);
+  }
+}
+
+/* ---------- Respiración lenta (aura de la portada) ---------- */
+@keyframes respirar-lento {
+  0%,
+  100% {
+    transform: scale(1) translate3d(0, 0, 0);
+    opacity: 0.72;
+  }
+  50% {
+    transform: scale(1.08) translate3d(1.5%, -1.5%, 0);
+    opacity: 0.95;
+  }
+}
+
+/* ---------- Respiración de brillo ---------- */
+@keyframes respirar {
+  0%,
+  100% {
+    opacity: 0.45;
+  }
+  50% {
+    opacity: 0.95;
+  }
+}
+
+/* ---------- Entrada de bloques ---------- */
+@keyframes entrar {
+  from {
+    opacity: 0;
+    transform: translateY(26px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* ---------- Cursor de escritura ---------- */
+@keyframes cursor-parpadeo {
+  0%,
+  49% {
+    opacity: 1;
+  }
+  50%,
+  100% {
+    opacity: 0;
+  }
+}
+
+/* ---------- Rotaura del planeta ---------- */
+@keyframes rotar-planeta {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* ---------- Entrada por letra ---------- */
+@keyframes letra-entra {
+  from {
+    opacity: 0;
+    transform: translateY(0.5em) rotateX(-70deg);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) rotateX(0);
+  }
+}
+
+/* ---------- Carga del preloader ---------- */
+@keyframes anillo-carga {
+  0% {
+    stroke-dashoffset: 905;
+  }
+  100% {
+    stroke-dashoffset: var(--carga, 0);
+  }
+}
+
+/* ---------- Red de seguridad del preloader ----------
+   Si el JavaScript no llega a ejecutarse (error, bloqueador, JS apagado),
+   la cortina se retira sola para no dejar la página inutilizable.
+   El script la oculta antes, así que esta animación nunca llega a verse. */
+@keyframes preloader-seguro {
+  0%,
+  96% {
+    opacity: 1;
+    visibility: visible;
+  }
+  100% {
+    opacity: 0;
+    visibility: hidden;
+  }
+}
+
+.preloader {
+  animation: preloader-seguro 5s var(--ease-in-out) 1s forwards;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .preloader {
+    animation-delay: 0.4s;
+  }
+}

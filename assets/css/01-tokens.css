@@ -1,0 +1,186 @@
+/* =============================================================
+   01 · TOKENS DE DISEÑO
+   Paleta, tipografía, ritmo espacial, radios, sombras y movimiento.
+   Todo el sistema visual se controla desde aquí.
+   ============================================================= */
+
+:root {
+  color-scheme: dark;
+
+  /* ---------- Superficies ---------- */
+  --space-900: #05070f;
+  --space-850: #070a14;
+  --space-800: #070a15;
+  --space-750: #0a0e1c;
+  --space-700: #0e1424;
+  --space-600: #141c30;
+  --space-500: #1c2740;
+
+  /* ---------- Texto ---------- */
+  --ink-100: #f2f6ff;
+  --ink-200: #d7e0f5;
+  --ink-300: #a9b6d4;
+  --ink-400: #7c8ab0;
+  --ink-500: #5b688a;
+
+  /* ---------- Acentos ---------- */
+  --cyan: #4fe3ff;
+  --cyan-deep: #0ea5c4;
+  --violet: #a06bff;
+  --violet-deep: #6d33d6;
+  --solar: #ffb454;
+  --solar-deep: #e07a1f;
+  --lime: #7ef2a8;
+  --rose: #ff6ba8;
+
+  /* ---------- Roles semánticos ---------- */
+  --bg: var(--space-900);
+  --bg-alt: var(--space-850);
+  --surface: rgb(255 255 255 / 4%);
+  --surface-strong: rgb(255 255 255 / 7%);
+  --surface-solid: var(--space-750);
+  --line: rgb(255 255 255 / 9%);
+  --line-strong: rgb(255 255 255 / 16%);
+  --text: var(--ink-100);
+  --text-soft: var(--ink-300);
+  --text-mute: var(--ink-400);
+  --accent: var(--cyan);
+  --accent-2: var(--violet);
+  --accent-3: var(--solar);
+  --on-accent: #02060c;
+
+  /* ---------- Cristal ---------- */
+  --glass-bg: rgb(10 15 28 / 62%);
+  --glass-bg-strong: rgb(8 12 24 / 82%);
+  --glass-blur: 18px;
+  --glass-border: rgb(255 255 255 / 10%);
+
+  /* ---------- Texto degradado ---------- */
+  --text-gradient: linear-gradient(100deg, var(--ink-100) 8%, var(--cyan) 46%, var(--violet) 92%);
+
+  /* Acento por etapa del proceso; el módulo va cambiando cuál está activo. */
+  --proceso-color: var(--cyan);
+  --radio-nodo: 40%;
+
+  /* ---------- Tipografía ---------- */
+  --font-display: 'Space Grotesk', 'Segoe UI', system-ui, -apple-system, sans-serif;
+  --font-body: 'Inter', 'Segoe UI', system-ui, -apple-system, sans-serif;
+  --font-mono: 'JetBrains Mono', ui-monospace, 'Cascadia Code', 'Courier New', monospace;
+
+  --step--2: clamp(0.69rem, 0.67rem + 0.1vw, 0.75rem);
+  --step--1: clamp(0.83rem, 0.8rem + 0.15vw, 0.9rem);
+  --step-0: clamp(0.98rem, 0.95rem + 0.2vw, 1.06rem);
+  --step-1: clamp(1.16rem, 1.1rem + 0.35vw, 1.35rem);
+  --step-2: clamp(1.38rem, 1.25rem + 0.6vw, 1.75rem);
+  --step-3: clamp(1.65rem, 1.4rem + 1.1vw, 2.3rem);
+  --step-4: clamp(1.98rem, 1.55rem + 2vw, 3.2rem);
+  --step-5: clamp(2.37rem, 1.6rem + 3.4vw, 4.6rem);
+  --step-6: clamp(2.4rem, 1.5rem + 3.6vw, 4.8rem);
+  --step-hero: clamp(1.95rem, 0.9rem + 3.9vw, 4.9rem);
+
+  /* ---------- Ritmo espacial ---------- */
+  --sp-1: 0.25rem;
+  --sp-2: 0.5rem;
+  --sp-3: 0.75rem;
+  --sp-4: 1rem;
+  --sp-5: 1.5rem;
+  --sp-6: 2rem;
+  --sp-7: 3rem;
+  --sp-8: 4rem;
+  --sp-9: 6rem;
+  --sp-10: 8rem;
+
+  --shell: 1240px;
+  --gutter: clamp(1.15rem, 4vw, 3.5rem);
+  --header-h: 74px;
+
+  /* ---------- Radios ---------- */
+  --r-xs: 6px;
+  --r-sm: 10px;
+  --r-md: 16px;
+  --r-lg: 24px;
+  --r-xl: 34px;
+  --r-pill: 999px;
+
+  /* ---------- Sombras ---------- */
+  --shadow-sm: 0 2px 8px rgb(0 0 0 / 30%);
+  --shadow-md: 0 14px 40px -12px rgb(0 0 0 / 65%);
+  --shadow-lg: 0 34px 90px -24px rgb(0 0 0 / 80%);
+  --glow-cyan: 0 0 0 1px rgb(79 227 255 / 28%), 0 0 34px -6px rgb(79 227 255 / 42%);
+  --glow-violet: 0 0 0 1px rgb(160 107 255 / 28%), 0 0 34px -6px rgb(160 107 255 / 42%);
+
+  /* ---------- Movimiento ---------- */
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
+  --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --t-fast: 160ms;
+  --t-base: 320ms;
+  --t-slow: 640ms;
+  --t-story: 1100ms;
+
+  /* ---------- Profundidad ----------
+     La cabecera va por encima del menú a propósito: si no, el menú de
+     pantalla completa taparía el propio botón que lo cierra. */
+  --z-bg: 0;
+  --z-content: 10;
+  --z-rail: 60;
+  --z-menu: 70;
+  --z-header: 80;
+  --z-cursor: 95;
+  --z-preloader: 100;
+}
+
+/* =============================================================
+   TEMA CLARO · "ALBA"
+   ============================================================= */
+:root[data-tema='claro'] {
+  color-scheme: light;
+
+  --space-900: #eef2fb;
+  --space-850: #e6ecf8;
+  --space-800: #dfe7f6;
+  --space-750: #ffffff;
+  --space-700: #f2f6fd;
+  --space-600: #e6edf9;
+  --space-500: #d8e2f2;
+
+  --ink-100: #0a1226;
+  --ink-200: #17233d;
+  --ink-300: #3b4a68;
+  --ink-400: #5b6a88;
+  --ink-500: #7d8aa5;
+
+  --cyan: #0090b4;
+  --cyan-deep: #00a9d6;
+  --violet: #6d33d6;
+  --violet-deep: #4f1fa8;
+  --solar: #c9700c;
+  --solar-deep: #a85a06;
+  --lime: #10935a;
+  --rose: #d63a7c;
+
+  --bg: var(--space-900);
+  --bg-alt: var(--space-850);
+  --surface: rgb(10 25 60 / 4%);
+  --surface-strong: rgb(10 25 60 / 7%);
+  --surface-solid: #ffffff;
+  --line: rgb(12 26 56 / 12%);
+  --line-strong: rgb(12 26 56 / 22%);
+  --text: var(--ink-100);
+  --text-soft: var(--ink-300);
+  --text-mute: var(--ink-400);
+  --on-accent: #ffffff;
+
+  --glass-bg: rgb(255 255 255 / 72%);
+  --glass-bg-strong: rgb(255 255 255 / 88%);
+  --glass-blur: 16px;
+  --glass-border: rgb(12 26 56 / 10%);
+
+  --text-gradient: linear-gradient(100deg, #0a1226 6%, var(--cyan-deep) 48%, var(--violet) 94%);
+
+  --shadow-sm: 0 2px 8px rgb(19 34 68 / 8%);
+  --shadow-md: 0 14px 36px -14px rgb(19 34 68 / 22%);
+  --shadow-lg: 0 34px 80px -28px rgb(19 34 68 / 30%);
+  --glow-cyan: 0 0 0 1px rgb(0 144 180 / 26%), 0 0 28px -8px rgb(0 144 180 / 34%);
+  --glow-violet: 0 0 0 1px rgb(109 51 214 / 26%), 0 0 28px -8px rgb(109 51 214 / 34%);
+}
