@@ -312,6 +312,10 @@
 
 .campo__control {
   width: 100%;
+  /* Nunca por debajo de 16px. iOS Safari hace zoom automático al enfocar
+     un campo con letra menor, y al salir del zoom la página se desplaza
+     hacia los lados: es el bug de "se mueve solo" en el formulario. */
+  font-size: max(1rem, var(--step-0));
   padding: 0.95rem 1.1rem;
   border: 1px solid var(--line);
   border-radius: var(--r-md);
@@ -345,7 +349,15 @@
 
 textarea.campo__control {
   min-height: 140px;
+  /* iOS no permite redimensionar a mano; el control lo pone el usuario. */
   resize: vertical;
+}
+
+select.campo__control,
+input.campo__control,
+textarea.campo__control {
+  -webkit-appearance: none;
+  appearance: none;
 }
 
 .campo__error {

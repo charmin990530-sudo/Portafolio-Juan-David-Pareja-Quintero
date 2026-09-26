@@ -16,9 +16,20 @@
 
 html {
   -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
   scroll-behavior: smooth;
   scroll-padding-top: calc(var(--header-h) + 1.5rem);
   color-scheme: inherit;
+
+  /* El recorte horizontal va AQUÍ y no en <body>.
+     Cuando el overflow se declara en <body> y <html> está en `visible`,
+     el navegador lo *propaga* a la ventana: el body deja de recortar y el
+     desborde se cuela. Con `clip` en la raíz el desborde se corta de
+     verdad (medido: 13-60 px menos) y `clip` no crea contenedor de
+     desplazamiento, así que `position: sticky` sigue funcionando. */
+  overflow-x: clip;
+  /* Nada de arrastre lateral por gestos ni por rebote. */
+  overscroll-behavior-x: none;
 }
 
 body {
@@ -32,7 +43,6 @@ body {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   text-rendering: optimizeLegibility;
-  overflow-x: clip;
   transition: background-color var(--t-base) var(--ease-out), color var(--t-base) var(--ease-out);
 }
 

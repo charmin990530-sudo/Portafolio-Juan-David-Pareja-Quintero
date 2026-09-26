@@ -40,15 +40,17 @@
   }
 }
 
-/* ---------- Respiración lenta (aura de la portada) ---------- */
+/* ---------- Respiración lenta (aura de la portada) ----------
+   Solo `transform` y `opacity`: animar `inset` o `width` en cada fotograma
+   obliga al navegador a recalcular la disposición y en móvil se nota. */
 @keyframes respirar-lento {
   0%,
   100% {
-    transform: scale(1) translate3d(0, 0, 0);
+    transform: scale(1);
     opacity: 0.72;
   }
   50% {
-    transform: scale(1.08) translate3d(1.5%, -1.5%, 0);
+    transform: scale(1.12);
     opacity: 0.95;
   }
 }

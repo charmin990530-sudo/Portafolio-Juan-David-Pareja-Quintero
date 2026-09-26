@@ -469,9 +469,12 @@ main {
 }
 
 /* Aura de color: da profundidad sin ninguna imagen de fondo. */
+/* El aura se dibuja del mismo tamaño que la portada y crece con
+   `transform`. Antes usaba `inset: -20%`, que dependía del recorte del
+   padre para no desbordar: frágil y en móvil se colaba. */
 .hero__aura {
   position: absolute;
-  inset: -20%;
+  inset: 0;
   z-index: -3;
   background:
     radial-gradient(38% 34% at 22% 26%, color-mix(in srgb, var(--accent) 30%, transparent), transparent 62%),
@@ -582,12 +585,15 @@ main {
 }
 
 /* --- Aros decorativos --- */
+/* Antes `width: min(112vw, 1040px)`: 112vw es un 12 % más ancho que la
+   pantalla, así que en móvil el elemento se salía y obligaba a confiar
+   en el recorte del padre. Ahora mide como mucho el ancho disponible. */
 .hero__anillos {
   position: absolute;
   top: 50%;
   left: 50%;
   z-index: -1;
-  width: min(112vw, 1040px);
+  width: min(100%, 1040px);
   aspect-ratio: 1;
   transform: translate(-50%, -50%);
   pointer-events: none;
@@ -718,6 +724,15 @@ main {
   max-width: 440px;
   aspect-ratio: 1;
   margin-inline: auto;
+
+  /* Los aros de abajo giran con `transform: rotate()`. Una rotación SÍ
+     genera desbordamiento de layout: el recuadro envolvente de un
+     cuadrado girado es mayor que el cuadrado, así que en móvil los aros
+     empujaban la página 18 px hacia los lados al cargar.
+     Recortar aquí no se ve nada: al ser círculos, la esquina que se
+     recorta siempre está vacía, y el resplandor de la foto cabe de
+     sobra dentro de la caja. */
+  overflow: clip;
 }
 
 .retrato__anillo {
