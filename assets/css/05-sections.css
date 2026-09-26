@@ -305,6 +305,12 @@ main {
   align-items: center;
   gap: 0.6rem;
   flex: none;
+  /* El margen automático de .nav es lo que empujaba los controles a la
+     derecha. En móvil .nav pasa a `display: none` y ese margen desaparece
+     con él, dejando el nombre, el tema y el botón de menú amontonados a
+     la izquierda con un hueco vacío de más de 100 px. Este margen los
+     mantiene pegados al borde derecho, haya navegación o no. */
+  margin-left: auto;
 }
 
 .tema {
@@ -1552,6 +1558,10 @@ main {
     align-content: center;
     gap: var(--sp-4);
     padding-block: calc(var(--header-h) + var(--sp-4)) var(--sp-5);
+    /* Aquí el riel se convierte en una tira horizontal abajo, así que el
+       carril de 5,5 rem de escritorio sobra. Sin este ajuste el texto
+       se quedaba 88 px más estrecho y pegado a la izquierda. */
+    padding-inline-end: var(--gutter);
   }
 
   .proceso__visual {
