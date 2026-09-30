@@ -38,7 +38,7 @@ import { crearAnillos } from './cuerpos/anillos.js';
 import { crearLunas } from './cuerpos/lunas.js';
 import { crearCampo } from './cuerpos/campo.js';
 import { crearBaliza, liberarTexturasBaliza } from './cuerpos/baliza.js';
-import { alCambiarTema, leerPaleta } from './colores.js';
+import { leerPaleta } from './colores.js';
 import { crearSonda, dprEfectivo, densidadUI, NIVELES, perfil } from './calidad.js';
 import { SISTEMAS, PRESENTACION } from '../data/universo.js';
 import { STACK } from '../data/stack.js';
@@ -265,8 +265,6 @@ export function crearEscena({ lienzo, nivelInicial, alInformar, alDegradar, alAc
   const alSalirPuntero = () => {
     puntero.tiene = false;
   };
-
-  const pararTema = alCambiarTema(aplicarPaleta);
 
   document.addEventListener('visibilitychange', alCambiarVisibilidad);
   window.addEventListener('resize', alRedimensionar, { passive: true });
@@ -502,7 +500,6 @@ export function crearEscena({ lienzo, nivelInicial, alInformar, alDegradar, alAc
       window.removeEventListener('pointermove', alMover);
       document.removeEventListener('pointerleave', alSalirPuntero);
       document.removeEventListener('visibilitychange', alCambiarVisibilidad);
-      pararTema();
 
       for (const cuerpo of cuerpos) {
         if (cuerpo.tipo === 'alias') continue;
@@ -523,18 +520,6 @@ export function crearEscena({ lienzo, nivelInicial, alInformar, alDegradar, alAc
     },
   };
 
-  /* ---------------------------------------------------------------
-     Locales
-     --------------------------------------------------------------- */
-
-  function aplicarPaleta(nueva) {
-    renderer.setClearColor(nueva.fondo, 1);
-    escena.fog.color.copy(nueva.fondo);
-    estrellas.aplicarPaleta(nueva);
-    nebulosa.aplicarPaleta(nueva);
-    polvo.aplicarPaleta(nueva);
-    for (const cuerpo of cuerpos) cuerpo.pieza?.aplicarPaleta?.(nueva);
-  }
 }
 
 /* ------------------------------------------------------------------

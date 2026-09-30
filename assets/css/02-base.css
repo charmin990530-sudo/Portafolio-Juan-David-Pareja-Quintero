@@ -17,7 +17,19 @@
 html {
   -webkit-text-size-adjust: 100%;
   text-size-adjust: 100%;
-  scroll-behavior: smooth;
+  /* `scroll-behavior` NO se pone en `smooth` a propósito.
+     El suavizado del scroll lo aporta Lenis (`core/desplazar.js`), que
+     además hace algo que CSS no puede: expose una señal de velocidad
+     suavizada, que es la que alarga las estelas de las estrellas y abre
+     el FOV de la cámara al acelerar.
+
+     Con las dos cosas activas a la vez, cada salto lo ejecutan los dos:
+     la página se mueve una vez por Lenis y otra por el navegador, y el
+     resultado se ve como un tirón. Aquí manda Lenis, y cuando no está
+     (móvil, movimiento reducido, sin JavaScript) el scroll nativo es
+     instantáneo, que es el comportamiento por defecto del navegador y
+     el que espera quien navega con teclado. */
+  scroll-behavior: auto;
   scroll-padding-top: calc(var(--header-h) + 1.5rem);
   color-scheme: inherit;
 

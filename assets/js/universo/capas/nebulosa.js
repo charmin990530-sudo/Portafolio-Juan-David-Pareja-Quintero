@@ -185,12 +185,6 @@ export function crearNebulosa({ nivel, radio, paleta }) {
       void segundos;
     },
 
-    aplicarPaleta(nueva) {
-      grupo.forEach((sprite, i) => {
-        const capa = capas[i % capas.length];
-        sprite.material.color.copy(nueva[capa.clave]);
-      });
-    },
 
     liberar() {
       for (const sprite of grupo) sprite.material.dispose();

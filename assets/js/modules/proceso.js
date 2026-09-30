@@ -19,6 +19,7 @@ import { $, $$, crear } from '../core/dom.js';
 import { alFotograma } from '../core/loop.js';
 import { clamp, mapear, movimientoReducido } from '../core/util.js';
 import { PROCESO, TOTAL_ETAPAS } from '../data/proceso.js';
+import { desplazarAposicion } from '../core/desplazar.js';
 
 const CAMBIO = 0.5;
 const RETARDO_FUNDIDO = 240;
@@ -164,13 +165,16 @@ export function montarProceso() {
     }, RETARDO_FUNDIDO);
   }
 
-  /* ---------- Navegación por el riel ---------- */
+  /* ---------- Navegación por el riel ----------
+     Los cinco nodos del diagrama y los cinco del riel llevan aquí. Con
+     movimiento reducido el salto es inmediato: animar el scroll cuando
+     alguien ha pedido menos movimiento es exactamente lo contrario de lo
+     que se le está pidiendo. */
   function irAProgreso(destino) {
     const caja = escena.getBoundingClientRect();
     const altoTotal = Math.max(1, caja.height - window.innerHeight);
-    window.scrollTo({
-      top: caja.top + window.scrollY + altoTotal * clamp(destino, 0, 1),
-      behavior: movimientoReducido() ? 'auto' : 'smooth',
+    desplazarAposicion(caja.top + window.scrollY + altoTotal * clamp(destino, 0, 1), {
+      inmediato: movimientoReducido(),
     });
   }
 

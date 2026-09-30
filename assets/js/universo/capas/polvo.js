@@ -122,9 +122,6 @@ export function crearPolvo({ nivel, caja, paleta }) {
       material.uniforms.uPixelRatio.value = dpr;
     },
 
-    aplicarPaleta(nueva) {
-      material.uniforms.uColor.value.copy(nueva.cian).lerp(nueva.violeta, 0.45);
-    },
 
     liberar() {
       geometria.dispose();

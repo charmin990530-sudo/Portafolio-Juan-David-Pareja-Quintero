@@ -8,6 +8,7 @@
 
 import { $, $$, crear } from '../core/dom.js';
 import { clamp } from '../core/util.js';
+import { desplazarAlPrincipio } from '../core/desplazar.js';
 
 export function montarCabecera() {
   const cabecera = $('#cabecera');
@@ -143,7 +144,9 @@ export function montarProgreso() {
   }
 
   subir?.addEventListener('click', () => {
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    // Va por el helper y no por `window.scrollTo`: con Lenis montado, un
+    // `scrollTo` nativo compite con el suavizado y el salto se ve a tirones.
+    desplazarAlPrincipio();
     $('.nav__enlace')?.focus({ preventScroll: true });
   });
 

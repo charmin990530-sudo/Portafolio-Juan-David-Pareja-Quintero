@@ -22,10 +22,20 @@ function desdeToken(nombre, porDefecto) {
 /**
  * Paleta del universo.
  *
- * `THREE.Color` con `setStyle` aplica la conversión sRGB→lineal que el
- * renderizador espera. Los valores literales son de respaldo por si el CSS
- * aún no está disponible (no debería ocurrir: este módulo se importa después
- * de que el CSS se aplique, pero el fallback cuesta cuatro palabras).
+ * Se lee una sola vez, al montar. Ya no hay tema que alternar —el sitio
+ * es nocturno por diseño y el selector "Alba" se retiró cuando llegó el
+ * universo—, así que no hace falta observar ningún atributo.
+ *
+ * Para recuperar un tema claro en el futuro hay que reañadir aquí un
+ * `MutationObserver` sobre `data-tema` que vuelva a llamar a `leerPaleta()`,
+ * exactamente como hacía `modules/fondo.js` con el canvas 2D antes de
+ * retirarlo. Ver `UNIVERSO.md`.
+ *
+ * `THREE.Color` con el constructor de cadena aplica la conversión
+ * sRGB→lineal que el renderizador espera. Los literales son de respaldo por
+ * si el CSS aún no estuviera disponible, que no debería pasar: este módulo
+ * se importa después de que el CSS se aplique, pero el respaldo cuesta
+ * cuatro palabras.
  */
 export function leerPaleta() {
   return {
@@ -37,24 +47,4 @@ export function leerPaleta() {
     rosa: desdeToken('--rose', '#ff6ba8'),
     tinta: desdeToken('--ink-100', '#f2f6ff'),
   };
-}
-
-/**
- * Aviso cuando cambia `data-tema`, para que la escena reinterprete los
- * tokens en vez de quedarse con la paleta vieja.
- *
- * No existe un evento propio de cambio de tema en el sitio: el patrón
- * establecido es observar el atributo con `MutationObserver`, que es lo que
- * ya hacía `modules/fondo.js` con el canvas 2D. Se reutiliza tal cual para
- * no inventar un segundo mecanismo.
- */
-export function alCambiarTema(callback) {
-  const observador = new MutationObserver(() => callback(leerPaleta()));
-  observador.observe(document.documentElement, { attributes: true, attributeFilter: ['data-tema'] });
-  return () => observador.disconnect();
-}
-
-/** Mezcla lineal entre dos colores; `t` en [0,1]. */
-export function mezclar(a, b, t) {
-  return a.clone().lerp(b, t);
 }

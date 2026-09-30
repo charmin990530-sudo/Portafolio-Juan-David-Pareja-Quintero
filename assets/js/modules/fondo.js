@@ -23,19 +23,17 @@ const MIN_NODOS = 14;
 const DISTANCIA = 132; // px a la que dos nodos se conectan
 const VELOCIDAD = 0.018;
 
-const PALETAS = {
-  oscuro: {
-    nodo: '79, 227, 255',
-    nodoFuerte: '160, 107, 255',
-    linea: '79, 227, 255',
-    particula: '255, 255, 255',
-  },
-  claro: {
-    nodo: '0, 144, 180',
-    nodoFuerte: '109, 51, 214',
-    linea: '0, 144, 180',
-    particula: '19, 34, 68',
-  },
+/* Paleta del campo de partículas. Son los mismos valores que los tokens
+   `--cyan` y `--violet` del tema oscuro, en triplets RGB porque el canvas
+   2D los necesita así y no admite `color-mix`.
+
+   Solo hay una paleta: el sitio ya no tiene tema claro. Este módulo es el
+   fondo de la versión simple, y esa versión es nocturna. */
+const PALETA = {
+  nodo: '79, 227, 255',
+  nodoFuerte: '160, 107, 255',
+  linea: '79, 227, 255',
+  particula: '255, 255, 255',
 };
 
 let lienzo;
@@ -45,10 +43,9 @@ let alto = 0;
 let escala = 1;
 let nodos = [];
 let activo = false;
-let observadorTema = null;
 let aspecto = 0;
 
-const paleta = () => PALETAS[document.documentElement.dataset.tema === 'claro' ? 'claro' : 'oscuro'];
+const paleta = () => PALETA;
 
 function crearNodo() {
   return {
@@ -156,18 +153,13 @@ export function montarFondo() {
     activo = !document.hidden;
     if (!activo) contexto.clearRect(0, 0, ancho, alto);
   };
-  const alCambiarTema = () => dibujar();
 
   window.addEventListener('resize', alRedimensionar, { passive: true });
   document.addEventListener('visibilitychange', alCambiarVisibilidad);
-
-  observadorTema = new MutationObserver(alCambiarTema);
-  observadorTema.observe(document.documentElement, { attributes: true, attributeFilter: ['data-tema'] });
 
   return () => {
     activo = false;
     window.removeEventListener('resize', alRedimensionar);
     document.removeEventListener('visibilitychange', alCambiarVisibilidad);
-    observadorTema?.disconnect();
   };
 }

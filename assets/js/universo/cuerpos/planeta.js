@@ -343,14 +343,6 @@ export function crearPlaneta({ nivel, def, semillaBase = 0 }) {
       }
     },
 
-    aplicarPaleta(nueva) {
-      // El acento del cuerpo es suyo, no de la marca: no se reescribe con el
-      // cambio de tema. Lo que sí se actualiza es el tinte de la luz, que en
-      // el tema claro tiene que dejar de ser blanco puro para no lavar la
-      // superficie.
-      material.uniforms.uColorLuz.value.set(def.colorLuz ?? '#ffffff');
-      void nueva;
-    },
 
     liberar() {
       // La geometría es compartida: NO se destruye aquí. La destruye

@@ -24,7 +24,6 @@
  */
 
 import { montarPreloader } from './modules/preloader.js';
-import { montarTema } from './modules/tema.js';
 import { montarCabecera, montarProgreso } from './modules/cabecera.js';
 import { montarFondo } from './modules/fondo.js';
 import { montarCursor } from './modules/cursor.js';
@@ -35,8 +34,13 @@ import { montarContadores } from './modules/contadores.js';
 import { montarProceso } from './modules/proceso.js';
 import { montarContacto } from './modules/contacto.js';
 import { $, $$ } from './core/dom.js';
+import {
+  montarScrollSuave,
+  montarEnlacesAncla,
+  montarRecalibrado,
+} from './core/desplazar.js';
 
-/** Ejecuta un módulo sin dejar que un fallotumbe el resto. */
+/** Ejecuta un módulo sin dejar que un fallo tumbe el resto. */
 function seguro(nombre, montar) {
   try {
     return montar();
@@ -46,38 +50,16 @@ function seguro(nombre, montar) {
   }
 }
 
-function desplazarSuave() {
-  document.addEventListener('click', (evento) => {
-    const enlace = evento.target instanceof Element ? evento.target.closest('a[href^="#"]') : null;
-    if (!enlace) return;
-
-    const id = enlace.getAttribute('href').slice(1);
-    if (!id) return;
-
-    const destino = document.getElementById(id);
-    if (!destino) return;
-
-    evento.preventDefault();
-
-    const alturaCabecera = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--header-h')) || 74;
-    const superior = destino.getBoundingClientRect().top + window.scrollY - alturaCabecera - 12;
-
-    window.scrollTo({ top: Math.max(0, superior), behavior: 'smooth' });
-    destino.setAttribute('tabindex', '-1');
-    destino.focus({ preventScroll: true });
-    history.replaceState(null, '', `#${id}`);
-  });
-}
-
 async function iniciar() {
   document.documentElement.classList.add('js');
-
-  // El tema arranca de inmediato: va antes de cualquierMeasurement visual.
-  seguro('tema', montarTema);
 
   await seguro('preloader', montarPreloader);
 
   const montajes = [
+    // El scroll suave va el primero de los módulos: el resto de medidas
+    // dependen de él. En móvil o con movimiento reducido, `montarScrollSuave`
+    // no hace nada y todo sigue con scroll nativo.
+    ['scroll', montarScrollSuave],
     ['fondo', montarFondo],
     ['cabecera', montarCabecera],
     ['progreso', montarProgreso],
@@ -89,7 +71,8 @@ async function iniciar() {
     ['proceso', montarProceso],
     ['contacto', montarContacto],
     ['revelar', montarRevelar],
-    ['desplazamiento', () => { desplazarSuave(); return () => {}; }],
+    ['enlaces', montarEnlacesAncla],
+    ['recalibrado', montarRecalibrado],
   ];
 
   const limpiezas = montajes.map(([nombre, montar]) => seguro(nombre, montar));

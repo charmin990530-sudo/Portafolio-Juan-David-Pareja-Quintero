@@ -201,10 +201,6 @@ export function crearEstrellas({ nivel, radio, paleta }) {
       u.uOpacidad.value = 1;
     },
 
-    aplicarPaleta(nueva) {
-      material.uniforms.uColorBase.value.copy(nueva.tinta);
-      material.uniforms.uColorAcento.value.copy(nueva.cian);
-    },
 
     liberar() {
       geometria.dispose();
