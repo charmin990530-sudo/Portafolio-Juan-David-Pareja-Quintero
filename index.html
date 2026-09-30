@@ -24,6 +24,74 @@
       content="Desarrollador web full stack. HTML, CSS, JavaScript, Angular, Node.js, Express y MongoDB."
     />
     <meta name="twitter:card" content="summary_large_image" />
+    <meta property="og:locale" content="es_CO" />
+    <meta property="og:site_name" content="Juan David Pareja Quintero" />
+    <!--
+      `og:image` faltaba. La tarjeta se declaraba como
+      `summary_large_image` sin imagen, que es justo el valor para el que
+      ese formato NO sirve: sin imagen, la mayoría de redes muestran solo
+      el texto o un recuadro vacío.
+
+      La imagen apunta a `assets/img/og.png`. Las proporciones que mejor
+      funcionan en WhatsApp y LinkedIn son 1200×630 (1.91:1). Si la
+      cambias, mantén la proporción: en WhatsApp la miniatura se centra y
+      una imagen de otra relación se recorta por los lados.
+    -->
+    <meta property="og:image" content="assets/img/og.png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content="Juan David Pareja Quintero, desarrollador web full stack" />
+    <meta name="twitter:title" content="Portafolio de Juan David Pareja Quintero" />
+    <meta name="twitter:image" content="assets/img/og.png" />
+
+    <!--
+      Datos estructurados. El sitio no tenía ninguno, y sin ellos un
+      buscador no puede saber que esto es la ficha de una persona con un
+      oficio concreto, aunque el título diga "Juan David Pareja Quintero,
+      desarrollador". Va en el HTML y no en JavaScript para que lo lean
+      también los rastreadores que no ejecutan scripts.
+
+      Rellenar `sameAs` con los perfiles reales es lo que más aporta: es el
+      puente entre esta ficha y el resto de la presencia de la persona.
+    -->
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "Person",
+        "name": "Juan David Pareja Quintero",
+        "givenName": "Juan David",
+        "familyName": "Pareja Quintero",
+        "jobTitle": "Desarrollador Web Full Stack",
+        "description": "Desarrollador web full stack. Construyo productos web de punta a punta: HTML y CSS con detalle visual, y del lado del servidor Angular, Node.js, Express y MongoDB.",
+        "email": "mailto:charmin990530@gmail.com",
+        "address": {
+          "@type": "PostalAddress",
+          "addressLocality": "Bogotá",
+          "addressCountry": "CO"
+        },
+        "knowsLanguage": ["es"],
+        "knowsAbout": [
+          "Desarrollo web",
+          "HTML5",
+          "CSS3",
+          "JavaScript",
+          "TypeScript",
+          "Angular",
+          "Node.js",
+          "Express",
+          "MongoDB",
+          "Accesibilidad web",
+          "Rendimiento web"
+        ],
+        "hasOccupation": {
+          "@type": "Occupation",
+          "name": "Desarrollador Web Full Stack",
+          "skills": "HTML5, CSS3, JavaScript, TypeScript, Angular, Node.js, Express, MongoDB, Accesibilidad, SVG, Canvas, Git, Docker, Figma"
+        },
+        "sameAs": ["https://github.com/charmin990530-sudo"]
+      }
+    </script>
+
 
     <link rel="preload" href="assets/fonts/space-grotesk-700-latin.woff2" as="font" type="font/woff2" crossorigin />
     <link rel="preload" href="assets/fonts/inter-400-latin.woff2" as="font" type="font/woff2" crossorigin />
@@ -635,8 +703,11 @@
 
         <div class="pie__legal">
           <p class="pie__creditos">
-            Sitio construido a mano: HTML, CSS y JavaScript sin frameworks ni librerías externas. Tipografías
-            Space Grotesk, Inter y JetBrains Mono bajo SIL Open Font License 1.1.
+            Sitio construido a mano: HTML, CSS y JavaScript sin frameworks, sin empaquetador y sin
+            proceso de compilación. Three.js solo para el universo WebGL y Lenis solo para el scroll;
+            el resto está escrito aquí. Tipografías Space Grotesk, Inter y JetBrains Mono bajo SIL
+            Open Font License 1.1. Texturas e imágenes generadas por código: en el proyecto no hay ni
+            un archivo de imagen 3D.
           </p>
           <p class="mono">© 2026 Juan David Pareja Quintero</p>
         </div>
