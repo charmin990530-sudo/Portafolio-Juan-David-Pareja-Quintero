@@ -19,7 +19,15 @@
 .vineta {
   position: fixed;
   inset: 0;
-  z-index: 1;
+  /* Va POR ENCIMA del lienzo del universo, no al lado. Con las dos capas en
+     el mismo `z-index`, manda el orden del DOM, y como el lienzo se
+     inserta después que la viñeta, la viñeta acababa debajo y no hacía
+     nada: el planeta se veía a pleno brillo en los bordes de la pantalla,
+     peleándose con la cabecera.
+
+     La viñeta es el marco de la escena. Sin ella el borde compite con la
+     interfaz; con ella, la mirada va al centro. */
+  z-index: 2;
   pointer-events: none;
   background:
     radial-gradient(120% 85% at 50% 0%, transparent 38%, color-mix(in srgb, var(--bg) 78%, transparent) 100%),
@@ -29,7 +37,7 @@
 .malla {
   position: fixed;
   inset: 0;
-  z-index: 1;
+  z-index: 2;
   pointer-events: none;
   opacity: 0.35;
   background-image:

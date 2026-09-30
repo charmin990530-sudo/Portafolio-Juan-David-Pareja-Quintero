@@ -24,6 +24,10 @@
 .universo-lienzo {
   position: fixed;
   inset: 0;
+  /* Capa 1 de las tres del fondo: por debajo de la viñeta y la malla
+     (`z-index: 2`) y por encima del canvas 2D de la vista simple
+     (`--z-bg: 0`). El orden 0 → 1 → 2 → 3 es el que hace que la viñeta
+     sea realmente el marco de la escena. */
   z-index: 1;
   width: 100%;
   /* `100%` y no `100vh`: con `vh` en móvil, cuando aparece la barra de
@@ -77,7 +81,9 @@
 .grano {
   position: fixed;
   inset: -50%;
-  z-index: 2;
+  /* Capa 3: la última de las decorativas, por encima de la viñeta y bajo
+     el contenido (`--z-content: 10`). */
+  z-index: 3;
   pointer-events: none;
   opacity: 0.038;
   background-image: var(--grano-imagen);
@@ -113,23 +119,76 @@
 }
 
 /* ------------------------------------------------------------------
-   VELO DE LEGIBILIDAD
+   LEGIBILIDAD DEL TEXTO SOBRE LA ESCENA
    ------------------------------------------------------------------
-   El problema real de un portafolio 3D: texto blanco sobre un planeta
-   iluminado. Aquí no se usa un panel opaco —taparía la escena—, sino
-   un velo radial que oscurece justo detrás del texto y se desvanece
-   hacia los bordes. La escena sigue viéndose alrededor.                */
+   Este es EL problema de un portafolio 3D, y la primera versión lo tenía
+   sin resolver: el texto de las secciones quedaba directamente sobre el
+   planeta, sin nada detrás. Es el fallo que más delata un sitio de este
+   tipo, y no se ve en el código: se ve en la pantalla.
 
-.velo-texto {
+   La solución no es un panel opaco, que taparía justo lo que se quiere
+   enseñar. Es una BANDA OSCURA que sigue al bloque de texto:
+
+   · Se coloca en `.seccion`, con un pseudoelemento, para que aplique a
+     todas las secciones sin tocar ni una línea de HTML.
+   · Solo existe con el universo montado. En vista simple no se dibuja,
+     y el sitio queda exactamente como estaba.
+   · Oscurece el CENTRO de la sección, que es donde vive el texto, y se
+     desvanece hacia arriba y hacia abajo, donde no hay nada que leer y
+     el planeta puede verse entero.
+   · Se apoya en la anchura del `.shell` (`--shell`), no en un porcentaje
+     fijo: si mañana se cambia el ancho del contenido, el velo se ajusta
+     solo y no deja de cubrir el texto.
+
+   El gradiente es vertical, no radial, porque el texto se lee en una
+   columna: lo que hace falta es una banda oscura a lo alto, y un óvalo
+   dejaría los extremos de línea sin protección. */
+
+:root[data-universo='activo'] .seccion:not(.hero):not(.contacto):not(.proyectos)::before,
+:root[data-universo='activo'] .pie::before {
+  content: '';
   position: absolute;
   inset: 0;
   z-index: -1;
   pointer-events: none;
-  background: radial-gradient(
-    118% 96% at 50% 50%,
-    color-mix(in srgb, var(--space-900) 88%, transparent) 0%,
-    color-mix(in srgb, var(--space-900) 72%, transparent) 42%,
-    transparent 78%
+  background: linear-gradient(
+    to bottom,
+    transparent 0%,
+    color-mix(in srgb, var(--space-900) 62%, transparent) 12%,
+    color-mix(in srgb, var(--space-900) 86%, transparent) 32%,
+    color-mix(in srgb, var(--space-900) 86%, transparent) 68%,
+    color-mix(in srgb, var(--space-900) 62%, transparent) 88%,
+    transparent 100%
+  );
+}
+
+/* La portada ya tiene su propio aura y su propio velo, con un degradado
+   distinto, así que se queda fuera: superponer los dos la deja plana. */
+
+/* La sección de contacto y la de proyectos llevan ya su propio fondo, y se
+   quedan FUERA del velo: superponer las dos cosas las deja casi negras y,
+   peor, mata el `backdrop-filter` de los paneles de cristal, que es lo que
+   hace que se lean como vidrio y no como cajas. */
+:root[data-universo='activo'] .contacto,
+:root[data-universo='activo'] .proyectos {
+  background: color-mix(in srgb, var(--space-900) 78%, transparent);
+  backdrop-filter: blur(2px);
+  -webkit-backdrop-filter: blur(2px);
+}
+
+/* En gama baja el velo se refuerza: con menos geometría, los cuerpos quedan
+   más grandes y más cerca del texto, que es justo cuando más hace falta. */
+:root[data-calidad='bajo'][data-universo='activo']
+  .seccion:not(.hero):not(.contacto):not(.proyectos)::before,
+:root[data-calidad='bajo'][data-universo='activo'] .pie::before {
+  background: linear-gradient(
+    to bottom,
+    transparent 0%,
+    color-mix(in srgb, var(--space-900) 76%, transparent) 10%,
+    color-mix(in srgb, var(--space-900) 94%, transparent) 28%,
+    color-mix(in srgb, var(--space-900) 94%, transparent) 72%,
+    color-mix(in srgb, var(--space-900) 76%, transparent) 90%,
+    transparent 100%
   );
 }
 
