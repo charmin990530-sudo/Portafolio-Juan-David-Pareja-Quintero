@@ -1,0 +1,420 @@
+/* =============================================================
+   06 · UNIVERSO
+   El lienzo WebGL, la señalética de a bordo y el grano.
+
+   Este archivo va DESPUÉS de los otros cinco. Solo hay una razón: el
+   lienzo tiene que quedar por encima de `.fondo` y por debajo de
+   `main`, y no se puede expresar con el orden del archivo sino con el
+   índice z. Aun así, agruparlo aquí deja claro qué es del universo.
+
+   Orden de capas, de atrás a delante:
+     0    canvas 2D de partículas  (--z-bg)      · solo en vista simple
+     1    lienzo WebGL del universo              · solo con el universo
+     2    viñeta y malla                         · siempre
+     10   contenido HTML en `main`               · siempre
+     60   rieles de sección
+     80   cabecera
+     100  preloader
+   ============================================================= */
+
+/* ------------------------------------------------------------------
+   LIENZO
+   ------------------------------------------------------------------ */
+
+.universo-lienzo {
+  position: fixed;
+  inset: 0;
+  z-index: 1;
+  width: 100%;
+  /* `100%` y no `100vh`: con `vh` en móvil, cuando aparece la barra de
+     direcciones el lienzo se estira y destapa una franja por debajo. La
+     alternativa correcta es `100dvh`, pero obliga al navegador a
+     recalcular la altura en cada cambio de barra, y eso dispara un
+     `resize` continuo durante el scroll. `position: fixed` con `inset: 0`
+     ya cubre el viewport visual, que es lo que se quiere. */
+  height: 100%;
+  display: block;
+  pointer-events: none;
+  /* Entra con un fundido. Sin esto, el sitio aparece de golpe en el
+     fotograma en que termina de cargar Three.js. */
+  opacity: 0;
+  transition: opacity 1.2s var(--ease-out);
+}
+
+/* Con el universo activo se muestra. En cualquier otro estado el nodo no
+   existe: lo borra `universo/index.js`. Esta regla cubre el instante entre
+   que se inserta y que se marca el atributo. */
+:root[data-universo='activo'] .universo-lienzo {
+  opacity: 1;
+}
+
+/* ------------------------------------------------------------------
+   CAPAS QUE CEDEN EL PASO AL UNIVERSO
+   ------------------------------------------------------------------
+   Con el espacio 3D montado, la malla de puntos y el campo de partículas
+   en 2D sobran: son dos capas más de puntos sobre puntos, y el resultado
+   se ve cargado, no profundo. Se apagan en lugar de eliminarse, para que
+   volver a la vista simple sea solo quitar un atributo del `<html>`. */
+
+.malla,
+.fondo {
+  transition: opacity var(--t-slow) var(--ease-in-out);
+}
+
+:root[data-universo='activo'] .malla,
+:root[data-universo='activo'] .fondo {
+  opacity: 0;
+}
+
+/* ------------------------------------------------------------------
+   GRANO
+   ------------------------------------------------------------------
+   El grano va aquí, en CSS, y no como pasada de post-procesado. Un
+   uniform de grano dentro de la cadena WebGL obligaría a renderizar a un
+   framebuffer aparte; en el compositor del navegador es gratis, y encima
+   se puede desactivar sin tocar el presupuesto de la escena.        */
+
+.grano {
+  position: fixed;
+  inset: -50%;
+  z-index: 2;
+  pointer-events: none;
+  opacity: 0.038;
+  background-image: var(--grano-imagen);
+  background-size: 180px 180px;
+  animation: grano-deriva 7s steps(8) infinite;
+}
+
+/* El grano se mueve en saltos discretos, no de forma continua. Movie a
+   velocidad continua se ve el patrón; a saltos de 1/8 de segundo el ojo
+   lo lee como textura de película, que es lo que se quiere. */
+@keyframes grano-deriva {
+  0% { transform: translate(0, 0); }
+  12.5% { transform: translate(-3%, 2%); }
+  25% { transform: translate(2%, -3%); }
+  37.5% { transform: translate(-2%, -2%); }
+  50% { transform: translate(3%, 1%); }
+  62.5% { transform: translate(-1%, 3%); }
+  75% { transform: translate(1%, -1%); }
+  87.5% { transform: translate(-3%, -1%); }
+  100% { transform: translate(0, 0); }
+}
+
+/* Sin el grano en el nivel BAJO ni con movimiento reducido: es un
+   adorno, y un adorno no puede costar fps ni desobedecer la preferencia. */
+:root[data-calidad='bajo'] .grano {
+  display: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .grano {
+    animation: none;
+  }
+}
+
+/* ------------------------------------------------------------------
+   VELO DE LEGIBILIDAD
+   ------------------------------------------------------------------
+   El problema real de un portafolio 3D: texto blanco sobre un planeta
+   iluminado. Aquí no se usa un panel opaco —taparía la escena—, sino
+   un velo radial que oscurece justo detrás del texto y se desvanece
+   hacia los bordes. La escena sigue viéndose alrededor.                */
+
+.velo-texto {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background: radial-gradient(
+    118% 96% at 50% 50%,
+    color-mix(in srgb, var(--space-900) 88%, transparent) 0%,
+    color-mix(in srgb, var(--space-900) 72%, transparent) 42%,
+    transparent 78%
+  );
+}
+
+/* ------------------------------------------------------------------
+   HUD DE A BORDO
+   ------------------------------------------------------------------
+   Se construye en JavaScript (`universo/hud.js`) y no está en el HTML a
+   propósito: si el universo no se monta, este módulo nunca se crea y no
+   queda un nodo vacío en el documento.                                 */
+
+.hud-universo {
+  position: fixed;
+  inset: 0;
+  z-index: var(--z-rail);
+  pointer-events: none;
+  font-family: var(--font-mono);
+  /* El HUD nunca debe capturar el clic: si lo hiciera, bloquearía la
+     selección de texto y los enlaces de las secciones que hay detrás. */
+}
+
+.hud-universo > * {
+  pointer-events: auto;
+}
+
+/* ---------- Indicador de sistema ---------- */
+
+.hud-sistema {
+  --hud-color: var(--accent);
+  position: absolute;
+  top: calc(var(--header-h) + var(--sp-4));
+  left: var(--gutter);
+  display: grid;
+  gap: 0.35rem;
+  min-width: 12rem;
+  padding: 0.7rem 0.9rem;
+  border: 1px solid var(--line);
+  border-left: 2px solid var(--hud-color);
+  border-radius: var(--r-sm);
+  background: var(--glass-bg);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  transition: border-color var(--t-slow) var(--ease-out);
+}
+
+.hud-sistema__clave {
+  font-size: var(--step--2);
+  letter-spacing: 0.18em;
+  color: var(--text-mute);
+}
+
+.hud-sistema__cuenta {
+  font-size: var(--step-1);
+  font-weight: 500;
+  color: var(--hud-color);
+  line-height: 1;
+  transition: color var(--t-slow) var(--ease-out);
+}
+
+.hud-sistema__nombre {
+  font-family: var(--font-display);
+  font-size: var(--step--1);
+  font-weight: 500;
+  letter-spacing: 0.02em;
+  color: var(--text-soft);
+}
+
+.hud-sistema__barra {
+  display: block;
+  height: 2px;
+  border-radius: 2px;
+  background: var(--line);
+  overflow: hidden;
+}
+
+.hud-sistema__relleno {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--hud-color);
+  transform: scaleX(var(--avance, 0));
+  transform-origin: 0 50%;
+}
+
+/* ---------- Puntos de navegación ---------- */
+
+.hud-puntos {
+  position: absolute;
+  top: 50%;
+  right: var(--sp-4);
+  transform: translateY(-50%);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 0.85rem;
+}
+
+.hud-punto {
+  display: grid;
+  place-items: center;
+  width: 1.5rem;
+  height: 1.5rem;
+  padding: 0;
+  border: 0;
+  background: none;
+  cursor: pointer;
+  color: var(--text-mute);
+  transition: color var(--t-base) var(--ease-out);
+}
+
+.hud-punto__marca {
+  display: block;
+  width: 6px;
+  height: 6px;
+  border: 1px solid currentColor;
+  border-radius: var(--r-pill);
+  background: transparent;
+  transition:
+    transform var(--t-base) var(--ease-spring),
+    background-color var(--t-base) var(--ease-out),
+    box-shadow var(--t-base) var(--ease-out);
+}
+
+.hud-punto:hover {
+  color: var(--text);
+}
+
+.hud-punto[data-activo='1'] {
+  color: var(--accent);
+}
+
+.hud-punto[data-activo='1'] .hud-punto__marca {
+  transform: scale(1.5);
+  background: currentColor;
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 20%, transparent);
+}
+
+.hud-punto:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+  border-radius: var(--r-pill);
+}
+
+/* ---------- Botones ---------- */
+
+.hud-acciones {
+  position: absolute;
+  right: var(--gutter);
+  bottom: var(--sp-4);
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.hud-boton {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.5rem 0.7rem;
+  border: 1px solid var(--line);
+  border-radius: var(--r-pill);
+  background: var(--glass-bg);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  color: var(--text-soft);
+  font-family: var(--font-mono);
+  font-size: var(--step--2);
+  letter-spacing: 0.06em;
+  cursor: pointer;
+  transition:
+    color var(--t-base) var(--ease-out),
+    border-color var(--t-base) var(--ease-out),
+    background-color var(--t-base) var(--ease-out);
+}
+
+.hud-boton:hover:not(:disabled) {
+  color: var(--text);
+  border-color: var(--line-strong);
+}
+
+.hud-boton:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.hud-boton:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.hud-boton__icono {
+  display: grid;
+  place-items: center;
+  width: 1rem;
+  height: 1rem;
+}
+
+.hud-boton__icono svg {
+  width: 100%;
+  height: 100%;
+}
+
+/* El botón de sonido tiene dos estados dibujados con los mismos
+   elementos: ondas visibles cuando está mudo, tachadas cuando suena. */
+.hud-boton__tacha {
+  opacity: 0;
+  transition: opacity var(--t-fast) var(--ease-out);
+}
+
+.hud-boton[data-activo='1'] .hud-boton__onda {
+  opacity: 0;
+}
+
+.hud-boton[data-activo='1'] .hud-boton__tacha {
+  opacity: 1;
+}
+
+.hud-boton[data-activo='1'] {
+  color: var(--accent);
+  border-color: color-mix(in srgb, var(--accent) 40%, transparent);
+}
+
+/* ---------- Telemetría ---------- */
+
+.hud-telemetria {
+  position: absolute;
+  left: var(--gutter);
+  bottom: var(--sp-4);
+  display: flex;
+  gap: 0.9rem;
+  font-size: var(--step--2);
+  color: var(--text-mute);
+  letter-spacing: 0.08em;
+}
+
+/* ------------------------------------------------------------------
+   AJUSTES
+   ------------------------------------------------------------------ */
+
+@media (max-width: 767px) {
+  .hud-sistema {
+    top: calc(var(--header-h) + var(--sp-2));
+    min-width: 0;
+    padding: 0.5rem 0.7rem;
+  }
+
+  .hud-sistema__nombre {
+    display: none;
+  }
+
+  .hud-puntos {
+    right: var(--sp-2);
+    gap: 0.6rem;
+  }
+
+  .hud-acciones {
+    right: var(--sp-3);
+    bottom: calc(var(--sp-3) + env(safe-area-inset-bottom, 0px));
+  }
+
+  .hud-boton__texto {
+    display: none;
+  }
+
+  .hud-telemetria {
+    display: none;
+  }
+}
+
+/* Pantallas muy anchas: el HUD se separa del borde para que no quede
+   pegado al marco, que es donde ya está la barra de lectura. */
+@media (min-width: 1680px) {
+  .hud-sistema,
+  .hud-telemetria {
+    left: calc((100vw - var(--shell)) / 2);
+  }
+
+  .hud-acciones {
+    right: calc((100vw - var(--shell)) / 2);
+  }
+}
+
+/* Cuando el universo no está, nada de esto debe verse. El HUD no existe
+   en el DOM en ese caso, pero estas reglas protegen contra el instante
+   entre el montaje y la primera actualización. */
+:root:not([data-universo='activo']) .hud-universo {
+  display: none;
+}

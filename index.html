@@ -41,6 +41,7 @@
     <link rel="stylesheet" href="assets/css/04-animations.css" />
     <link rel="stylesheet" href="assets/css/03-components.css" />
     <link rel="stylesheet" href="assets/css/05-sections.css" />
+    <link rel="stylesheet" href="assets/css/06-universo.css" />
 
     <noscript>
       <!-- Sin JavaScript la cortina de carga no se retira sola por script. -->
@@ -84,9 +85,37 @@
       </div>
     </div>
 
-    <!-- Fondo global: el lienzo de partículas lo inserta modules/fondo.js -->
+    <!--
+      Fondo, de atrás a delante.
+
+      1. `canvas.fondo` no está en el HTML: `modules/fondo.js` lo inserta.
+         Es el campo de partículas en 2D, y solo se usa en vista simple o
+         sin WebGL. Con el universo montado se apaga (ver 06-universo.css),
+         porque tres capas de partículas sobre un espacio 3D son ruido, no
+         profundidad.
+      2. El lienzo del universo va aquí y no en el `<head>`, porque un
+         `<canvas>` ahí es HTML inválido y el navegador lo reubica al
+         `body` por su cuenta, rompiendo el orden de capas.
+      3. Malla y viñeta van encima del lienzo: oscurecen los bordes y
+         asientan el texto sobre la escena.
+      4. El grano va el último de los decorativos, bajo el contenido.
+    -->
     <div class="malla" aria-hidden="true"></div>
     <div class="vineta" aria-hidden="true"></div>
+
+    <!--
+      El lienzo del universo va sin `src` a propósito: sin `src` no dispara
+      ninguna petición, así que no añade un recurso bloqueante. Lo que se
+      descarga es Three.js, y lo hace `universo/index.js` con `import()`
+      dinámico una vez que el preloader ha terminado. Declararlo en el
+      HTML y no crearlo desde el script evita además un salto de layout al
+      insertarlo.
+    -->
+    <canvas id="universo-lienzo" class="universo-lienzo" aria-hidden="true"></canvas>
+
+    <!-- Grano de película. Decorativo: con `prefers-reduced-motion` se
+         apaga y el sitio se ve igual. -->
+    <div class="grano" aria-hidden="true"></div>
 
     <!-- Barra de progreso de lectura -->
     <div class="progreso" aria-hidden="true">

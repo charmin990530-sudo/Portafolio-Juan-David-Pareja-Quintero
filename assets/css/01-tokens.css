@@ -55,6 +55,18 @@
   --glass-blur: 18px;
   --glass-border: rgb(255 255 255 / 10%);
 
+  /* ---------- Grano de película ----------
+     Un `feTurbulence` en línea: cero peticiones de red y cero KB. La
+     alternativa sería un PNG de 180×180, que son unos 12 KB y una
+     petición bloqueante más. El SVG se genera una vez y se cachea con el
+     resto del CSS.
+
+     Lo usa `.grano` en `06-universo.css`. El filtro fractal es
+     deliberadamente suave y con pocos octavas: con muchos octavas el grano
+     sale demasiado fino y a pantalla completa se ve como ruido de vídeo
+     degradado. */
+  --grano-imagen: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='g'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.82' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='180' height='180' filter='url(%23g)' opacity='0.5'/%3E%3C/svg%3E");
+
   /* ---------- Texto degradado ---------- */
   --text-gradient: linear-gradient(100deg, var(--ink-100) 8%, var(--cyan) 46%, var(--violet) 92%);
 
