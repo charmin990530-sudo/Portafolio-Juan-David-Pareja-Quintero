@@ -37,6 +37,22 @@ import { clamp, easeInOutCubic, lerp } from '../core/util.js';
  *  recorrido de esta longitud; subirlo no aporta nada visible. */
 const DIVISIONES_ARCO = 400;
 
+/**
+ * FRACCIÓN FINAL DE CADA SECCIÓN RESERVADA PARA EL CAMBIO DE PLANO.
+ *
+ * Sin esto hay un salto. La última llave de una sección cae en su borde
+ * inferior, y la primera de la siguiente cae en su borde superior, que es
+ * EL MISMO PÍXEL. El tramo entre las dos —que es el movimiento de cámara
+ * de un cuerpo al siguiente, varios cientos de unidades— no tendría ni un
+ * píxel de scroll y se ejecutaría de golpe, en un solo fotograma.
+ *
+ * Reservando el último 18 % de cada sección, la cámara empieza a salirse del
+ * cuerpo actual mientras el visitante todavía está viendo el texto de esa
+ * sección, y llega al siguiente justo cuando su sección entra. Que es como
+ * funciona un travelling: el movimiento arranca antes del corte.
+ */
+const ZONA_DE_CAMBIO = 0.18;
+
 export function crearRuta(sistemas) {
   /* ----------------------------------------------------------------
      1. Recopilar fotogramas de todos los sistemas
@@ -120,6 +136,20 @@ export function crearRuta(sistemas) {
     /**
      * Traduce progreso de documento a posición de cámara.
      *
+     * ⚠ ATENCIÓN, `posicion` y `objetivo` son VECTORES COMPARTIDOS: son los
+     * mismos objetos en todas las llamadas, y se sobrescriben en la
+     * siguiente. Es deliberado —llamar a `resolver` dos veces por fotograma
+     * no debe crear memoria, y en el bucle de render eso se nota—, pero
+     * significa que el resultado hay que CONSUMIRLO ANTES DE LLAMAR OTRA
+     * VEZ:
+     *
+     *   const a = ruta.resolver(p1);        // correcto: se usa enseguida
+     *   const b = ruta.resolver(p2);
+     *   a.posicion.equals(b.posicion);       // ¡true! es el mismo objeto
+     *
+     * Si hace falta conservar un resultado, hay que copiarlo:
+     * `ruta.resolver(p).posicion.clone()`.
+     *
      * @param {number} progreso 0..1 del recorrido total del documento.
      * @returns {{
      *   posicion: Vector3, objetivo: Vector3, fov: number, roll: number,
@@ -177,7 +207,10 @@ export function crearRuta(sistemas) {
      * @param {number} altoTotal  `scrollHeight - innerHeight`.
      */
     recalibrar(secciones, altoTotal) {
-      const altoVentana = window.innerHeight;
+      const ultimoSistema = anclas.reduce(
+        (mayor, ancla) => Math.max(mayor, ancla.indiceSistema),
+        0,
+      );
 
       for (const ancla of anclas) {
         const seccion = secciones.find((s) => s.id === ancla.seccion);
@@ -193,16 +226,49 @@ export function crearRuta(sistemas) {
 
         ancla.valido = true;
 
-        /* El tramo de scroll en el que este sistema "ocurre".
-           Empieza cuando su sección asoma por el borde inferior de la
-           pantalla y termina cuando su parte baja sale por arriba. Ese
-           intervalo, más el alto de la ventana, es lo que recorre la
-           cámara mientras el usuario lee esa sección. */
-        const desde = seccion.arriba - altoVentana;
+        /* La ventana de scroll de un sistema es la de SU SECCIÓN, tal cual:
+           desde que su borde superior llega al borde superior de la
+           pantalla, hasta que su borde inferior sale por arriba.
+
+           La primera versión sumaba también la altura de la ventana a cada
+           sección, y eso hacía que dos secciones consecutivas se solaparan
+           en una altura de pantalla entera. Con el solape, el orden de los
+           `u` de la curva dejaba de coincidir con el orden del scroll: el
+           ajuste de monotonicidad del final machacaba entonces los tramos
+           afectados y el movimiento de esos sistemas se comprimía a casi
+           cero scroll. Con la ventana justa, las secciones embaldosan el
+           documento y el ritmo se respeta. */
+        const desde = seccion.arriba;
         const hasta = seccion.arriba + seccion.alto;
 
-        const scroll = desde + ancla.t * (hasta - desde);
-        ancla.desplazamiento = altoTotal > 0 ? clamp(scroll / altoTotal, 0, 1) : 0;
+        /* El último sistema no comprime: su llave final tiene que coincidir
+           con el final real del documento, o el plano de cierre se queda
+           corto. */
+        const tEfectivo =
+          ancla.indiceSistema === ultimoSistema ? ancla.t : ancla.t * (1 - ZONA_DE_CAMBIO);
+
+        ancla.desplazamiento =
+          altoTotal > 0 ? (desde + tEfectivo * (hasta - desde)) / altoTotal : 0;
+      }
+
+      /* El último sistema llega hasta donde acaba el documento, no hasta
+         donde acaba su sección: el scroll se agota `innerHeight` antes, y el
+         plano de cierre no puede quedar a medias. */
+      for (const ancla of anclas) {
+        if (ancla.indiceSistema !== ultimoSistema) continue;
+        const seccion = secciones.find((s) => s.id === ancla.seccion);
+        if (!seccion) continue;
+        const disponible = Math.max(0, altoTotal - seccion.arriba);
+        ancla.desplazamiento =
+          altoTotal > 0 ? (seccion.arriba + ancla.t * disponible) / altoTotal : 1;
+      }
+
+      /* Escalado global. Si aun así alguna ventana se sale del documento, se
+         divide toda la línea de tiempo por el mismo factor: así se conserva
+         la proporción entre los tramos y el ritmo no cambia de golpe. */
+      const mayor = anclas.reduce((maximo, a) => Math.max(maximo, a.desplazamiento), 0);
+      if (mayor > 1) {
+        for (const ancla of anclas) ancla.desplazamiento /= mayor;
       }
 
       /* Los fotogramas inválidos se colapsan sobre el anterior válido, para
@@ -220,7 +286,6 @@ export function crearRuta(sistemas) {
          Sin esto, dos fotogramas con el mismo valor (una sección muy corta,
          o fotogramas colapsados) producen un tramo de anchura cero, y la
          cámara salta de un cuerpo al siguiente de golpe. */
-
       const paso = 0.0002;
       for (let i = 1; i < anclas.length; i += 1) {
         const minimo = anclas[i - 1].desplazamiento + paso;

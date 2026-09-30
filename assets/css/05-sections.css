@@ -1411,10 +1411,36 @@ main {
    ============================================================= */
 .pie {
   position: relative;
+  /* El pie lleva altura mínima a propósito, y no por un capricho de diseño.
+     Es la sección que sostiene el retroceso final de la cámara: un travelling
+     de salida de mil unidades de recorrido. Con los ~800 px que ocupa el
+     texto, ese travelling iba a 1,4 unidades por píxel, el movimiento MÁS
+     RÁPIDO de todo el viaje, cuando es el plano que cierra la obra y
+     debería ser el más contemplativo.
+
+     Con 200svh el cierre dispone de 900 px útiles y baja a 0,65 u/px, por debajo del propio despegue de la
+     portada (1,1 u/px). El cierre respira.
+
+     Si añades contenido al pie, este valor puede bajar. La relación que hay
+     que mantener es: más recorrido de scroll = cámara más lenta. */
+  min-height: 200svh;
   padding-block: var(--sp-8) var(--sp-5);
   border-top: 1px solid var(--line);
   background: color-mix(in srgb, var(--bg) 88%, var(--accent) 12%);
   overflow: hidden;
+}
+
+/* El contenido del pie se reparte de arriba abajo: el cierre en el primer
+   bloque, la rejilla de enlaces en el medio y los créditos al fondo. Con
+   la altura mínima que hay ahora, si el contenido se apilara arriba se
+   dejaría un hueco vacío de más de media pantalla debajo, que es lo que
+   hace que un pie largo parezca un pie roto en vez de un plano largo. */
+.pie > .shell {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: var(--sp-7);
 }
 
 .pie__marca {

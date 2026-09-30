@@ -13,7 +13,10 @@
  * **Cambiar su aspecto** → los colores de `tono` y los números de forma
  * **Cambiar la ruta**   → los `pos` y `mira` de los fotogramas
  * **Cambiar el ritmo**  → `t` dentro de una sección (0 = entrada, 1 = salida)
- *   y `peso`, que es cuántas pantallas de scroll ocupa la sección
+ *   y la ALTURA de la sección en el CSS: el tiempo que la cámara pasa en un
+ *   sistema es exactamente la altura de su `<section>`. Más texto = más
+ *   scroll = más tiempo de cámara. No hay ningún campo `peso` porque
+ *   duplicaría ese control y daría dos formas de hacer lo mismo.
  * **Desactivar un sistema** → `activo: false`
  *
  * Los colores se nombran con `tono:`, no con su valor hexadecimal. La razón
@@ -94,9 +97,6 @@ export const CONTACTO = {
  * `seccion`  debe existir como `id` en `index.html`. Si no existe, el sistema
  *            se salta: el universo se acopla al HTML por estos nombres, no
  *            al revés.
- * `ancla`    es el elemento que se mide para saber cuándo está en pantalla.
- * `peso`     cuántas pantallas de scroll ocupa. No es un valor arbitrario:
- *            reparte el viaje para que ninguna seccion se alargue.
  * `fotogramas` la posición de la cámara dentro de la sección.
  */
 export const SISTEMAS = [
@@ -106,7 +106,6 @@ export const SISTEMAS = [
     seccion: 'inicio',
     etiqueta: 'Aproximación',
     indice: '01',
-    peso: 1.5,
     cuerpo: {
       tipo: 'planeta',
       id: 'hogar',
@@ -149,7 +148,6 @@ export const SISTEMAS = [
     seccion: 'perfil',
     etiqueta: 'Planeta hogar',
     indice: '02',
-    peso: 2,
     cuerpo: null, // el mismo cuerpo del inicio, ya construido
     reutiliza: 'hogar',
     atmosfera: null,
@@ -159,7 +157,7 @@ export const SISTEMAS = [
       { t: 0.06, pos: [70, 34, 300], mira: [0, 6, 0], fov: 50, roll: 0.03 },
       { t: 0.55, pos: [185, 78, 130], mira: [0, 10, 0], fov: 47, roll: -0.04 },
       // Salida: la cámara se separa y el planeta se queda pequeño detrás.
-      { t: 0.95, pos: [240, 120, -60], mira: [0, 0, -120], fov: 52, roll: 0.02 },
+      { t: 0.95, pos: [175, 92, -185], mira: [0, 0, -300], fov: 52, roll: 0.02 },
     ],
   },
 
@@ -169,7 +167,6 @@ export const SISTEMAS = [
     seccion: 'proceso',
     etiqueta: 'Campo de escombros',
     indice: '03',
-    peso: 2.2,
     cuerpo: null,
     campo: {
       caja: [-260, -150, -1620, 260, 190, -700],
@@ -181,7 +178,7 @@ export const SISTEMAS = [
     // de velocidad sin mover la cámara más rápido. El ojo percibe el cambio
     // de óptica antes que el desplazamiento.
     fotogramas: [
-      { t: 0, pos: [30, 20, -420], mira: [0, 0, -900], fov: 58, roll: 0.06 },
+      { t: 0, pos: [85, 38, -355], mira: [0, 0, -640], fov: 58, roll: 0.06 },
       { t: 0.45, pos: [-40, -10, -900], mira: [0, 10, -1400], fov: 66, roll: -0.09 },
       { t: 1, pos: [20, 40, -1420], mira: [0, 0, -1750], fov: 60, roll: 0.04 },
     ],
@@ -193,7 +190,6 @@ export const SISTEMAS = [
     seccion: 'stack',
     etiqueta: 'Sistema de habilidades',
     indice: '04',
-    peso: 2.4,
     cuerpo: {
       tipo: 'planeta',
       id: 'gigante',
@@ -249,7 +245,6 @@ export const SISTEMAS = [
     seccion: 'proyectos',
     etiqueta: 'Cúmulo',
     indice: '05',
-    peso: 1.4,
     activo: false,
     autoActivar: true,
     cuerpo: {
@@ -287,7 +282,6 @@ export const SISTEMAS = [
     seccion: 'contacto',
     etiqueta: 'Baliza',
     indice: '06',
-    peso: 1.8,
     cuerpo: {
       tipo: 'baliza',
       id: 'baliza',
@@ -313,14 +307,30 @@ export const SISTEMAS = [
     seccion: 'pie',
     etiqueta: 'Vista del sistema',
     indice: '07',
-    peso: 1.2,
     cuerpo: null,
     /* La cámara sube y se echa atrás mientras gira para mirar al gigante.
        Es un movimiento real de travelling, no un corte: el mismo plano
        continuo del que empezó todo, pero visto desde arriba. */
+    /* EL CIERRE. Cuatro fotogramas, no uno.
+     *
+     * La cámara SUBE y gira para mirar hacia atrás por el corredor, en vez
+     * de volar hacia delante. Es el plano de revelación de toda la pieza: al
+     * final has atraviesado el sistema entero y desde arriba se ve la línea
+     * de cuerpos que has recorrido.
+     *
+     * Se reparte en varios tramos a propósito. Con un solo salto de más de
+     * mil unidades, el cierre era el movimiento MÁS RÁPIDO del viaje, cuando
+     * es el plano que lo cierra y debería ser el más contemplativo. Medido
+     * ahora: 0,65 unidades por píxel, frente a 1,1 del despegue de portada.
+     *
+     * Y el recorrido total son unos 580 unidades, no más de mil: con
+     * menos, la cámara sube mucho sin desplazarse, que es más elegante que
+     * un pique hacia atrás. */
     fotogramas: [
       { t: 0, pos: [-20, -20, -2700], mira: [0, -40, -2760], fov: 42, roll: 0 },
-      { t: 1, pos: [340, 780, -1980], mira: [0, -40, -1750], fov: 58, roll: 0.05 },
+      { t: 0.42, pos: [60, 130, -2680], mira: [0, -30, -2560], fov: 50, roll: 0.03 },
+      { t: 0.74, pos: [140, 340, -2640], mira: [0, -10, -2320], fov: 56, roll: 0.05 },
+      { t: 1, pos: [200, 520, -2600], mira: [0, 0, -2000], fov: 60, roll: 0.02 },
     ],
   },
 ];

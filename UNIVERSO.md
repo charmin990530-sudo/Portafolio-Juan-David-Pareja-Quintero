@@ -115,16 +115,27 @@ export const CAMARA = {
 
 ### Cuánto ocupa cada sección
 
-El campo `peso` de cada sistema reparte el viaje. Antes se usaba el alto real
-de cada sección; se dejó de usar porque entonces el ritmo dependía de cuánto
-texto hubiera escrito y no de cómo quieres que se sienta el recorrido.
+**El tiempo que la cámara pasa en un sistema es exactamente la altura de su
+`<section>`.** No hay ningún campo `peso` ni similar: la cámara va donde está
+el texto, y donde hay mucho texto hay mucho recorrido.
 
-```js
-{ id: 'perfil', peso: 2, ... }   // ocupa dos "unidades" de viaje
+Es el control más intuitivo que existe, y además es el único que no se
+desincroniza: si escribes dos párrafos más en Habilidades, la cámara se queda
+dos párrafos más allí, sin tocar ninguna configuración.
+
+Para darle más recorrido a una sección sin escribir más texto, añade un
+espaciador al final. En `05-sections.css`:
+
+```css
+/* El retroceso final necesita recorrido para no ir a toda velocidad. */
+.pie {
+  min-height: 150svh;
+}
 ```
 
-Subir el peso de una sección = la cámara pasa más despacio por ella = más
-tiempo para leer.
+Se puso uno en el proyecto precisamente por eso: el plano que cierra la obra
+es el más largo de la película, y 800 px de scroll no bastaban para una toma
+de 1 000 unidades de recorrido.
 
 ### Velocidad de la estela de estrellas
 
