@@ -245,8 +245,11 @@ p {
 }
 
 .eyebrow--solar::before {
-  background: var(--accent-3);
-  box-shadow: 0 0 12px var(--accent-3);
+  background: var(--solar);
+}
+
+.eyebrow--rosa::before {
+  background: var(--rose);
 }
 
 /* Encabezado de sección -------------------------------------------------- */

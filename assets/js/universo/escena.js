@@ -534,6 +534,16 @@ export function crearEscena({ lienzo, nivelInicial, alInformar, alDegradar, alAc
  * que ignorarlos sin fallar y sin dejar un sistema descolgado.
  */
 function sistemasPresentes() {
+  /* La condición ES que exista la sección en el documento, y con eso basta.
+     El sistema de proyectos lleva `activo: false` y `autoActivar: true` en
+     la configuración, pero ambos son documentación para quien lea el
+     archivo: la decisión real la toma el DOM.
+
+     El orden importa: `main.js` monta `proyectos` antes que el universo,
+     así que cuando aquí se busca `#proyectos` la sección ya existe si hay
+     contenido. Ese es el puente entre "hay proyectos" y "hay un cúmulo de
+     planetas", y por eso el módulo de proyectos va antes en la lista de
+     montajes. */
   return SISTEMAS.filter((s) => document.getElementById(s.seccion) !== null);
 }
 

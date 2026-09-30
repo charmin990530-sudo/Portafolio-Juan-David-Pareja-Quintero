@@ -418,3 +418,151 @@
 :root:not([data-universo='activo']) .hud-universo {
   display: none;
 }
+
+/* ------------------------------------------------------------------
+   PROYECTOS
+   ------------------------------------------------------------------
+   La sección se construye en `modules/proyectos.js` y solo existe cuando
+   `data/proyectos.js` tiene al menos un proyecto con título. Si no hay
+   contenido, no hay sección: es preferible a un hueco gris con un
+   "próximamente" que no promete nada.
+
+   El color de cada tarjeta sale de `--proyecto-color`, que el módulo fija
+   desde el token `--rosa` / `--cian` / etc. según el campo `ancla` del
+   proyecto. Es el mismo color que su planeta en el cúmulo, así que la
+   tarjeta y su cuerpo celeste se corresponden.                              */
+
+.proyectos__rejilla {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 20rem), 1fr));
+  gap: var(--sp-5);
+  margin-top: var(--sp-6);
+}
+
+.proyecto {
+  --proyecto-color: var(--rose);
+  position: relative;
+  display: grid;
+  grid-template-rows: auto 1fr;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: var(--r-lg);
+  background: var(--surface);
+  transition:
+    border-color var(--t-base) var(--ease-out),
+    transform var(--t-base) var(--ease-out),
+    box-shadow var(--t-base) var(--ease-out);
+}
+
+.proyecto:hover,
+.proyecto:focus-within {
+  border-color: color-mix(in srgb, var(--proyecto-color) 45%, transparent);
+  transform: translateY(-3px);
+  box-shadow: var(--shadow-md);
+}
+
+/* ---------- Portada ---------- */
+
+.proyecto__portada {
+  position: relative;
+  aspect-ratio: 16 / 9;
+  overflow: hidden;
+  background: var(--surface-solid);
+  border-bottom: 1px solid var(--line);
+}
+
+.proyecto__imagen {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  /* Sin transición de escala en reposo: en una rejilla de varias tarjetas
+     el efecto al pasar el ratón debe ser instantáneo, o parece un
+     lagging. */
+}
+
+.proyecto:hover .proyecto__imagen {
+  transform: scale(1.03);
+  transition: transform var(--t-slow) var(--ease-out);
+}
+
+/* Marcador de posición cuando el proyecto no tiene captura. Se ve
+   deliberado, con el color del proyecto, en vez de como un archivo
+   que falta. */
+.proyecto__marcador {
+  display: grid;
+  place-items: center;
+  width: 100%;
+  height: 100%;
+  background:
+    radial-gradient(70% 90% at 30% 20%, color-mix(in srgb, var(--proyecto-color) 26%, transparent), transparent 70%),
+    radial-gradient(60% 80% at 80% 80%, color-mix(in srgb, var(--proyecto-color) 14%, transparent), transparent 70%),
+    var(--space-800);
+}
+
+.proyecto__marcador-indice::after {
+  content: '';
+}
+
+/* ---------- Cuerpo ---------- */
+
+.proyecto__cuerpo {
+  display: grid;
+  align-content: start;
+  gap: var(--sp-3);
+  padding: var(--sp-5);
+}
+
+.proyecto__resumen {
+  font-family: var(--font-display);
+  font-size: var(--step-0);
+  font-weight: 500;
+  color: var(--proyecto-color);
+  line-height: 1.35;
+}
+
+.proyecto__titulo {
+  font-family: var(--font-display);
+  font-size: var(--step-2);
+  font-weight: 700;
+  letter-spacing: -0.025em;
+  line-height: 1.1;
+}
+
+.proyecto__descripcion {
+  color: var(--text-soft);
+  font-size: var(--step--1);
+}
+
+.proyecto__tecnologias {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.proyecto__tecnologias .chip {
+  font-size: var(--step--2);
+  padding-block: 0.2rem;
+  cursor: default;
+}
+
+.proyecto__enlaces {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sp-3);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+@media (max-width: 640px) {
+  .proyectos__rejilla {
+    gap: var(--sp-4);
+  }
+
+  .proyecto__cuerpo {
+    padding: var(--sp-4);
+  }
+}

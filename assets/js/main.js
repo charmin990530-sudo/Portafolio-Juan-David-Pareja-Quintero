@@ -33,6 +33,7 @@ import { montarMarquesina, montarStack } from './modules/contenido.js';
 import { montarContadores } from './modules/contadores.js';
 import { montarProceso } from './modules/proceso.js';
 import { montarContacto } from './modules/contacto.js';
+import { montarProyectos } from './modules/proyectos.js';
 import { $, $$ } from './core/dom.js';
 import {
   montarScrollSuave,
@@ -69,6 +70,10 @@ async function iniciar() {
     ['contadores', montarContadores],
     ['stack', montarStack],
     ['proceso', montarProceso],
+    // Proyectos se monta antes que contacto porque inserta su sección
+    // justo delante de él. Así el orden del documento lo decide el orden
+    // de montaje, y no una línea de índice en el HTML.
+    ['proyectos', montarProyectos],
     ['contacto', montarContacto],
     ['revelar', montarRevelar],
     ['enlaces', montarEnlacesAncla],
