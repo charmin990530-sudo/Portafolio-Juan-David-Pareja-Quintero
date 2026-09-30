@@ -450,9 +450,59 @@ siempre empieza arriba. Si prefieres que respete la posición, quita esa línea.
 Pero entonces la cámara arranca en medio del recorrido con progreso 0 y hay un
 salto visible de varios cientos de unidades.
 
+## 10. Dos cosas que dependen del dominio de producción
+
+Hay dos archivos que **no** se pueden escribir bien sin saber la URL final.
+Se dejaron prepared y se documentan aquí en vez de inventarse.
+
+### URL canónica
+
+En `index.html` hay:
+
+```html
+<link rel="canonical" href="./" />
+```
+
+Una canónica **relativa** es válida: los buscadores la resuelven contra la URL
+actual y funciona en cualquier dominio. En cuanto tengas el definitivo:
+
+```html
+<link rel="canonical" href="https://TU-DOMINIO/" />
+<meta property="og:url" content="https://TU-DOMINIO/" />
+```
+
+Y actualiza el campo `url` del JSON-LD, que ahora no está para no apuntar a
+ningún sitio.
+
+### Sitemap
+
+**No hay sitemap, y es deliberado.** El esquema de `sitemaps.org` exige URL
+absolutas en `<loc>`, y un `./` se rechaza con un error. Preferimos no tener
+sitemap a tener uno que no vale. Cuando tengas el dominio:
+
+```xml
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <url>
+    <loc>https://TU-DOMINIO/</loc>
+    <changefreq>monthly</changefreq>
+    <priority>1.0</priority>
+  </url>
+</urlset>
+```
+
+Guárdalo como `sitemap.xml` en la raíz y añade esto a `robots.txt`:
+
+```
+Sitemap: https://TU-DOMINIO/sitemap.xml
+```
+
+Para un sitio de una sola página, un sitemap aporta poco. Se incluye solo si
+algún día hay varias rutas.
+
 ---
 
-## 10. Estructura
+## 11. Estructura
 
 ```
 index.html                        Todo el contenido. Es el archivo que se edita.
@@ -509,9 +559,13 @@ assets/
     lenis/1.3.26/                 Lenis (MIT)
 
 tools/
-  probar-calidad.mjs              14 casos del sistema de calidad
-  verificar-texto.mjs              Caracteres, rutas, sintaxis, console.log
-  generar-og.py                   Regenera la tarjeta social
+  verificar-texto.mjs              Caracteres ajenos, rutas, sintaxis, console.log
+  verificar-grafo.mjs              Grafo de imports desde main.js
+  verificar-contenido.mjs          Nada perdido respecto a la versión anterior
+  verificar-a11y.mjs               Encabezados, nombres, contraste, SEO
+  probar-calidad.mjs               14 casos del sistema de calidad
+  probar-ruta.mjs                  7 grupos sobre la ruta y la cámara
+  generar-og.py                    Regenera la tarjeta social
 ```
 
 ★ = los archivos que vas a editar
@@ -519,13 +573,26 @@ tools/
 
 ---
 
-## 11. Antes de publicar
+## 12. Antes de publicar
 
 ```bash
-node tools/verificar-texto.mjs     # rutas rotas, sintaxis, caracteres
-node tools/probar-calidad.mjs      # 14 casos del sistema de calidad
-python3 tools/generar-og.py        # solo si cambiaste la imagen social
+node tools/verificar-texto.mjs      # caracteres ajenos, rutas rotas, sintaxis, console.log
+node tools/verificar-grafo.mjs      # el grafo de imports entero desde main.js
+node tools/verificar-contenido.mjs  # nada perdido respecto a la versión anterior
+node tools/verificar-a11y.mjs       # encabezados, nombres, contraste, SEO
+node tools/probar-calidad.mjs       # 14 casos del sistema de calidad
+node tools/probar-ruta.mjs          # 7 grupos sobre la ruta y la cámara
+python3 tools/generar-og.py         # solo si cambiaste la imagen social
 ```
+
+Los cinco primeros salen con código 1 si algo falla, así que valen como puerta
+en un `pre-commit` o en la integración continua. Los otros dos imprimen un
+informe y salen con 0 aunque mutagen.
+
+**Lo que estas herramientas NO comprueban, y hay que mirar en el navegador:**
+el orden real de tabulación, si el foco se ve sobre el planeta, si un panel se
+lee bien con la escena detrás, el framerate real en un móvil y el aspecto en
+un portátil con GPU integrada. Lo estático no llega hasta ahí.
 
 Y a mano, en el navegador:
 

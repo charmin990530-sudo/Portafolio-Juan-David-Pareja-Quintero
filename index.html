@@ -6,6 +6,30 @@
     <meta name="color-scheme" content="dark" />
     <meta name="theme-color" content="#05070f" />
 
+    <!--
+      URL canónica.
+
+      Va RELATIVA a propósito: no hay forma de saber aquí cuál es el dominio
+      de producción sin inventarlo, y una canonical que apunte a un dominio
+      equivocado es PEOR que no tenerla — le dice al buscador que la versión
+      buena de esta página está en otro sitio.
+
+      `./` es válida: los buscadores la resuelven contra la URL actual y
+      funcionan en cualquier dominio, incluido el de Vercel y el de GitHub
+      Pages. Cuando quieras la absoluta, es una línea:
+
+        <link rel="canonical" href="https://TU-DOMINIO/" />
+
+      Y conviene subir el mismo valor a `og:url`, que ahora falta.
+
+      NO hay sitemap a propósito. El esquema exige URL ABSOLUTAS en `<loc>`,
+      y sin conocer el dominio de producción solo cabría escribir una
+      relativa, que los buscadores rechazan con un error. Es preferible no
+      tener sitemap a tener uno que no vale. Ver la sección 12 de
+      sección 10 de UNIVERSO.md para crearlo cuando se sepa el dominio.
+    -->
+    <link rel="canonical" href="./" />
+
     <title>Juan David Pareja Quintero — Desarrollador Web Full Stack</title>
     <meta
       name="description"
