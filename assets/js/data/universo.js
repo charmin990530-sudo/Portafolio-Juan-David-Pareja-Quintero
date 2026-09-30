@@ -48,6 +48,45 @@ export const TONOS = {
 };
 
 /* ------------------------------------------------------------------
+   CONTACTO
+   ------------------------------------------------------------------ */
+
+/**
+ * Endpoint del formulario.
+ *
+ * ESTÁ VACÍO A PROPÓSITO. Mientras no pegues aquí un endpoint de Formspree,
+ * el formulario funciona íntegro por el camino del correo: valida, y al
+ * enviar abre el cliente de correo del visitante con el mensaje ya escrito.
+ * No depende de ningún tercero y no se pierde nada.
+ *
+ * ── CÓMO CONECTARLO (tres minutos) ─────────────────────────────────
+ *
+ * 1. Entra en https://formspree.io y crea una cuenta con
+ *    charmin990530@gmail.com.
+ * 2. "New Form" → elige tu correo como destinatario.
+ * 3. Copia el endpoint que te dan, con esta forma:
+ *      https://formspree.io/f/abcdwxyz
+ * 4. Pégalo en `endpoint`, abajo, sin comillas.
+ *
+ * A partir de ahí los mensajes llegan solos a tu correo y el respaldo de
+ * `mailto:` sigue ahí por si Formspree algún día se cae o lo bloquea un
+ * adblocker.
+ */
+export const CONTACTO = {
+  /** Pega aquí tu endpoint de Formspree. Vacío = solo correo. */
+  endpoint: '',
+
+  /** A quién se responde. Debe coincidir con el destinatario de Formspree. */
+  destinatario: 'charmin990530@gmail.com',
+
+  asunto: 'Mensaje desde el portafolio',
+
+  plantilla: {
+    cabecera: 'Hola Juan David, te escribo desde tu portafolio:',
+  },
+};
+
+/* ------------------------------------------------------------------
    SISTEMAS
    ------------------------------------------------------------------ */
 
