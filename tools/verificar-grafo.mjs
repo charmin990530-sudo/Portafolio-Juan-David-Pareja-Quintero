@@ -39,7 +39,13 @@ function recorrer(archivo) {
     return;
   }
 
-  const fuente = readFileSync(archivo, 'utf8');
+  /* Se quitan los comentarios ANTES de buscar imports. Una ruta citada en
+     un comentario —`import { X } from './otro.js'` como ejemplo— no es un
+     import, y sin esto el verificador la toma por una ruta rota. */
+  const fuente = readFileSync(archivo, 'utf8')
+    .replace(/\/\*[\s\S]*?\*\//g, '\n')
+    .replace(/(^|[^:])\/\/[^\n]*/g, '$1\n');
+
   const patrones = [IMPORT_ESTATICO, IMPORT_DINAMICO, EXPORT_DESDE];
 
   for (const patron of patrones) {

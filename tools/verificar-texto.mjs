@@ -86,9 +86,17 @@ for (const ruta of lista) {
 
   // 4. imports relativos rotos
   if (extname(ruta) === '.js' || extname(ruta) === '.mjs') {
+    /* Se buscan sobre el texto SIN comentarios. Una ruta citada en un
+       comentario —`from './ejemplo.js'` en una explicación— no es un
+       import, y sin esto salta como ruta rota. Le pasó a este mismo
+       archivo, que menciona una ruta de ejemplo en su documentación. */
+    const sinComentarios = texto
+      .replace(/\/\*[\s\S]*?\*\//g, '\n')
+      .replace(/(^|[^:])\/\/[^\n]*/g, '$1\n');
+
     const patron = /from\s+'(\.[^']+)'/g;
     let coincidencia;
-    while ((coincidencia = patron.exec(texto)) !== null) {
+    while ((coincidencia = patron.exec(sinComentarios)) !== null) {
       const destino = resolve(dirname(ruta), coincidencia[1]);
       try {
         statSync(destino);

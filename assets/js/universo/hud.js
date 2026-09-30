@@ -135,7 +135,16 @@ export function crearHud({ sistemas }) {
     escena.irAPunto(sistema.seccion, { instantaneo: true });
   };
 
-  botones.forEach((boton, indice) => boton.addEventListener('click', alPulsarPunto(indice)));
+  /* Los manejadores de los puntos se guardan en un array para poder
+     retirarlos uno a uno. Antes se "limpiaban" clonar y sustituir cada
+     botón, que funciona pero es un truco: clona el nodo entero y tira
+     cualquier estado que tuviera, y no es lo que dice que hace. */
+  const manejadoresPuntos = [];
+  botones.forEach((boton, indice) => {
+    const manejador = alPulsarPunto(indice);
+    manejadoresPuntos.push({ boton, manejador });
+    boton.addEventListener('click', manejador);
+  });
 
   /* ---- API ---------------------------------------------------------- */
   return {
@@ -218,7 +227,10 @@ export function crearHud({ sistemas }) {
     destroy() {
       botonSonido.removeEventListener('click', alPulsarSonido);
       botonSimple.removeEventListener('click', alPulsarSimple);
-      for (const boton of botones) boton.replaceWith(boton.cloneNode(true));
+      for (const { boton, manejador } of manejadoresPuntos) {
+        boton.removeEventListener('click', manejador);
+      }
+      manejadoresPuntos.length = 0;
       raiz.remove();
     },
   };

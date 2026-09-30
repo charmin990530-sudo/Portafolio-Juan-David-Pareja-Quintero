@@ -55,7 +55,10 @@ function alturaDeCabecera() {
  * amortiguación de cámara que ya da el peso: `syncTouch` de Lenis tiene
  * problemas conocidos en iOS y no compensa arriesgar el scroll en el móvil.
  *
- * @returns {{activo: boolean, destruir: () => void}}
+ * @returns {() => void} Función de limpieza, como el resto de módulos del
+ *   sitio. `main.js` la invoca en `pagehide`, así que devolver aquí un
+ *   objeto en vez de una función haría que Lenis nunca se destruyera.
+ *   Para consultar el estado, `scrollSuaveActivo()`.
  */
 export function montarScrollSuave() {
   alturaCabecera = alturaDeCabecera();
@@ -64,9 +67,17 @@ export function montarScrollSuave() {
   const tactil = matchMedia('(pointer: coarse)').matches;
   const escritorio = matchMedia('(min-width: 900px)').matches;
 
-  if (reducido || tactil || !escritorio) {
-    return { activo: false, destruir: () => {} };
-  }
+  const destruir = () => {
+    instancia?.destroy();
+    lenis = null;
+    instancia = null;
+    limpiarScrollSuave?.();
+    limpiarScrollSuave = null;
+    document.documentElement.classList.remove('lenis');
+    delete document.documentElement.dataset.scroll;
+  };
+
+  if (reducido || tactil || !escritorio) return destruir;
 
   let instancia = null;
 
@@ -114,24 +125,7 @@ export function montarScrollSuave() {
       console.warn('[scroll] Lenis no cargó; se usa el scroll nativo');
     });
 
-  return {
-    get activo() {
-      return Boolean(instancia);
-    },
-    destruir() {
-      instancia?.destroy();
-      lenis = null;
-      limpiarScrollSuave?.();
-      limpiarScrollSuave = null;
-      document.documentElement.classList.remove('lenis');
-      delete document.documentElement.dataset.scroll;
-    },
-  };
-}
-
-/** ¿Hay Lenis montado y en marcha? */
-export function scrollSuaveActivo() {
-  return Boolean(lenis);
+  return destruir;
 }
 
 /**
@@ -262,11 +256,17 @@ export function montarRecalibrado() {
     tictac = window.setTimeout(recalibrar, 180);
   };
 
+  /* El manejador de `orientationchange` se declara con nombre y no en línea.
+     Con una función en línea es imposible de quitar después, y aquí el
+     evento ocurre varias veces en una sesión móvil. */
+  const alGirar = () => window.setTimeout(recalibrar, 320);
+
   window.addEventListener('resize', alRedimensionar, { passive: true });
-  window.addEventListener('orientationchange', () => window.setTimeout(recalibrar, 320), { passive: true });
+  window.addEventListener('orientationchange', alGirar, { passive: true });
 
   return () => {
     clearTimeout(tictac);
     window.removeEventListener('resize', alRedimensionar);
+    window.removeEventListener('orientationchange', alGirar);
   };
 }

@@ -576,18 +576,25 @@ tools/
 ## 12. Antes de publicar
 
 ```bash
-node tools/verificar-texto.mjs      # caracteres ajenos, rutas rotas, sintaxis, console.log
-node tools/verificar-grafo.mjs      # el grafo de imports entero desde main.js
-node tools/verificar-contenido.mjs  # nada perdido respecto a la versión anterior
-node tools/verificar-a11y.mjs       # encabezados, nombres, contraste, SEO
-node tools/probar-calidad.mjs       # 14 casos del sistema de calidad
-node tools/probar-ruta.mjs          # 7 grupos sobre la ruta y la cámara
+node tools/comprobar.mjs            # pasa las siete comprobaciones
 python3 tools/generar-og.py         # solo si cambiaste la imagen social
 ```
 
-Los cinco primeros salen con código 1 si algo falla, así que valen como puerta
-en un `pre-commit` o en la integración continua. Los otros dos imprimen un
-informe y salen con 0 aunque mutagen.
+`comprobar.mjs` sale con código 1 si algo falla, así que vale como puerta en un
+`pre-commit` o en la integración continua. Para correrlas por separado:
+
+```bash
+node tools/verificar-texto.mjs      # caracteres ajenos, rutas, sintaxis, console.log
+node tools/verificar-grafo.mjs      # el grafo de imports entero desde main.js
+node tools/verificar-contenido.mjs  # nada perdido respecto a la versión anterior
+node tools/verificar-a11y.mjs       # encabezados, nombres, contraste, SEO
+node tools/verificar-exports.mjs    # exports que nadie llama
+node tools/probar-calidad.mjs       # 14 casos del sistema de calidad
+node tools/probar-ruta.mjs          # 7 grupos sobre la ruta y la cámara
+```
+
+El de exports avisa, no falla: hay nueve exports sin uso que ya estaban antes
+de este trabajo y que están en su línea base. Los nuevos sí los falla.
 
 **Lo que estas herramientas NO comprueban, y hay que mirar en el navegador:**
 el orden real de tabulación, si el foco se ve sobre el planeta, si un panel se
