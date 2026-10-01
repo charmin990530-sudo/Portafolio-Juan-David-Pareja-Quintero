@@ -100,22 +100,40 @@ export function crearNebulosa({ nivel, radio, paleta }) {
 
   // Dos capas de planos por mancha: una grande y difusa, otra más pequeña y
   // definida. La superposición de las dos es lo que da volumen.
+  //
+  // LA OPACIDAD ES EL NÚMERO QUE IMPORTA AQUÍ. Los planos son aditivos y no
+  // prueban profundidad, así que todo lo que hay delante se ve a través de
+  // ellos: si son grandes y brillantes, el resultado no es una nebulosa de
+  // fondo sino un velo azul que sube la luminancia de toda la pantalla y
+  // se come los planetas. Con estas cifras la mancha más brillante aporta
+  // menos de un 12 % de luz, que es lo que se ve como gas sin estropear el
+  // negro del espacio ni el contraste del texto.
   const capas = [
-    { clave: 'cian', escala: 1.0, opacidad: 0.34 },
-    { clave: 'violeta', escala: 0.78, opacidad: 0.3 },
-    { clave: 'solar', escala: 0.5, opacidad: 0.16 },
+    { clave: 'cian', escala: 1.0, opacidad: 0.19 },
+    { clave: 'violeta', escala: 0.78, opacidad: 0.14 },
+    { clave: 'solar', escala: 0.5, opacidad: 0.075 },
   ];
 
   const grupo = [];
   const aleatorioF = (min, max) => aleatorio(min, max);
+  /* La opacidad de cada sprite se reescribe en cada fotograma cuando nace el
+     gas, así que hay que recordar la original: si se multiplicara por sí
+     mismo, el gas se apagaría solo en dos segundos. */
+  const opacidadBase = [];
 
   // Cuatro manchas: dos grandes que tejen el fondo, dos pequeñas que dan
   // puntos de interés en los tramos de viaje.
+  //
+  // `tam` se multiplica por la distancia de la mancha, no por el radio de la
+  // esfera: así una nube mantiene su tamaño RELATIVO a lo cerca que está del
+  // eje de vuelo. Con un factor absoluto sobre el radio total (4 200 u) cada
+  // plano medía 7 000 u de lado a 1 700 u de distancia, es decir, tapaba la
+  // pantalla entera y las doce se sumaban.
   const manchas = [
-    { r: 0.42, tam: 3.4, orden: 0 },
-    { r: 0.68, tam: 2.6, orden: 1 },
-    { r: 0.3, tam: 1.9, orden: 2 },
-    { r: 0.85, tam: 3.0, orden: 3 },
+    { r: 0.42, tam: 1.5, orden: 0 },
+    { r: 0.68, tam: 1.15, orden: 1 },
+    { r: 0.3, tam: 0.85, orden: 2 },
+    { r: 0.85, tam: 1.35, orden: 3 },
   ];
 
   for (const [i, mancha] of manchas.entries()) {
@@ -147,7 +165,7 @@ export function crearNebulosa({ nivel, radio, paleta }) {
         altura * radioCapa,
         Math.sin(theta) * horiz * radioCapa,
       );
-      const escala = radio * mancha.tam * capa.escala * 0.5;
+      const escala = radioCapa * mancha.tam * capa.escala;
       sprite.scale.set(escala, escala, 1);
 
       // Un `Sprite` se orienta siempre a cámara, así que su rotación Z sí es
@@ -158,6 +176,7 @@ export function crearNebulosa({ nivel, radio, paleta }) {
       sprite.renderOrder = -100 + mancha.orden * 3 + capas.indexOf(capa);
 
       grupo.push(sprite);
+      opacidadBase.push(capa.opacidad);
     }
   }
 
@@ -165,17 +184,25 @@ export function crearNebulosa({ nivel, radio, paleta }) {
     objetos: grupo,
     capas,
 
-    /**
+/**
      * Respiración muy lenta. Las nebulosas de un universo real no laten, pero
      * un fondo completamente estático mientras el usuario lee hace que el
      * sitio parezca una captura de pantalla. Es un compromise deliberado.
+     *
+     * @param {number} segundos
+     * @param {number} velocidad
+     * @param {number} nacimientro 0..1. El gas no está ahí antes de que pase
+     *   la onda: es parte de lo que la onda deja al pasar, así que sin este
+     *   parámetro el arranque no abriría nada.
      */
-    actualizar(segundos, velocidad) {
+    actualizar(segundos, velocidad, nacimiento = 1) {
       for (const [i, sprite] of grupo.entries()) {
         // Cada mancha gira a un ritmo distinto para que no se sincronicen.
         sprite.material.rotation += 0.00004 * (1 + (i % 4)) * (1 + velocidad * 2);
+        sprite.material.opacity = opacidadBase[i] * nacimiento;
+        sprite.visible = nacimiento > 0.004;
       }
-      // Con velocidad alta, la nebulosa se estira hacia atrás: reinforces la
+      // Con velocidad alta, la nebulosa se estira hacia atrás: refuerza la
       // sensación de movimiento sin tocar el shader de las estrellas.
       const estirado = 1 + velocidad * 0.12;
       for (const sprite of grupo) {

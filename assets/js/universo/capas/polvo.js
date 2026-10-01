@@ -17,6 +17,7 @@ import {
   Points,
   ShaderMaterial,
 } from '../../../vendor/three/0.186.1/three.module.js';
+import { clamp } from '../../core/util.js';
 import { perfil } from '../calidad.js';
 
 const VERTEX = /* glsl */ `
@@ -30,8 +31,8 @@ const VERTEX = /* glsl */ `
   void main() {
     vec4 mundo = modelMatrix * vec4(position, 1.0);
 
-    // Deriva lenta y casi imperceptible. El polvo no debería moverse con la
-    // cámara: si se moviera con ella desaparecería el paralaje, que es justo
+    // Deriva lenta y casi imperceptible. El polvo no deberia moverse con la
+    // camara: si se moviera con ella desapareceria el paralaje, que es justo
     // lo que sirve para vender la profundidad.
     mundo.x += sin(uTiempo * 0.06 + position.z * 0.4) * 1.6;
     mundo.y += cos(uTiempo * 0.05 + position.x * 0.4) * 1.2;
@@ -41,8 +42,8 @@ const VERTEX = /* glsl */ `
 
     float distancia = -vista.z;
 
-    // Se desvanece al acercarse mucho para no cruzar la cámara como un
-    // fogonazo, y también al alejarse para que el fondo quede limpio.
+    // Se desvanece al acercarse mucho para no cruzar la camara como un
+    // fogonazo, y tambien al alejarse para que el fondo quede limpio.
     vDesvanecer = smoothstep(6.0, 46.0, distancia) * (1.0 - smoothstep(900.0, 1800.0, distancia));
 
     gl_PointSize = aTamano * uPixelRatio * (90.0 / max(distancia, 1.0));
@@ -59,8 +60,8 @@ const FRAGMENT = /* glsl */ `
 
   void main() {
     float d = length(gl_PointCoord - 0.5) * 2.0;
-    // Perfil gaussiano aproximado con un smoothstep: más barato que
-    // exp() y a esta resolución la diferencia no se ve.
+    // Perfil gaussiano aproximado con un smoothstep: mas barato que
+    // exp() y a esta resolucion la diferencia no se ve.
     float alfa = smoothstep(1.0, 0.0, d) * smoothstep(0.0, 0.45, d);
     if (alfa < 0.01) discard;
 
@@ -117,9 +118,12 @@ export function crearPolvo({ nivel, caja, paleta }) {
     material,
     geometria,
 
-    actualizar(segundos, dpr) {
+    actualizar(segundos, dpr, nacimiento = 1) {
       material.uniforms.uTiempo.value = segundos;
       material.uniforms.uPixelRatio.value = dpr;
+      // El polvo es materia que la onda deja al pasar: antes de eso no hay.
+      material.uniforms.uOpacidad.value = 0.5 * clamp(nacimiento, 0, 1);
+      puntos.visible = nacimiento > 0.004;
     },
 
 

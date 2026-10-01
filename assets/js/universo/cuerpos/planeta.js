@@ -101,6 +101,7 @@ const FRAGMENT = /* glsl */ `
   uniform float uSemilla;
   uniform float uDeriva;
   uniform float uEntrada;
+  uniform float uFormacion;
 
   varying vec3 vNormal;
   varying vec3 vLocal;
@@ -110,8 +111,8 @@ const FRAGMENT = /* glsl */ `
   ${LUZ}
 
   /* Rampa de tres tramos sobre el valor de altura: agua, tierra y hielo.
-     El umbral de agua es un uniforme, así que un mundo seco y uno oceánico
-     salen del mismo código. */
+     El umbral de agua es un uniforme, asi que un mundo seco y uno oceanico
+     salen del mismo codigo. */
   vec3 rampaClave(float v) {
     vec3 c = mix(uOceano, uTierra, smoothstep(uNivelMar, uNivelMar + 0.16, v));
     return mix(c, uHielo, smoothstep(0.68, 0.9, v));
@@ -120,12 +121,25 @@ const FRAGMENT = /* glsl */ `
   void main() {
     vec3 p = normalize(vLocal);
 
+    /* Formacion: lo que hace que este cuerpo venga de la explosion.
+
+       Al principio el cuerpo es una nube caliente y brillante, sin tierra ni
+       estructura: el ruido esta revuelto y la superficie es un rescoldo
+       uniforme. A medida que el uniforme de formacion sube, el ruido se
+       ordena, los continentes emergen y el planeta se enfria hasta
+       parecerse a un planeta.
+
+       Sin esto el primer cuerpo aparecia ya terminado en el fotograma
+       siguiente al arranque, y la apertura contaba que hubo un universo sin
+       que nada de el llegara a formarse. */
+    float formacion = clamp(uFormacion, 0.0, 1.0);
+
     // La semilla desplaza el campo de ruido: cada cuerpo tiene continentes
-    // propios aunque comparta la misma función.
+    // propios aunque comparta la misma funcion.
     vec3 q = p * (1.6 + uRugosidad * 2.2) + uSemilla;
 
     // Dos derivas distintas: una para el relieve, otra para las nubes.
-    // Si compartieran velocidad, la nube parecería clavada a la montaña.
+    // Si compartieran velocidad, la nube pareceria clavada a la montana.
     vec3 derivaRelieve = vec3(uTiempo * 0.014, 0.0, uDeriva * 0.02);
     vec3 derivaNubes = vec3(uTiempo * 0.028 + 11.0, 0.0, 0.0);
 
@@ -141,6 +155,12 @@ const FRAGMENT = /* glsl */ `
     float altura = fbm(q + derivaRelieve, octavas);
     altura = altura * 0.5 + 0.5;
     altura = pow(altura, 1.0 + uRugosidad * 0.7);
+
+    /* Mientras se forma, el relieve esta revuelto: la superficie es un
+       rescoldo sin continentes que definir. El ruido se aplana hacia el punto
+       medio y los continentes solo van apareciendo conforme sube la
+       formacion, que es lo que se ve en una proto-planeta. */
+    altura = mix(0.5, altura, 0.15 + formacion * 0.85);
 
     vec3 normal = normalize(vNormal);
     vec3 vision = normalize(cameraPosition - vMundo);
@@ -193,7 +213,14 @@ const FRAGMENT = /* glsl */ `
        da el aspecto de esfera sin necesitar una segunda malla. */
     color += uAcento * pow(fresnel(normal, vision, 3.2), 2.4) * 0.30;
 
-    color *= uEntrada;
+    /* Scorched: a body that has just formed is red hot inside and its surface is
+       molten rock. The sea, the ice and the atmosphere only show up once it
+       cools. This is the turning point of the whole opening: here the
+       universe stops being light and becomes matter. */
+    vec3 rescoldo = vec3(1.0, 0.46, 0.16);
+    color += rescoldo * (1.0 - formacion) * (0.35 + base.r * 0.5) * 1.6;
+
+    color *= uEntrada * (0.25 + formacion * 0.75);
 
     gl_FragColor = vec4(color, 1.0);
 
@@ -284,6 +311,7 @@ export function crearPlaneta({ nivel, def, semillaBase = 0 }) {
       uSemilla: { value: (def.semilla ?? 1) + semillaBase },
       uDeriva: { value: def.deriva ?? 0 },
       uEntrada: { value: 0 },
+      uFormacion: { value: 1 },
     },
     vertexShader: VERTEX,
     fragmentShader: FRAGMENT,
@@ -292,6 +320,12 @@ export function crearPlaneta({ nivel, def, semillaBase = 0 }) {
   const malla = new Mesh(geometriaPlaneta(conf.detallePlaneta), material);
   malla.scale.setScalar(def.radio);
   grupo.add(malla);
+
+  /* Radio ya formado. Mientras `formacion` baja de 1 el planeta crece desde
+     un rescoldo: no aparece de golpe, se ACRECENTA. La malla lleva su propia
+     escala y no se toca `grupo`, porque `grupo` es contra lo que se mide la
+     prueba de visibilidad. */
+  const radioFinal = def.radio;
 
   /* Halo atmosférico: un sprite aditivo que se orienta a cámara.
      `depthTest: false` para que no lo recorte el propio planeta: el halo
@@ -324,10 +358,20 @@ export function crearPlaneta({ nivel, def, semillaBase = 0 }) {
      * @param {number} segundos  Reloj del universo.
      * @param {number} entrada    0 = demasiado lejos para verse, 1 = cuadro completo.
      * @param {object} camara     Para orientar el halo a cámara.
+     * @param {number} formacion  0 = rescoldo sin estructura, 1 = planeta
+     *   terminado. Solo lo usa el cuerpo que nace del arranque.
      */
-    actualizar(segundos, entrada, camara) {
+    actualizar(segundos, entrada, camara, formacion = 1) {
       material.uniforms.uTiempo.value = segundos;
       material.uniforms.uEntrada.value = entrada;
+      material.uniforms.uFormacion.value = formacion;
+
+      /* Crece al condensarse. Es la misma medida que la del shader, pero en la
+         escala: así el cuerpo se ve nacer pequeño y crecer, no solo cambiar
+         de color. */
+      const escala = radioFinal * (0.28 + 0.72 * formacion);
+      malla.scale.setScalar(escala);
+      if (halo) halo.scale.setScalar(escala * (def.escalaHalo ?? 4.6));
 
       if (def.rotacion) {
         malla.rotation.y = segundos * def.rotacion;
@@ -338,8 +382,8 @@ export function crearPlaneta({ nivel, def, semillaBase = 0 }) {
         if (camara) halo.quaternion.copy(camara.quaternion);
         // A distancia, un halo del tamaño del planeta se lee como una mancha
         // fija pegada al cuerpo. Se estrecha al alejarse.
-        halo.material.opacity = 0.5 * entrada;
-        halo.scale.setScalar(def.radio * (def.escalaHalo ?? 4.6) * (0.35 + 0.65 * entrada));
+        halo.material.opacity = 0.5 * entrada * formacion;
+        halo.scale.setScalar(escala * (def.escalaHalo ?? 4.6) * (0.35 + 0.65 * entrada));
       }
     },
 

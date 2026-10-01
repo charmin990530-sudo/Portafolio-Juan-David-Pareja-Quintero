@@ -46,8 +46,12 @@ export function crearHud({ sistemas }) {
   indicador.setAttribute('role', 'status');
   indicador.setAttribute('aria-live', 'polite');
 
-  /* ---- Puntos de navegación ---------------------------------------- */
-  const puntos = crear('nav', { class: 'hud-puntos', 'aria-label': 'Ir a un sistema' });
+  /* ---- Puntos de navegación ----------------------------------------
+     Un `<nav>` con una `<ul>` dentro. Antes los `<li>` colgaban
+     directamente del `<nav>`: es HTML inválido y, en un lector de pantalla,
+     la lista de puntos de navegación desaparecía del árbol de
+     accesibilidad. La lista no cuesta un nodo más de lo que ya había. */
+  const puntos = crear('ul', { class: 'hud-puntos', 'aria-label': 'Ir a un sistema' });
   const botones = [];
 
   sistemas.forEach((sistema, indice) => {
@@ -59,7 +63,7 @@ export function crearHud({ sistemas }) {
     punto.setAttribute('aria-label', `${sistema.etiqueta}, sistema ${indice + 1} de ${sistemas.length}`);
     punto.append(crear('span', { class: 'hud-punto__marca', 'aria-hidden': 'true' }));
 
-    const envoltorio = crear('li', { class: 'hud-punto__envoltorio' });
+    const envoltorio = crear('li', { class: 'hud-punto__item' });
     envoltorio.append(punto);
     puntos.append(envoltorio);
 
@@ -68,6 +72,16 @@ export function crearHud({ sistemas }) {
 
   /* ---- Botones ------------------------------------------------------ */
   const acciones = crear('div', { class: 'hud-acciones' });
+
+  /* La telemetría vive DENTRO de la fila de acciones, no en su propia esquina.
+     Estaba en la esquina inferior izquierda, que es donde el HUD de la
+     portada imprime el reloj y la ubicación: los dos textos se montaban uno
+     encima del otro y se leían como "01:19:53 18 FPS". Un solo rincón por
+     elemento, y este rincón ya estaba ocupado. */
+  const telemetria = crear('div', { class: 'hud-telemetria mono', 'aria-hidden': 'true' });
+  const telemetriaFps = crear('span', { class: 'hud-telemetria__item' });
+  const telemetriaNivel = crear('span', { class: 'hud-telemetria__item' });
+  telemetria.append(telemetriaFps, telemetriaNivel);
 
   const botonSonido = crear('button', {
     class: 'hud-boton',
@@ -88,15 +102,9 @@ export function crearHud({ sistemas }) {
   botonSimple.setAttribute('aria-label', 'Ver la versión simple, sin animación');
   botonSimple.append(crear('span', { class: 'hud-boton__texto', text: 'Vista simple' }));
 
-  acciones.append(botonSonido, botonSimple);
+  acciones.append(telemetria, botonSonido, botonSimple);
 
-  /* ---- Telemetry --------------------------------------------------- */
-  const telemetria = crear('div', { class: 'hud-telemetria mono', 'aria-hidden': 'true' });
-  const telemetriaFps = crear('span', { class: 'hud-telemetria__item' });
-  const telemetriaNivel = crear('span', { class: 'hud-telemetria__item' });
-  telemetria.append(telemetriaFps, telemetriaNivel);
-
-  raiz.append(indicador, puntos, acciones, telemetria);
+  raiz.append(indicador, puntos, acciones);
   document.body.append(raiz);
 
   /* ---- Estado ------------------------------------------------------- */
@@ -107,6 +115,7 @@ export function crearHud({ sistemas }) {
   let alPedirSimple = null;
   let ultimoInforme = 0;
   let mostrarTelemetria = true;
+  let ultimoAvance = -1;
 
   /* ---- Botones ------------------------------------------------------ */
   const alPulsarSonido = () => {
@@ -219,7 +228,13 @@ export function crearHud({ sistemas }) {
         }
       }
 
-      if (typeof datos.progreso === 'number') {
+      if (typeof datos.progreso === 'number' && Math.abs(datos.progreso - ultimoAvance) > 0.002) {
+        /* La barra de avance se escribía en CADA fotograma. Es un Custom
+           Property, así que cada escritura invalida el estilo del nodo y la
+           de los que la usan: sesenta invalidaciones por segundo para un
+           número de tres píxeles de ancho. Con el margen, se escribe unas
+           veinte veces en un recorrido completo y se ve igual. */
+        ultimoAvance = datos.progreso;
         relleno.style.setProperty('--avance', datos.progreso.toFixed(4));
       }
     },

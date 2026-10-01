@@ -86,12 +86,27 @@ export const CONTACTO = {
  * `fotogramas` la posición de la cámara dentro de la sección.
  */
 export const SISTEMAS = [
-  /* ---------- 01 · INICIO · Aproximación ---------- */
+  /* ---------- 01 · INICIO · El origen ---------- */
   {
     id: 'inicio',
     seccion: 'inicio',
-    etiqueta: 'Aproximación',
+    etiqueta: 'El origen',
     indice: '01',
+
+    /* EL ARRANQUE. Aquí está el Big Bang, y es lo que se ve al empezar a
+       bajar.
+
+       La cámara viaja POR DENTRO de la onda: entra a 200 unidades del núcleo,
+       con la burbuja ya tiene 320, y sale hacia atrás mientras el frente se
+       aleja hasta llenar el sistema entero. Si la cámara se quedara fuera,
+       esto sería una esfera que crece en la distancia; por dentro, es una
+       cúpula de luz que se abre en todas direcciones a la vez.
+
+       Y al final del tramo el planeta no aparece hecho: se ha condensado. La
+       cámara sale de la portada mirando un rescoldo que se acaba de formar,
+       que es lo que da sentido a que "Perfil" sea un planeta con ciudades. */
+    explosion: true,
+
     cuerpo: {
       tipo: 'planeta',
       id: 'hogar',
@@ -119,12 +134,26 @@ export const SISTEMAS = [
     },
     atmosfera: { tono: 'cian', escala: 1.06, fuerza: 1 },
     fotogramas: [
-      // Lejos: el cuerpo es un punto y el HUD arranca. FOV estrecho para
-      // comprimir la perspectiva y hacer que el punto parezca lejano.
-      { t: 0, pos: [0, 130, 1250], mira: [0, 0, 0], fov: 40, roll: 0 },
-      // Aproximación: el cuerpo crece hasta llenar el cuadro. El FOV se abre
-      // un poco al acercarse, que es lo que hace la cámara una optics de cine.
-      { t: 0.62, pos: [10, 70, 640], mira: [0, 0, 0], fov: 47, roll: -0.02 },
+      // El "antes": dentro de la burbuja, mirando al núcleo. El FOV estrecho
+      // comprime la perspectiva y hace que el punto parezca diminuto.
+      { t: 0, pos: [0, 70, 200], mira: [0, 0, 0], fov: 36, roll: 0 },
+
+      // El estallido. El núcleo arde, los escombros salen y la cámara
+      // empieza a separarse; el FOV se abre, que es lo que la venta como
+      // aceleración sin necesidad de moverla más rápido.
+      { t: 0.24, pos: [14, 88, 430], mira: [0, 0, -140], fov: 52, roll: 0.02 },
+
+      // La onda nos pasa. La cúpula de luz ya está lejos y el cielo empieza a
+      // llenarse de estrellas nuevas detrás.
+      { t: 0.55, pos: [-18, 112, 810], mira: [0, 0, -520], fov: 58, roll: -0.04 },
+
+      // La materia se enfría y se agrupa. El rescoldo ya tiene forma de
+      // planeta, aunque no tiene todavía nada de planeta encima.
+      { t: 0.82, pos: [16, 126, 1090], mira: [0, 0, -300], fov: 50, roll: 0.02 },
+
+      // El "después": la onda se ha ido y queda un mundo recién formado. De
+      // aquí lo recoge la sección siguiente.
+      { t: 1, pos: [10, 130, 1250], mira: [0, 0, 0], fov: 44, roll: 0 },
     ],
   },
 
@@ -210,15 +239,39 @@ export const SISTEMAS = [
     },
     // Las 21 habilidades se injectan desde `data/stack.js` al montar.
     lunas: { radioBase: 190, radioMax: 330, radioLuna: 0.95 },
-    /* El gesto: la cámara pasa POR ENCIMA y sale POR DEBAJO, cruzando el
-       plano de los anillos en y=0. Es el momento más cinematográfico del
-       recorrido y no cuesta nada más que dos fotogramas. */
+    /* EL GESTO: la cámara pasa POR ENCIMA y sale POR DEBAJO, cruzando el
+       plano de los anillos en y = 0. Es el momento más cinematográfico del
+       recorrido.
+
+       ── POR QUÉ ESTOS NÚMEROS Y NO LOS ANTERIORES ──────────────────────
+       El cruce estaba en [90, 6, -1930], y eso metía la cámara DENTRO del
+       gigante: el planeta está en (0, 0, -1900) con radio 132, y de ese punto
+       al centro hay 95 unidades. Menos que el radio, o sea que la cámara
+       estaba dentro de la roca.
+
+       No se notaba leyendo el código —los números parecían razonables— y en
+       la pantalla se veía como un agujero negro con un arco de anillo
+       alrededor: el planeta se dibujaba desde dentro, se veían sus caras
+       traseras, que están descartadas, y el resultado era el fondo. Medido en
+       el navegador: cámara a 87 unidades de un cuerpo de 132, y el gigante
+       renderizando en RGB(10, 15, 27) contra un fondo de RGB(9, 14, 25).
+       Indistinguible.
+
+       Ahora el cruce ocurre en y = 6, a 257 unidades del centro: FUERA del
+       planeta (132) y DENTRO de la banda de anillos (190-330), que es justo
+       lo que hace que el plano se vea pasar por encima de la cámara en lugar
+       de quedar como una línea en el horizonte.
+
+       Y hay una comprobación que impide que vuelva a pasar:
+       `tools/probar-ruta.mjs` mide la distancia de cada fotograma a cada
+       cuerpo y falla si alguna es menor que el radio del cuerpo. */
     fotogramas: [
-      { t: 0, pos: [0, 30, -1450], mira: [0, 0, -1900], fov: 52, roll: 0 },
-      { t: 0.36, pos: [120, 190, -1830], mira: [0, 10, -1960], fov: 50, roll: 0.05 },
-      // Justo el cruce del plano de anillos.
-      { t: 0.62, pos: [90, 6, -1930], mira: [0, 0, -2010], fov: 56, roll: -0.08 },
-      { t: 1, pos: [40, -190, -2010], mira: [0, -20, -2080], fov: 54, roll: 0.03 },
+      { t: 0, pos: [0, 240, -1380], mira: [0, 0, -1900], fov: 52, roll: 0 },
+      { t: 0.36, pos: [220, 120, -1640], mira: [0, 0, -1900], fov: 50, roll: 0.05 },
+      // El cruce del plano de anillos: y casi cero, a 257 del centro.
+      { t: 0.62, pos: [60, 6, -2150], mira: [0, 0, -1960], fov: 56, roll: -0.08 },
+      // Salida por debajo y por detrás, ya fuera de todo.
+      { t: 1, pos: [40, -260, -2260], mira: [0, 0, -1990], fov: 54, roll: 0.03 },
     ],
   },
 
@@ -331,7 +384,13 @@ export const CAMARA = {
   fovInicial: 50,
   fovMax: 74,
   near: 1,
-  far: 6000,
+  /* El campo de estrellas llega a 4 200 unidades del origen y la cámara
+     recorre el corredor entero, así que desde el fondo del viaje hay
+     estrellas a casi 7 000. Con `far: 6000` se perdían: la mitad del cielo
+     no se dibujaba por estar más lejos del plano de corte, y no había forma
+     de verlo en el código. Subirlo no cuesta nada —el búfer de profundidad va
+     con `depthWrite: false` en casi toda la escena— y devuelve el cielo. */
+  far: 8200,
 
   /* Amortiguación.
      Cuánto tarda la cámara en alcanzar el punto que le pide el scroll. Con

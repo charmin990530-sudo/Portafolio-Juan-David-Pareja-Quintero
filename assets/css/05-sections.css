@@ -25,13 +25,28 @@
      nada: el planeta se veía a pleno brillo en los bordes de la pantalla,
      peleándose con la cabecera.
 
-     La viñeta es el marco de la escena. Sin ella el borde compite con la
-     interfaz; con ella, la mirada va al centro. */
+     LA VIÑETA ES UN MARCO, Y AHORA LO ES DE VERDAD.
+
+     Tenía dos degradados: uno centrado que se comía los bordes, y otro
+     anclado ARRIBA que iba al 78 % de opacidad justo en la mitad
+     inferior de la pantalla — es decir, en la parte de abajo, que es donde
+     están los planetas y donde se lee el texto. Sumado al velo de la
+     sección, que ya ponía el 72 %, la escena quedaba al 6 % de su luz.
+
+     Medido con el gigante gaseoso en pantalla: RGB(150, 200, 255) en la
+     escena, RGB(8, 12, 23) en la página. El planeta estaba dibujado,
+     encendido y bien coloreado, y no se veía.
+
+     Ahora es un solo degradado, centrado, que no empieza a morder hasta
+     pasado el 62 % del radio. El marco sigue ahí —los bordes se apagan y
+     la mirada va al centro— y el centro se queda limpio. */
   z-index: 2;
   pointer-events: none;
-  background:
-    radial-gradient(120% 85% at 50% 0%, transparent 38%, color-mix(in srgb, var(--bg) 78%, transparent) 100%),
-    radial-gradient(150% 110% at 50% 50%, transparent 52%, var(--bg) 100%);
+  background: radial-gradient(
+    108% 92% at 50% 50%,
+    transparent 60%,
+    color-mix(in srgb, var(--bg) 58%, transparent) 100%
+  );
 }
 
 .malla {
@@ -252,10 +267,29 @@ main {
 }
 
 .nav {
+  /* El anclaje de la píldora deslizante (`#nav-marca`), que es su hija. Sin
+     `position` aquí no tenía ningún ancestro posicionado y se iba al origen
+     del viewport: medido, la píldora acababa en x=6 con la lista empezando
+     en x=360, encima de la marca del sitio. */
+  position: relative;
   margin-inline: auto;
 }
 
 .nav__lista {
+  /* El `z-index` va AQUÍ y no en los enlaces, y no es un detalle menor.
+
+     `.nav__lista` tiene `backdrop-filter`, y `backdrop-filter` —igual que
+     `filter`— CREA UN CONTEXTO DE APILAMIENTO. Eso significa que un
+     `z-index: 1` puesto en un enlace de dentro se queda encerrado en la
+     lista: la lista entera se dibuja en su propio escalón y la píldora, que
+     es un hermano POSICIONADO, se dibuja después. Medido: la píldora salía
+     como un rectángulo claro VACÍO, con la etiqueta de la sección activa
+     debajo.
+
+     Poner el índice en la lista la coloca por encima de la píldora, que es
+     un hijo de `.nav` y por tanto está fuera de su contexto. */
+  position: relative;
+  z-index: 1;
   display: flex;
   align-items: center;
   gap: 0.15rem;
@@ -287,14 +321,26 @@ main {
   color: var(--text);
 }
 
+/* La píldora de la sección activa.
+
+   CON RELLENO CLARO Y NO TRANSLÚCIDO. El enlace activo invierte el color
+   del texto a `--space-900` —casi negro— para que se lea como una ficha
+   iluminada dentro de una barra apagada. Eso obliga a que el fondo sea
+   claro de verdad: un degradado al 22 % de opacidad deja pasar el fondo
+   oscuro, y el resultado es texto negro sobre negro, es decir, un enlace
+   que desaparece justo cuando debería destacar.
+
+   Es el mismo recurso que el botón principal del sitio, invertido. */
 .nav__marca {
   position: absolute;
   top: 0.3rem;
   left: 0;
   height: calc(100% - 0.6rem);
   border-radius: var(--r-pill);
-  background: linear-gradient(120deg, color-mix(in srgb, var(--accent) 22%, transparent), color-mix(in srgb, var(--accent-2) 22%, transparent));
-  border: 1px solid var(--line-strong);
+  background: linear-gradient(180deg, #ffffff, #d7e6f7);
+  box-shadow:
+    0 0 0 1px rgb(255 255 255 / 45%),
+    0 6px 18px -6px rgb(0 0 0 / 70%);
   opacity: 0;
   transform: translateX(var(--nav-x, 0));
   transition:
@@ -434,7 +480,15 @@ main {
   position: relative;
   display: grid;
   place-items: center;
-  min-height: 100svh;
+  /* LA PORTADA ES EL BIG BANG, Y POR ESO NECESITA SCROLL.
+
+     Con `100svh` la sección mide justo una pantalla: los cinco fotogramas del
+     arranque cabían en cero píxeles de scroll, así que la explosión no tenía
+     dónde pasar y se veía un planeta quieto. Ahora la sección es más alta que
+     la pantalla y el contenido se ancla arriba, de forma que lo primero que
+     se ve sigue siendo la portada entera y el resto del alto es el recorrido
+     de la cámara mientras el universo se abre. */
+  min-height: 190svh;
   /* Sección de sangre completa: el canal lateral lo pone ella misma. */
   padding-inline: var(--gutter);
   padding-block: calc(var(--header-h) + var(--sp-6)) var(--sp-7);
@@ -445,10 +499,16 @@ main {
 /* Aura de color: da profundidad sin ninguna imagen de fondo. */
 /* El aura se dibuja del mismo tamaño que la portada y crece con
    `transform`. Antes usaba `inset: -20%`, que dependía del recorte del
-   padre para no desbordar: frágil y en móvil se colaba. */
+   padre para no desbordar: frágil y en móvil se colaba.
+
+   `height: 100svh` y no `inset: 0` porque la portada es más alta que la
+   pantalla (el arranque necesita scroll): si no, el aura y el velo se estirarían
+   por los 190 svh y la segunda mitad quedaría teñida, que es justo donde tiene
+   que verse la explosión. */
 .hero__aura {
   position: absolute;
-  inset: 0;
+  inset: 0 0 auto 0;
+  height: 100svh;
   z-index: -3;
   background:
     radial-gradient(38% 34% at 22% 26%, color-mix(in srgb, var(--accent) 30%, transparent), transparent 62%),
@@ -461,16 +521,43 @@ main {
 
 .hero__velo {
   position: absolute;
-  inset: 0;
+  inset: 0 0 auto 0;
+  height: 100svh;
   z-index: -2;
+  /* El velo TERMINA EN TRANSPARENTE, no en el color del fondo.
+
+     La versión anterior terminaba en `var(--bg) 99%`: opaco. Como el velo
+     mide `100svh` y la portada mide bastante más, su borde inferior quedaba
+     dibujado como una línea horizontal cruzando la pantalla. Medido en la
+     captura: una costura nítida a media altura, con todo lo de encima más
+     oscuro que lo de debajo. El velo es para que el titular se lea; por
+     debajo del titular no hay que oscurecer nada, y menos aún dejando una
+     raya de cortesía. */
+  /* El velo de la portada NO puede ser fuerte. La estrella está detrás del
+     texto —es lo que tiene que estar— y con el velo al 82 % el sol se
+     apagaba justo en el centro, que es donde vive. Medido: la estrella se
+     veía como un disco apagado con un halo alrededor, no como un sol.
+
+     La legibilidad no sale de aquí, sale de la `text-shadow` del titular y
+     del párrafo, que está puesta para justo este caso. */
   background:
-    radial-gradient(62% 48% at 50% 44%, color-mix(in srgb, var(--space-900) 78%, transparent), transparent 72%),
-    linear-gradient(to bottom, color-mix(in srgb, var(--space-900) 70%, transparent) 0%, transparent 24%, transparent 56%, var(--bg) 99%);
+    radial-gradient(56% 44% at 50% 38%, color-mix(in srgb, var(--space-900) 58%, transparent), transparent 76%),
+    linear-gradient(
+      to bottom,
+      color-mix(in srgb, var(--space-900) 62%, transparent) 0%,
+      transparent 30%,
+      transparent 70%,
+      color-mix(in srgb, var(--space-900) 40%, transparent) 90%,
+      transparent 100%
+    );
 }
 
 .hero__contenido {
   display: grid;
   justify-items: center;
+  /* Anclado arriba: el contenido ocupa la primera pantalla y el resto del
+     alto de la sección queda libre para el vuelo de la cámara. */
+  align-self: start;
   /* Sin min-width:0 el hijo más ancho estira la columna y desborda. */
   min-width: 0;
   gap: var(--sp-4);
@@ -485,6 +572,23 @@ main {
   line-height: 0.98;
   letter-spacing: -0.04em;
   text-transform: uppercase;
+  /* El titular de la portada es el único texto ENORME y blanco que se queda
+     directamente encima de la estrella. Con el velo de la sección LIGHT —que
+     es lo que deja ver el sol— la sombra es la que sostiene el texto, así que
+     aquí es más profunda que en las secciones: tres capas, la última
+     amplia, que es lo que separa una silueta blanca de un fondo caliente. */
+  text-shadow:
+    0 2px 4px rgb(2 3 8 / 82%),
+    0 4px 18px rgb(2 3 8 / 72%),
+    0 10px 60px rgb(2 3 8 / 60%);
+}
+
+/* El párrafo de la portada, con la misma intención y menos cuerpo. */
+.hero__resumen,
+.hero__rol {
+  text-shadow:
+    0 1px 3px rgb(2 3 8 / 80%),
+    0 3px 16px rgb(2 3 8 / 62%);
 }
 
 .hero__titulo .letra {
@@ -559,7 +663,9 @@ main {
    en el recorte del padre. Ahora mide como mucho el ancho disponible. */
 .hero__anillos {
   position: absolute;
-  top: 50%;
+  /* Medidos desde arriba, no desde el centro: la portada es más alta que la
+     pantalla y los aros tienen que seguir centrados en lo que se ve. */
+  top: calc(50svh);
   left: 50%;
   z-index: -1;
   width: min(100%, 1040px);
@@ -1456,6 +1562,20 @@ main {
   justify-items: start;
   gap: var(--sp-3);
   margin-bottom: var(--sp-6);
+}
+
+/* Los controles de sonido y el de volver arriba están fijos abajo a la
+   derecha. El título del pie es una sola línea muy larga, y en móvil pasaba
+   POR DEBAJO de ellos. Acotar el ancho obliga a que se parta en varias
+   líneas antes de llegar ahí, que es lo que quiere un título de ese peso. */
+.pie__marca {
+  max-width: min(100%, 22rem);
+}
+
+@media (max-width: 46rem) {
+  .pie__marca {
+    max-width: 15rem;
+  }
 }
 
 .pie__titulo {

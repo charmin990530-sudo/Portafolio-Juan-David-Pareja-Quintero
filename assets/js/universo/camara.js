@@ -30,7 +30,7 @@
  */
 
 import { PerspectiveCamera, Vector2, Vector3 } from '../../vendor/three/0.186.1/three.module.js';
-import { clamp, suavizar } from '../core/util.js';
+import { clamp, suavizar, separacionParaEncuadre } from '../core/util.js';
 import { CAMARA } from '../data/universo.js';
 
 export function crearCamara() {
@@ -58,6 +58,8 @@ export function crearCamara() {
   let progresoSuavizado = 0;
   let progresoPrevio = 0;
   let velocidad = 0;
+
+  const posicionColocada = new Vector3();
 
   return {
     camara,
@@ -136,7 +138,14 @@ export function crearCamara() {
       const velocidadNormalizada = clamp(Math.abs(velocidad) / CAMARA.velocidadMax, 0, 1);
       const fovFinal = clamp(fovActual + velocidadNormalizada * 5.5, 24, CAMARA.fovMax);
 
-      camara.position.copy(posActual);
+      /* --- Encuadre en pantalla vertical --------------------------------
+
+         La regla vive en `core/util.js` porque es una REGLA y las reglas se
+         prueban: `probar-ruta.mjs` la ejecuta con las proporciones reales de
+         un móvil y de un monitor, y falla si alguien la cambia sin querer. */
+      const separacion = separacionParaEncuadre(camara.aspect);
+      posicionColocada.copy(posActual).sub(miraActual).multiplyScalar(separacion).add(miraActual);
+      camara.position.copy(posicionColocada);
 
       miraLejos.copy(miraActual);
       miraLejos.x += ratonSuavizado.x * CAMARA.raton * 26;

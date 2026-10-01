@@ -466,15 +466,24 @@ textarea.campo__control {
 }
 
 /* ---------- Barra de progreso ---------- */
+/* ---------- Barra de lectura ----------
+   Va dentro de la cabecera, no suelta en el `<body>`. Suena a un detalle y
+   no lo es: como elemento fijo aparte ocupaba una capa del compositor por
+   encima de todo, y además tapaba la franja entre el borde inferior de la
+   cabecera y el primer contenido, que es justo lo que una barra de lectura
+   no debería hacer.
+
+   Al ser hija de la cabecera —que es `position: fixed`— el absoluto es
+   relativo a ella, así que acompaña su `height` sin que ningún selector
+   tenga que acordarse de los dos valores que usa (74 px arriba, 64 px
+   compactada). */
 .progreso {
-  position: fixed;
-  top: 0;
-  left: 0;
-  z-index: calc(var(--z-header) + 5);
-  width: 100%;
+  position: absolute;
+  inset: auto 0 -1px;
   height: 2px;
-  background: transparent;
+  background: var(--line);
   pointer-events: none;
+  overflow: hidden;
 }
 
 .progreso__barra {
@@ -484,6 +493,14 @@ textarea.campo__control {
   transform-origin: 0 50%;
   background: linear-gradient(90deg, var(--accent), var(--accent-2) 55%, var(--accent-3));
   box-shadow: 0 0 14px var(--accent);
+}
+
+/* Con el recorrido guiado activo la cabecera se apaga, y la barra es su
+   hija: si no, la línea seguiría cruzando la parte de arriba de la pantalla
+   con la barra negra de cine debajo. La reemplaza la del panel, que va en
+   la parte de abajo. */
+:root[data-viaje='activo'] .progreso {
+  opacity: 0;
 }
 
 /* ---------- Botón volver arriba ---------- */

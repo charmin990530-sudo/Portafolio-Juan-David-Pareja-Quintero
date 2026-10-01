@@ -37,15 +37,85 @@
  * resplandor. El scroll nativo da esa señal sucia.
  */
 
+import { alFotograma } from './loop.js';
+import { clamp } from './util.js';
+
 let lenis = null;
-let alturaCabecera = 74;
+let alturaCabeceraRespaldo = 74;
 let limpiarScrollSuave = null;
+
+/** Duración por defecto de un salto con Lenis, en segundos. */
+const DURACION_SCROLL = 1.05;
+
+/* ------------------------------------------------------------------
+   ALTO DEL DOCUMENTO
+
+   `document.documentElement.scrollHeight` es el ÚNICO modo que tiene el
+   navegador de saber cuánto se puede desplazar, y leerlo obliga a vaciar
+   la cola de diseño: si el documento está sucio, la lectura provoca un
+   reflow síncrono completo.
+
+   Y el documento estaba sucio. Tres cosas lo ensucian sin parar: este
+   módulo escribe el scroll, `modules/cabecera.js` escribe `--avance` en
+   cada evento de scroll, y el universo escribe `dataset.sistema` en el
+   `<html>` de la escena que acaba de renderizar. Leyendo el alto después
+   de cualquiera de las tres, cada evento de scroll y cada fotograma
+   provocaba un layout completo de la página.
+
+   Con layout forzado, la secuencia de un fotograma era: escribir, leer,
+   escribir, leer. Es el patrón que más se nota en un móvil, y no aparece
+   en un perfil de CPU de escritorio.
+
+   La solución es que el alto se mida UNA vez y se reutilice, y que quien
+   lo invalide lo diga: al redimensionar y al cargar las fuentes, que son
+   las dos únicas cosas que lo cambian de verdad. Aquí y en `escena.js`
+   hay ahora un solo origen para esa medida.
+   ------------------------------------------------------------------ */
+
+let altoDesplazado = 0;
+
+/** Vuelve a medir el alto desplazable. Llámala cuando el documento cambia. */
+export function refrescarAltoDocumento() {
+  const alto = document.documentElement.scrollHeight - window.innerHeight;
+  altoDesplazado = alto > 0 ? alto : 0;
+  return altoDesplazado;
+}
+
+/** Píxeles desplazables del documento, sin provocar un reflow. */
+export function altoDesplazable() {
+  if (altoDesplazado <= 0) refrescarAltoDocumento();
+  return altoDesplazado;
+}
+
+/**
+ * Progreso de lectura del documento, 0..1.
+ *
+ * La misma cuenta la necesitan la barra de progreso de la cabecera y la
+ * cámara del universo. Que la hagan los dos por su cuenta significaba dos
+ * medidas por fotograma, cada una con su propio reflow.
+ */
+export function progresoDeLectura() {
+  const alto = altoDesplazable();
+  return alto > 0 ? clamp(window.scrollY / alto, 0, 1) : 0;
+}
 
 /** La altura de la cabecera se lee una vez y se reutiliza. */
 function alturaDeCabecera() {
   const bruto = getComputedStyle(document.documentElement).getPropertyValue('--header-h');
   const valor = parseFloat(bruto);
-  return Number.isFinite(valor) ? valor : alturaCabecera;
+  return Number.isFinite(valor) ? valor : alturaCabeceraRespaldo;
+}
+
+/**
+ * Alto de la cabecera en píxeles, sin una relectura del estilo.
+ *
+ * Lo exporta para que quien vaya a parar el scroll en una posición
+ * concreta —el recorrido guiado, que coloca cada parada por debajo del
+ * título de su sección— mida lo mismo que mide el resto del sitio y las
+ * paradas no acaben debajo de la barra.
+ */
+export function alturaCabecera() {
+  return alturaDeCabecera();
 }
 
 /**
@@ -61,13 +131,23 @@ function alturaDeCabecera() {
  *   Para consultar el estado, `scrollSuaveActivo()`.
  */
 export function montarScrollSuave() {
-  alturaCabecera = alturaDeCabecera();
+  alturaCabeceraRespaldo = alturaDeCabecera();
 
   const reducido = matchMedia('(prefers-reduced-motion: reduce)').matches;
   const tactil = matchMedia('(pointer: coarse)').matches;
   const escritorio = matchMedia('(min-width: 900px)').matches;
 
+  /* `destruido` cierra la carrera contra la carga del módulo: si el sitio se
+     desmonta antes de que llegue el `import()`, crear la instancia a posteriori
+     dejaría un Lenis vivo sin nadie que lo llame. */
+  let destruido = false;
+  let instancia = null;
+  let bajaDelBucle = null;
+
   const destruir = () => {
+    destruido = true;
+    bajaDelBucle?.();
+    bajaDelBucle = null;
     instancia?.destroy();
     lenis = null;
     instancia = null;
@@ -79,15 +159,13 @@ export function montarScrollSuave() {
 
   if (reducido || tactil || !escritorio) return destruir;
 
-  let instancia = null;
-
   // El módulo se carga aquí, no arriba del todo: son 8 KB que solo hacen
   // falta en escritorio, y no tiene sentido pedirlos en un móvil.
   import('../../vendor/lenis/1.3.26/lenis.mjs')
     .then(({ default: Lenis }) => {
-      if (lenis) return; // ya montado: no duplicar
+      if (destruido || lenis) return; // ya montado, o ya desmontado
       instancia = new Lenis({
-        duration: 1.05,
+        duration: DURACION_SCROLL,
         // `easing` con un expo suave: llega rápido y frena largo, que es
         // lo que pesa. Con el easing por defecto el final se nota blando.
         easing: (t) => Math.min(1, 1.001 - 2 ** (-10 * t)),
@@ -101,6 +179,26 @@ export function montarScrollSuave() {
         respectReducedMotion: true,
       });
       lenis = instancia;
+
+      /* ── LO QUE HACE QUE LENIS FUNCIONE ──────────────────────────────
+         Lenis NO SE MUEVE SOLO. Su constructor pone `autoRaf: false`, y eso
+         significa que hay que llamar a `lenis.raf(tiempo)` en cada
+         fotograma: es el Integrador, el bucle es del sitio.
+
+         Sin esta llamada el scroll no se rompe de forma visible: Lenis ya
+         ha registrado su escuchador de rueda y ya ha hecho
+         `preventDefault()`, así que anula el scroll nativo del navegador,
+         pero su posición animada nunca avanza porque nadie le dice por
+         dónde va el tiempo. El resultado es la rueda muerta y el teclado
+         funcionando, que es la forma más difícil de diagnosticar que hay:
+         la página está perfectamente desplazable, solo que no con la rueda.
+
+         Se engancha a `core/loop.js` y no con un `requestAnimationFrame`
+         propio para no tener dos bucles en la página, que es justo lo que
+         ese módulo existe para evitar. */
+      bajaDelBucle = alFotograma((_delta, ahora) => {
+        instancia?.raf(ahora);
+      });
 
       // Las reglas de CSS que el propio Lenis pide. Están aquí y no en un
       // archivo aparte para no añadir una petición bloqueante de 513 bytes.
@@ -153,7 +251,7 @@ export function desplazarA(destino, opciones = {}) {
       // Enlace "atrás" o salto muy largo: sin animación. Animar 8 000 px
       // de golpe produce un mareo y tarda varios segundos.
       immediate: opciones.inmediato === true || objetivo - window.scrollY > 6000,
-      duration: opciones.inmediato ? 0 : 1.05,
+      duration: opciones.inmediato ? 0 : DURACION_SCROLL,
     });
     // El foco se mueve aquí y no en el manejador: el destino se ha
     // desplazado, así que ahora sí se puede calcular sin `preventScroll`.
@@ -171,13 +269,31 @@ export function desplazarA(destino, opciones = {}) {
   return true;
 }
 
-/** Desplaza a una posición absoluta del documento. */
-export function desplazarAposicion(posicion, { inmediato = false } = {}) {
+/**
+ * Desplaza a una posición absoluta del documento.
+ *
+ * @param {number} posicion  Píxeles desde arriba.
+ * @param {object} [opciones]
+ * @param {boolean} [opciones.inmediato] Sin animación.
+ * @param {number} [opciones.duracion]  Milisegundos, en vez del valor por
+ *   defecto del sitio. Lo necesita el recorrido guiado, que encadena
+ *   movimientos de duraciones distintas según lo lejos que esté cada
+ *   parada: con una duración única, un salto corto se queda tirante
+ *   esperando y uno largo se lee como un teletransporte.
+ */
+export function desplazarAposicion(posicion, { inmediato = false, duracion } = {}) {
   const objetivo = Math.max(0, posicion);
   if (lenis) {
-    lenis.scrollTo(objetivo, { immediate: inmediato, duration: inmediato ? 0 : 1.05 });
+    lenis.scrollTo(objetivo, {
+      immediate: inmediato,
+      duration: inmediato ? 0 : duracion ?? DURACION_SCROLL,
+    });
     return;
   }
+
+  /* Sin Lenis no hay forma de decir "tarda 2,4 segundos": el scroll nativo
+     solo sabe ir a una velocidad o a otra. Se degrada a `smooth`, que es lo
+     más cerca que se puede estar, y el recorrido sigue siendo legible. */
   window.scrollTo({ top: objetivo, behavior: inmediato ? 'auto' : 'smooth' });
 }
 
@@ -191,13 +307,15 @@ export function desplazarAlPrincipio() {
 }
 
 /**
- * Recalibra Lenis tras un cambio de altura del documento.
+ * Recalibra Lenis y el alto del documento tras un cambio de altura.
  *
  * Sin esto, Lenis sigue creyendo que la página es de la altura anterior y
- * el scroll se queda corto: no deja llegar al final.
+ * el scroll se queda corto: no deja llegar al final. Y sin reponer el alto
+ * cacheado, el progreso de lectura se quedaría congelado en el valor viejo.
  */
 export function recalibrarScroll() {
   lenis?.resize();
+  refrescarAltoDocumento();
 }
 
 /**

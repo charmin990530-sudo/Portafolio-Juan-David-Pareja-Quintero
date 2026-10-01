@@ -1,0 +1,681 @@
+/* =============================================================
+   07 · INTERFAZ
+   Lo que va POR ENCIMA del contenido: la navegación de la cabecera con su
+   índice, el selector de calidad, la barra de lectura que hace de borde
+   inferior de la cabecera, el botón del recorrido, la cortina de cine del
+   recorrido guiado y la pila de avisos.
+
+   Este archivo va el último, y solo por una razón práctica: define reglas
+   que tienen que GANAR a las de `05-sections.css` y `06-universo.css`
+   (`.nav__enlace[aria-current]`, `.progreso`, `.hud-acciones`) y hacerlo
+   con la misma especificidad exigiría subir el orden de los `<link>`, que
+   es peor. El orden de carga de las hojas no debería depender de qué gana.
+
+   `.hud-acciones` sí se toca desde aquí, y por el motivo que ya está
+   documentado en `06-universo.css`: las dos filas —la del selector de
+   calidad y la del HUD— comparten la esquina inferior derecha.
+   ============================================================= */
+
+/* ------------------------------------------------------------------
+   NAVEGACIÓN CON ÍNDICE
+
+   El índice `01`, `02`… es el mismo número que imprime el HUD y el que
+   cuenta el recorrido. Va en monoespaciada, atenuado, y se ilumina con la
+   sección activa: es el mismo recurso que ya usaba el menú de móvil
+   (`.menu__indice`), ahora en la barra de arriba.
+
+   La píldora activa invierte —fondo claro, texto oscuro— en vez de
+   subrayarse. Sobre un fondo casi negro, un relleno claro es la única
+   señal de "dónde estoy" que se lee de un vistazo sin apartar la vista del
+   contenido que tiene detrás.
+   ------------------------------------------------------------------ */
+
+.nav__indice {
+  margin-right: 0.45rem;
+  font-family: var(--font-mono);
+  font-size: 0.68em;
+  font-weight: 500;
+  letter-spacing: 0.06em;
+  color: var(--text-mute);
+  transition: color var(--t-base) var(--ease-out);
+}
+
+.nav__enlace:hover .nav__indice {
+  color: var(--accent);
+}
+
+/* La píldora activa la pinta el indicador deslizante (`.nav__marca`), que ya
+   existía: aquí solo se invierte el texto. El indicador se queda detrás, así
+   que el color de la píldora no puede ser el mismo que el del texto o
+   desaparecería. */
+.nav__enlace[aria-current='true'] {
+  color: var(--space-900);
+}
+
+.nav__enlace[aria-current='true'] .nav__indice {
+  color: color-mix(in srgb, var(--space-900) 62%, transparent);
+}
+
+/* ------------------------------------------------------------------
+   SELECTOR DE CALIDAD
+
+   Vive en la cabecera, no en el HUD del 3D, por una razón de disponibilidad:
+   el HUD solo existe si el universo se montó. Si el 3D está apagado, o si
+   el navegador no tiene WebGL, el visitante sigue teniendo que poder
+   cambiar la calidad. Un control que desaparece justo cuando hace falta
+   es un control que no está.
+   ------------------------------------------------------------------ */
+
+.calidad {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.34rem 0.5rem 0.34rem 0.6rem;
+  border: 1px solid var(--line);
+  border-radius: var(--r-pill);
+  background: var(--glass-bg);
+  backdrop-filter: blur(var(--glass-blur));
+  -webkit-backdrop-filter: blur(var(--glass-blur));
+  color: var(--text-soft);
+  font-family: var(--font-mono);
+  font-size: var(--step--2);
+  line-height: 1;
+  cursor: pointer;
+  transition:
+    color var(--t-base) var(--ease-out),
+    border-color var(--t-base) var(--ease-out);
+}
+
+.calidad:hover {
+  color: var(--text);
+  border-color: var(--line-strong);
+}
+
+.calidad:focus-within {
+  color: var(--text);
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 22%, transparent);
+}
+
+.calidad__icono {
+  flex: none;
+  opacity: 0.75;
+}
+
+.calidad__rotulo {
+  white-space: nowrap;
+  letter-spacing: 0.04em;
+}
+
+/* El `<select>` se hace invisible pero conserva su tamaño: si se dejara
+   colapsado, el ancho del control dependería del texto elegido y la
+   cabecera daría un salto horizontal cada vez que se cambiaba. */
+.calidad__selector {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  opacity: 0;
+  cursor: pointer;
+  appearance: none;
+  -webkit-appearance: none;
+}
+
+.calidad__flecha {
+  flex: none;
+  opacity: 0.55;
+}
+
+/* El anillo de foco lo pone `:focus-within` en el `<label>`. El propio
+   `<select>` no lo muestra: es transparente y el anillo se dibujaría sobre
+   un área invisible. */
+.calidad__selector:focus {
+  outline: none;
+}
+
+/* En las opciones del desplegable nativo el fondo oscuro no se hereda: cada
+   sistema lo pinta con el suyo, y sobre un panel claro el texto claro
+   disappears. */
+.calidad__selector option {
+  background: var(--space-800);
+  color: var(--text);
+}
+
+@media (max-width: 900px) {
+  /* Por debajo de 900 px la navegación se va al menú de pantalla completa y
+     la cabecera se queda con marca, calidad y hamburguesa. El selector
+     conserva el icono y el valor, que es lo que hace falta para entenderlo;
+     la etiqueta larga no cabe. */
+  .calidad__rotulo {
+    max-width: 5.5rem;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+}
+
+@media (max-width: 560px) {
+  .calidad__rotulo {
+    display: none;
+  }
+
+  .calidad {
+    padding: 0.4rem 0.5rem;
+  }
+}
+
+/* ------------------------------------------------------------------
+   BARRA DE LECTURA
+   ------------------------------------------------------------------
+   `.progreso` vive en `03-components.css`, que es donde estaba antes de
+   pasar a ser hija de la cabecera. Aquí solo queda el caso del recorrido
+   guiado, porque depende de un atributo que solo existe con el 3D y con la
+   interfaz montados. */
+
+:root[data-viaje='activo'] .progreso {
+  opacity: 0;
+}
+
+/* ------------------------------------------------------------------
+   BOTÓN DEL RECORRIDO
+
+   El diseño es el de un disparador: un anillo que gira, una esfera que
+   late y un borde con un degradado que recorre el contorno. Todo con
+   `transform` y `opacity`, nunca con `width`, `top` ni `box-shadow`
+   animado: son las tres propiedades que provocan reflow o un repintado de
+   toda la capa en cada fotograma, y este botón está en la primera pantalla.
+
+   El anillo que gira usa la propiedad registrada `--giro`, con su tipo
+   declarado arriba: sin `@property` el navegador interpolaría el ángulo
+   como un número y el degradado daría un tirón en cada vuelta.
+   ------------------------------------------------------------------ */
+
+@property --giro {
+  syntax: '<angle>';
+  inherits: false;
+  initial-value: 0deg;
+}
+
+.viaje-boton {
+  --giro: 0deg;
+
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.85rem;
+  padding: 0.45rem 1.5rem 0.45rem 0.5rem;
+  border: 0;
+  border-radius: var(--r-pill);
+  background:
+    linear-gradient(150deg, #141020, #080a18) padding-box,
+    conic-gradient(
+      from var(--giro),
+      rgb(255 255 255 / 12%) 0deg,
+      rgb(255 255 255 / 12%) 190deg,
+      var(--accent-3) 250deg,
+      #fff1d6 300deg,
+      var(--accent) 340deg,
+      rgb(255 255 255 / 12%) 360deg
+    )
+      border-box;
+  border: 1.5px solid transparent;
+  color: var(--text);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  box-shadow:
+    0 14px 40px rgb(0 0 0 / 45%),
+    0 0 44px color-mix(in srgb, var(--accent-3) 22%, transparent);
+  animation: viaje-orbita 4s linear infinite;
+  transition:
+    transform var(--t-base) var(--ease-out),
+    box-shadow var(--t-base) var(--ease-out);
+}
+
+.viaje-boton:hover,
+.viaje-boton:focus-visible {
+  transform: translateY(-2px);
+  box-shadow:
+    0 18px 50px rgb(0 0 0 / 50%),
+    0 0 64px color-mix(in srgb, var(--accent-3) 36%, transparent);
+  animation-duration: 1.8s;
+}
+
+.viaje-boton:active {
+  transform: translateY(0) scale(0.985);
+}
+
+.viaje-boton[data-activo='1'] {
+  animation: none;
+}
+
+@keyframes viaje-orbita {
+  to {
+    --giro: 360deg;
+  }
+}
+
+/* La esfera del disparador. El latido es una escala, no un `box-shadow` que
+   crezca: un `box-shadow` animado repinta el área de la sombra cada
+   fotograma, y aquí esa área es de 44 px en la primera pantalla. */
+.viaje-boton__lanzador {
+  position: relative;
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 2.5rem;
+  height: 2.5rem;
+  border-radius: 50%;
+  color: #2a1204;
+  background: radial-gradient(circle at 35% 30%, #fffaf0, #ffd08a 45%, var(--accent-3));
+  box-shadow:
+    0 0 22px color-mix(in srgb, var(--accent-3) 75%, transparent),
+    inset 0 -3px 8px rgb(160 60 0 / 35%);
+  transition: transform var(--t-base) var(--ease-out);
+}
+
+.viaje-boton:hover .viaje-boton__lanzador {
+  transform: scale(1.08);
+}
+
+.viaje-boton__lanzador svg {
+  margin-left: 2px;
+}
+
+.viaje-boton__texto {
+  display: grid;
+  gap: 0.1rem;
+}
+
+.viaje-boton__rotulo {
+  font-size: 1.02rem;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+}
+
+.viaje-boton__pista {
+  font-family: var(--font-mono);
+  font-size: 0.62rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: color-mix(in srgb, var(--accent-3) 70%, transparent);
+}
+
+@media (max-width: 560px) {
+  .viaje-boton {
+    justify-content: center;
+    width: 100%;
+    padding-right: 1.6rem;
+  }
+}
+
+/* Los dos botones secundarios van en su propia fila dentro de `.hero__acciones`.
+   Antes eran dos `<a>` sueltos y ahora hay que agruparlos: el botón del
+   recorrido es alto y sin esta envoltura el grupo de tres se descentraba
+   con `justify-content: center`, porque el botón del recorrido no tiene la
+   misma altura que los otros dos. */
+.hero__enlaces {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sp-3);
+}
+
+@media (max-width: 620px) {
+  .hero__acciones {
+    flex-direction: column;
+    flex-wrap: nowrap;
+    align-items: stretch;
+    gap: var(--sp-3);
+  }
+
+  .hero__enlaces {
+    width: 100%;
+  }
+
+  .hero__enlaces .btn {
+    flex: 1;
+  }
+}
+
+/* ------------------------------------------------------------------
+   RECORRIDO GUIADO
+
+   Dos barras negras que entran desde arriba y desde abajo, la cabecera y el
+   HUD que se apartan, y una línea de lectura abajo con el contador y el
+   botón de parar.
+
+   La cabecera se apaga en vez de moverse. Si se desplazara hacia arriba
+   estaría siguiendo su propia transición al compactarse, y al terminar
+   tendría que volver a su sitio: dos animaciones compitiendo por el mismo
+   `transform` se ven como un tirón. Con `opacity: 0` y `pointer-events:
+   none` se retira en un solo paso.
+   ------------------------------------------------------------------ */
+
+.viaje-marco {
+  position: fixed;
+  inset: 0;
+  z-index: var(--z-viaje);
+  pointer-events: none;
+}
+
+.viaje-marco__barra {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: clamp(38px, 9vh, 82px);
+  background: #000;
+  transform: scaleY(0);
+  transition: transform 1.1s var(--ease-in-out);
+}
+
+.viaje-marco__barra--arriba {
+  top: 0;
+  transform-origin: 50% 0;
+}
+
+.viaje-marco__barra--abajo {
+  bottom: 0;
+  transform-origin: 50% 100%;
+}
+
+:root[data-viaje='activo'] .viaje-marco__barra {
+  transform: scaleY(1);
+}
+
+/* El `overflow: clip` del navegador en un elemento fijo no hace nada aquí:
+   las barras se escalan desde su propio origen, no se desplazan. */
+
+/* La transición de la cabecera se reescribe en vez de añadirse, así que aquí
+   van también las suyas de `05-sections.css`. Si se declararan solo
+   `opacity` y `transform`, al terminar el recorrido la cabecera volvería de
+   golpe a su alto y su fondo en vez de deslizarse, y se vería un saltito
+   justo cuando el visitante ya está mirando. */
+.cabecera,
+.hud-universo,
+.avisos {
+  transition:
+    opacity 0.6s var(--ease-out),
+    transform 0.6s var(--ease-out),
+    background-color var(--t-base) var(--ease-out),
+    border-color var(--t-base) var(--ease-out),
+    backdrop-filter var(--t-base) var(--ease-out),
+    height var(--t-base) var(--ease-out);
+}
+
+:root[data-viaje='activo'] .cabecera {
+  opacity: 0;
+  transform: translateY(-30%);
+  pointer-events: none;
+}
+
+:root[data-viaje='activo'] .hud-universo {
+  opacity: 0;
+  pointer-events: none;
+}
+
+:root[data-viaje='activo'] .avisos {
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* ------------------------------------------------------------------
+   PANEL DE LECTURA DEL RECORRIDO
+   ------------------------------------------------------------------ */
+
+.viaje-panel {
+  --altura-barra: clamp(38px, 9vh, 82px);
+
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: calc(var(--z-viaje) + 1);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-4);
+  height: var(--altura-barra);
+  padding-inline: var(--gutter);
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+  background: #000;
+  color: var(--text-soft);
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(100%);
+  transition:
+    opacity 0.5s var(--ease-out),
+    transform 0.7s var(--ease-out),
+    visibility 0s linear 0.7s;
+}
+
+:root[data-viaje='activo'] .viaje-panel {
+  opacity: 1;
+  visibility: visible;
+  transform: none;
+  transition-delay: 0.35s, 0.35s, 0s;
+}
+
+/* La línea de progreso del recorrido, dibujada con la MISMA variable que
+   alimenta el contador del bucle. No hay dos medidas de "por dónde va": una
+   sola, y las dos cosas que la muestran leen de ella. */
+.viaje-panel__riel {
+  position: absolute;
+  inset: auto 0 0;
+  height: 2px;
+  background: rgb(255 255 255 / 10%);
+  overflow: hidden;
+}
+
+.viaje-panel__riel::after {
+  content: '';
+  display: block;
+  height: 100%;
+  width: 100%;
+  transform: scaleX(var(--viaje-avance, 0));
+  transform-origin: 0 50%;
+  background: linear-gradient(90deg, var(--accent), var(--accent-2));
+}
+
+.viaje-panel__lectura {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  min-width: 0;
+  margin: 0;
+  font-size: 0.7rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.viaje-panel__pulso {
+  flex: none;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--accent-3);
+  box-shadow: 0 0 12px var(--accent-3);
+  animation: viaje-pulso 1.7s var(--ease-in-out) infinite;
+}
+
+@keyframes viaje-pulso {
+  50% {
+    opacity: 0.25;
+  }
+}
+
+.viaje-panel__cuenta {
+  color: var(--text-mute);
+  flex: none;
+}
+
+.viaje-panel__nombre {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  color: var(--text);
+  font-weight: 500;
+}
+
+.viaje-panel__parar {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.42rem 0.9rem;
+  border: 1px solid rgb(255 255 255 / 18%);
+  border-radius: var(--r-pill);
+  background: rgb(255 255 255 / 6%);
+  color: var(--text-soft);
+  font: inherit;
+  font-size: 0.78rem;
+  cursor: pointer;
+  transition:
+    color var(--t-fast) var(--ease-out),
+    border-color var(--t-fast) var(--ease-out);
+}
+
+.viaje-panel__parar:hover {
+  color: var(--text);
+  border-color: rgb(255 255 255 / 40%);
+}
+
+.viaje-panel__parar:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+@media (max-width: 600px) {
+  .viaje-panel__lectura {
+    font-size: 0.62rem;
+    letter-spacing: 0.1em;
+  }
+}
+
+@media (max-width: 400px) {
+  .viaje-panel__cuenta {
+    display: none;
+  }
+}
+
+/* ------------------------------------------------------------------
+   PILA DE AVISOS
+
+   Esquina superior derecha: es la única libre. Abajo a la derecha viven los
+   botones del HUD, abajo a la izquierda el reloj de la portada, y el centro
+   es el contenido. Con el recorrido activo se apagan —`.avisos` comparte
+   la regla de la cabecera— porque un aviso encima de la línea de lectura
+   taparía justo el contador.
+   ------------------------------------------------------------------ */
+
+.avisos {
+  position: fixed;
+  top: calc(var(--header-h) + var(--sp-3));
+  right: var(--gutter);
+  z-index: var(--z-aviso);
+  display: grid;
+  justify-items: end;
+  gap: 0.5rem;
+  width: min(24rem, calc(100vw - 2 * var(--gutter)));
+  pointer-events: none;
+}
+
+.aviso-flotante {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.6rem;
+  max-width: 100%;
+  padding: 0.7rem 0.95rem;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--r-md);
+  background: color-mix(in srgb, var(--space-800) 92%, transparent);
+  backdrop-filter: blur(14px) saturate(1.2);
+  -webkit-backdrop-filter: blur(14px) saturate(1.2);
+  color: var(--text-soft);
+  font-size: var(--step--1);
+  line-height: 1.5;
+  box-shadow: var(--shadow-md);
+  opacity: 0;
+  transform: translateY(-8px);
+  transition:
+    opacity var(--t-base) var(--ease-out),
+    transform var(--t-base) var(--ease-out);
+}
+
+.aviso-flotante[data-saliendo='1'] {
+  opacity: 0;
+  transform: translateY(-6px);
+}
+
+.aviso-flotante__punto {
+  flex: none;
+  width: 7px;
+  height: 7px;
+  margin-top: 0.5em;
+  border-radius: 50%;
+  background: var(--accent);
+  box-shadow: 0 0 10px var(--accent);
+}
+
+.aviso-flotante[data-tipo='exito'] .aviso-flotante__punto {
+  background: var(--lime);
+  box-shadow: 0 0 10px var(--lime);
+}
+
+.aviso-flotante[data-tipo='aviso'] .aviso-flotante__punto {
+  background: var(--accent-3);
+  box-shadow: 0 0 10px var(--accent-3);
+}
+
+.aviso-flotante__cuerpo {
+  display: grid;
+  gap: 0.15rem;
+  min-width: 0;
+}
+
+.aviso-flotante__texto {
+  min-width: 0;
+  color: var(--text);
+  font-weight: 500;
+}
+
+.aviso-flotante__detalle {
+  min-width: 0;
+  font-size: 0.9em;
+  line-height: 1.45;
+  color: var(--text-mute);
+}
+
+@media (max-width: 560px) {
+  .avisos {
+    top: calc(var(--header-h) + var(--sp-2));
+    right: var(--sp-3);
+    left: var(--sp-3);
+    width: auto;
+  }
+}
+
+/* ------------------------------------------------------------------
+   MOVIMIENTO REDUCIDO
+
+   El recorrido ya no se monta en JavaScript cuando hay movimiento reducido,
+   así que sus reglas no llegan a activarse nunca. Estas dos son la red de
+   seguridad para el caso en que la preferencia cambie con la página abierta
+   —se puede desde el sistema operativo— y para el prefetch, que todavía
+   puede pintar el botón.
+   ------------------------------------------------------------------ */
+
+@media (prefers-reduced-motion: reduce) {
+  .viaje-boton,
+  .viaje-boton__lanzador,
+  .viaje-panel__pulso {
+    animation: none;
+  }
+
+  .viaje-marco,
+  .viaje-panel {
+    display: none;
+  }
+}

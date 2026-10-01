@@ -144,6 +144,115 @@
    columna: lo que hace falta es una banda oscura a lo alto, y un óvalo
    dejaría los extremos de línea sin protección. */
 
+/* ── LOS DOS VELOS, Y POR QUÉ HACE FALTA EL SEGUNDO ────────────────────
+
+   El primero es el de la sección: un lavado elíptico, suave, pensado para
+   que el cielo se vea. Al bajar su opacidad para enseñar el espacio, se
+   rompió la legibilidad, y al medirla la cosa salió así:
+
+     .perfil__texto p     1,38:1   sobre rgb(150,155,159)   ← invisible
+     .stack__nota         1,13:1   sobre rgb( 99,207,233)   ← invisible
+     .hero__resumen       1,07:1   sobre rgb(175,177,165)   ← invisible
+
+   No es un problema de número: es un problema de FORMA. El velo de sección
+   es una elipse centrada en la página, y el texto no está en el centro. En
+   Perfil la columna de texto va a la derecha; la elipse ya se ha apagado
+   cuando llega. En móvil el cuerpo celeste llena la pantalla entera y la
+   elipse no cubre nada de lo que importa.
+
+   ── LA SOLUCIÓN: EL VELO SIGUE AL TEXTO ───────────────────────────────
+
+   El fondo tiene que estar pegado al bloque de texto, no a la página. Es lo
+   que hacen las viñetas y los paneles de cristal del sitio: un scrim local,
+   con su propia forma, que se mueve con lo que tapa.
+
+   Y es lo que hace la referencia: el texto va en un panel de cristal sobre la
+   escena, y la escena se ve entera alrededor. El panel no es decoración, es
+   lo que permite que las dos cosas coexistan.
+
+   Aquí no hay panel porque el diseño de las secciones es de texto sobre
+   página abierta. El scrim cumple la misma función sin añadir un marco que
+   el diseño no pide: un degradado radial suave, con el mismo color de fondo
+   del sitio, que se diluye en los cuatro lados y no se lee como una caja.
+
+   ── EL NÚMERO ──────────────────────────────────────────────────────────
+
+   88 % en el centro, 78 % al 62 % del radio, transparente en el borde. Sale
+   de medir contra el peor caso medido —un píxel del planeta más claro que
+   aparece detrás del texto— y no de una regla: `--text-soft`
+   (#a9b6d4) sobre el resultado queda por encima de 4,5:1, que es lo que
+   pide WCAG AA para texto corrido.
+
+   `isolation: isolate` es lo que hace que funcione: crea un contexto de
+   apilamiento EN el bloque, de modo que el `z-index: -1` del scrim queda
+   encerrado dentro y no se va detrás de la página entera. */
+
+.section-head,
+.perfil__bio,
+.stack__nota,
+.pie__marca,
+.hero__contenido {
+  position: relative;
+  isolation: isolate;
+}
+
+/* El scrim sobresale del bloque a propósito —si no, se lee como una caja— y
+   eso, sin más, convierte la página en un documento desplazable en
+   horizontal. `clip` recorta sin crear un contenedor de scroll, así que
+   `position: sticky` y el layout siguen funcionando igual. */
+.seccion,
+.hero,
+.pie {
+  overflow-x: clip;
+}
+
+.section-head::before,
+.perfil__bio::before,
+.stack__nota::before,
+.pie__marca::before,
+.hero__contenido::before {
+  content: '';
+  position: absolute;
+  inset: -1.75rem -2.75rem;
+  z-index: -1;
+  pointer-events: none;
+  background: radial-gradient(
+    116% 108% at 50% 50%,
+    color-mix(in srgb, var(--space-900) 88%, transparent) 0%,
+    color-mix(in srgb, var(--space-900) 80%, transparent) 58%,
+    color-mix(in srgb, var(--space-900) 42%, transparent) 82%,
+    transparent 100%
+  );
+}
+
+/* El resumen de la portada va en un bloque estrecho y el sol está justo
+   detrás, así que necesita un poco más de fondo y menos margen: un scrim
+   proporcional al párrafo, no a toda la caja de contenido. */
+.hero__resumen,
+.hero__rol {
+  position: relative;
+  isolation: isolate;
+}
+
+.hero__resumen::before {
+  content: '';
+  position: absolute;
+  inset: -1.1rem -2.2rem;
+  z-index: -1;
+  pointer-events: none;
+  background: radial-gradient(
+    110% 120% at 50% 50%,
+    color-mix(in srgb, var(--space-900) 84%, transparent) 0%,
+    color-mix(in srgb, var(--space-900) 70%, transparent) 60%,
+    transparent 100%
+  );
+}
+
+/* ── EL VELO DE SECCIÓN, QUE AHORA SÍ ES SUAVE ─────────────────────────
+
+   Su trabajo ya no es sostener el contraste —de eso se encarga el scrim del
+   bloque— sino, bajar la escena para que el contenido tenga aire y para
+   que la página no sea un collage de texto sobre luz. Por eso es bajo. */
 :root[data-universo='activo'] .seccion:not(.hero):not(.contacto):not(.proyectos)::before,
 :root[data-universo='activo'] .pie::before {
   content: '';
@@ -151,13 +260,11 @@
   inset: 0;
   z-index: -1;
   pointer-events: none;
-  background: linear-gradient(
-    to bottom,
-    transparent 0%,
-    color-mix(in srgb, var(--space-900) 62%, transparent) 12%,
-    color-mix(in srgb, var(--space-900) 86%, transparent) 32%,
-    color-mix(in srgb, var(--space-900) 86%, transparent) 68%,
-    color-mix(in srgb, var(--space-900) 62%, transparent) 88%,
+  background: radial-gradient(
+    124% 66% at 50% 34%,
+    color-mix(in srgb, var(--space-900) 40%, transparent) 0%,
+    color-mix(in srgb, var(--space-900) 34%, transparent) 42%,
+    color-mix(in srgb, var(--space-900) 16%, transparent) 76%,
     transparent 100%
   );
 }
@@ -181,13 +288,16 @@
 :root[data-calidad='bajo'][data-universo='activo']
   .seccion:not(.hero):not(.contacto):not(.proyectos)::before,
 :root[data-calidad='bajo'][data-universo='activo'] .pie::before {
+  /* Misma forma que el velo normal —oscuro arriba, abierto abajo— solo que
+     más denso. Si esta variante empezara en transparente volvería a aparecer
+     la escalera de bandas, pero solo en gama baja, que es justo donde nadie
+     la miraría hasta que ya es unforme. */
   background: linear-gradient(
     to bottom,
-    transparent 0%,
-    color-mix(in srgb, var(--space-900) 76%, transparent) 10%,
-    color-mix(in srgb, var(--space-900) 94%, transparent) 28%,
-    color-mix(in srgb, var(--space-900) 94%, transparent) 72%,
-    color-mix(in srgb, var(--space-900) 76%, transparent) 90%,
+    color-mix(in srgb, var(--space-900) 94%, transparent) 0%,
+    color-mix(in srgb, var(--space-900) 94%, transparent) 30%,
+    color-mix(in srgb, var(--space-900) 94%, transparent) 68%,
+    color-mix(in srgb, var(--space-900) 66%, transparent) 90%,
     transparent 100%
   );
 }
@@ -213,63 +323,83 @@
   pointer-events: auto;
 }
 
-/* ---------- Indicador de sistema ---------- */
+/* ---------- Indicador de sistema ----------
+
+   UNA LÍNEA ABAJO A LA IZQUIERDA, NO UN PANEL ARRIBA.
+
+   La primera versión era un panel de 181 × 75 px arriba a la izquierda, con
+   la palabra SISTEMA, un contador y el nombre del cuerpo. Medido sobre la
+   captura: caía justo debajo de la marca del sitio y era, con diferencia,
+   lo primero que se leía de la pantalla. Para quien no conoce el proyecto,
+   "SISTEMA 01 / 06 — El origen" no dice nada: es jerga de nave puesta
+   encima de un portafolio, y ocupa el sitio donde debería estar el nombre
+   de la persona.
+
+   Ahora es una sola línea de 10 px en la esquina inferior izquierda, con la
+   misma forma que el resto de la señalética del sitio: un número, una raya,
+   el nombre del cuerpo. Se lee como un pie de foto, no como un instrumento.
+   Y al estar abajo no compite con la marca ni con el titular.
+
+   El `role="status"` y el `aria-label` se quedan en `hud.js`: para quien no
+   ve la línea, el anuncio de "va por el sistema 3 de 6" sigue siendo útil.
+   La barra de avance no se dibuja, pero el JavaScript la sigue alimentando:
+   es el mismo estado, y una regla que la apaga vale menos que un elemento
+   que no existe. */
 
 .hud-sistema {
   --hud-color: var(--accent);
-  position: absolute;
-  top: calc(var(--header-h) + var(--sp-4));
+  position: fixed;
   left: var(--gutter);
-  display: grid;
-  gap: 0.35rem;
-  min-width: 12rem;
-  padding: 0.7rem 0.9rem;
-  border: 1px solid var(--line);
-  border-left: 2px solid var(--hud-color);
-  border-radius: var(--r-sm);
-  background: var(--glass-bg);
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
-  transition: border-color var(--t-slow) var(--ease-out);
+  bottom: calc(clamp(1rem, 3vw, 2rem) + env(safe-area-inset-bottom, 0px));
+  z-index: var(--z-rail);
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  max-width: min(22rem, 55vw);
+  font-family: var(--font-mono);
+  font-size: var(--step--2);
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--text-mute);
+  /* El HUD va fijo sobre la escena, así que su fondo es el planeta que haya
+     en ese momento: ahora mismo, un lavanda casi blanco. Sin sombra, un
+     texto de 11 px sobre eso no se lee. */
+  text-shadow: 0 1px 3px color-mix(in srgb, var(--space-950) 90%, transparent);
+  pointer-events: none;
+  transition: color var(--t-slow) var(--ease-out);
 }
 
-.hud-sistema__clave {
-  font-size: var(--step--2);
-  letter-spacing: 0.18em;
-  color: var(--text-mute);
+.hud-sistema__clave,
+.hud-sistema__barra,
+.hud-sistema__relleno {
+  display: none;
 }
 
 .hud-sistema__cuenta {
-  font-size: var(--step-1);
-  font-weight: 500;
+  flex: none;
   color: var(--hud-color);
-  line-height: 1;
+  font-weight: 500;
   transition: color var(--t-slow) var(--ease-out);
 }
 
 .hud-sistema__nombre {
-  font-family: var(--font-display);
-  font-size: var(--step--1);
-  font-weight: 500;
-  letter-spacing: 0.02em;
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  min-width: 0;
   color: var(--text-soft);
+  font-weight: 500;
 }
 
-.hud-sistema__barra {
-  display: block;
-  height: 2px;
-  border-radius: 2px;
-  background: var(--line);
-  overflow: hidden;
-}
-
-.hud-sistema__relleno {
-  display: block;
-  height: 100%;
-  border-radius: inherit;
-  background: var(--hud-color);
-  transform: scaleX(var(--avance, 0));
-  transform-origin: 0 50%;
+/* La raya que separa el número del nombre. Es el mismo recurso que usan la
+   barra de lectura y el pie del recorrido: una línea de 1 px, nada más. */
+.hud-sistema__nombre::before {
+  content: '';
+  flex: none;
+  width: 2.2rem;
+  height: 1px;
+  background: currentColor;
+  opacity: 0.45;
 }
 
 /* ---------- Puntos de navegación ---------- */
@@ -334,10 +464,15 @@
 
 /* ---------- Botones ---------- */
 
+/* La fila se aparta del botón "subir", que ocupa la misma esquina.
+   Los dos son fijos y ambos existían superpuestos: el círculo de volver
+   arriba quedaba debajo de "Vista simple" y no se podía pulsar con
+   seguridad. El hueco se reserva siempre, esté el botón visible o no, para
+   que nada salte al empezar a hacer scroll. */
 .hud-acciones {
   position: absolute;
-  right: var(--gutter);
-  bottom: var(--sp-4);
+  right: calc(clamp(1rem, 3vw, 2rem) + 48px + 0.65rem);
+  bottom: clamp(1rem, 3vw, 2rem);
   display: flex;
   gap: 0.5rem;
   align-items: center;
@@ -413,12 +548,21 @@
 
 /* ---------- Telemetría ---------- */
 
+/* Con el universo montado, la esquina inferior derecha es suya: ahí viven
+   los botones de sonido y de vista simple. El HUD de la portada —estado y
+   ubicación— se sube por encima de esa fila en lugar de solaparse con ella.
+   Solo afecta a la portada, que es la única sección con ese HUD. */
+:root[data-universo='activo'] .hero .hud {
+  bottom: calc(clamp(1rem, 3vw, 2rem) + 2.4rem);
+}
+
+/* La telemetría ya no es un bloque con posición propia: va dentro de la fila
+   de acciones, a su izquierda. Se queda sin posición para que herede la de
+   la fila y no pueda volver a pisar el HUD de la portada. */
 .hud-telemetria {
-  position: absolute;
-  left: var(--gutter);
-  bottom: var(--sp-4);
   display: flex;
   gap: 0.9rem;
+  margin-right: 0.35rem;
   font-size: var(--step--2);
   color: var(--text-mute);
   letter-spacing: 0.08em;
@@ -429,10 +573,11 @@
    ------------------------------------------------------------------ */
 
 @media (max-width: 767px) {
+  /* En móvil el nombre del cuerpo no cabe al lado del contador sin empujar
+     los botones de la esquina, así que se queda solo el número. Es la misma
+     información y un tercio del ancho. */
   .hud-sistema {
-    top: calc(var(--header-h) + var(--sp-2));
-    min-width: 0;
-    padding: 0.5rem 0.7rem;
+    max-width: 8rem;
   }
 
   .hud-sistema__nombre {
@@ -445,7 +590,7 @@
   }
 
   .hud-acciones {
-    right: var(--sp-3);
+    right: calc(var(--sp-3) + 42px + 0.5rem);
     bottom: calc(var(--sp-3) + env(safe-area-inset-bottom, 0px));
   }
 
@@ -459,10 +604,9 @@
 }
 
 /* Pantallas muy anchas: el HUD se separa del borde para que no quede
-   pegado al marco, que es donde ya está la barra de lectura. */
+   pegado al marco. */
 @media (min-width: 1680px) {
-  .hud-sistema,
-  .hud-telemetria {
+  .hud-sistema {
     left: calc((100vw - var(--shell)) / 2);
   }
 

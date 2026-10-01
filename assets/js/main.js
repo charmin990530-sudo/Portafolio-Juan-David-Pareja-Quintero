@@ -34,6 +34,9 @@ import { montarContadores } from './modules/contadores.js';
 import { montarProceso } from './modules/proceso.js';
 import { montarContacto } from './modules/contacto.js';
 import { montarProyectos } from './modules/proyectos.js';
+import { montarAviso } from './modules/aviso.js';
+import { montarCalidadVisual } from './modules/calidadVisual.js';
+import { montarViaje } from './modules/viaje.js';
 import { $, $$ } from './core/dom.js';
 import {
   montarScrollSuave,
@@ -56,6 +59,18 @@ async function iniciar() {
 
   await seguro('preloader', montarPreloader);
 
+  /* Los avisos van los primeros de los montajes porque el selector de
+     calidad y el recorrido guiado los necesitan para poder hablar: los dos
+     montan controles que confirman lo que han hecho, y sin la pila de
+     avisos sus confirmaciones se irían a ningún sitio.
+
+     No entra en la lista de `montajes` porque su limpieza tiene otra
+     forma —devuelve un objeto con `destroy()`, no una función— y mezclar las
+     dos en el mismo `map` acabaría con un `TypeError` silenciado por el
+     `try` de la limpieza. */
+  const pilaAvisos = seguro('aviso', montarAviso);
+  const avisar = pilaAvisos?.encolar;
+
   const montajes = [
     // El scroll suave va el primero de los módulos: el resto de medidas
     // dependen de él. En móvil o con movimiento reducido, `montarScrollSuave`
@@ -64,8 +79,10 @@ async function iniciar() {
     ['fondo', montarFondo],
     ['cabecera', montarCabecera],
     ['progreso', montarProgreso],
+    ['calidad', () => montarCalidadVisual({ avisar })],
     ['cursor', montarCursor],
     ['hero', montarHero],
+    ['viaje', () => montarViaje({ avisar })],
     ['marquesina', montarMarquesina],
     ['contadores', montarContadores],
     ['stack', montarStack],
@@ -81,6 +98,7 @@ async function iniciar() {
   ];
 
   const limpiezas = montajes.map(([nombre, montar]) => seguro(nombre, montar));
+  if (typeof pilaAvisos?.destroy === 'function') limpiezas.push(() => pilaAvisos.destroy());
 
   // Red de seguridad: si tras 5 s algo sigue oculto (observador que no
   // disparó por un fallo de layout), se revela igualmente.

@@ -11,7 +11,9 @@ romper nada.
 - **Quiero poner mis propias imágenes o modelos** → [Assets propios](#6-assets-propios)
 - **Quiero que vaya más rápido o más lento** → [Calidad](#7-calidad)
 - **Quiero quitar la animación** → [Desactivar](#8-desactivar-la-animación)
-- **No funciona** → [Problemas](#9-problemas)
+- **Quiero cambiar el sol de la portada** → [La apertura](#9-la-apertura-el-sol-que-estalla)
+- **Quiero cambiar el recorrido guiado** → [El recorrido](#10-el-recorrido-guiado)
+- **No funciona** → [Problemas](#11-problemas)
 - **¿De dónde salió todo esto?** → [`ESTUDIO.md`](./ESTUDIO.md)
 
 ---
@@ -29,7 +31,7 @@ terminar de contar esa historia, no inventarla.
 
 | Sección | Cuerpo | Por qué |
 |---|---|---|
-| Portada | Aproximación a un punto que crece | El arranque no es un despegue: es un acercamiento, que es más cine y menos tópico |
+| Portada | Un sol que estalla | La estrella ocupa el encuadre, detona y de ella sale el mundo de Perfil |
 | Perfil | Planeta hogar, en cuarto creciente | "De dónde vengo" → un mundo con habitantes. Tus luces de ciudad están ahí |
 | Proceso | Campo de escombros con 5 balizas | "Cinco etapas, siempre en este orden" → un orden visible en el espacio |
 | Habilidades | Gigante gaseoso con anillos; 21 lunas en órbita | El radio de cada luna es tu nivel real. El árbol de habilidades se ve en la forma |
@@ -115,7 +117,7 @@ export const CAMARA = {
 
 ### Cuánto ocupa cada sección
 
-**El tiempo que la cámara pasa en un sistema es exactamente la altura de su
+**El tiempo que la cámara pasa en un sistema es, por defecto, la altura de su
 `<section>`.** No hay ningún campo `peso` ni similar: la cámara va donde está
 el texto, y donde hay mucho texto hay mucho recorrido.
 
@@ -123,8 +125,57 @@ Es el control más intuitivo que existe, y además es el único que no se
 desincroniza: si escribes dos párrafos más en Habilidades, la cámara se queda
 dos párrafos más allí, sin tocar ninguna configuración.
 
-Para darle más recorrido a una sección sin escribir más texto, añade un
-espaciador al final. En `05-sections.css`:
+### El reparto de velocidad, y cuándo te salta el aviso
+
+Hay una segunda regla, y es la que evita que un cambio de cuerpo se convierta
+en un tirón.
+
+**La distancia que la cámara recorre tiene que caber en el scroll que le toca.**
+Un tramo va a `distancia / scroll` unidades de mundo por píxel, y si ese
+número se dispara, el ojo lo lee como un salto y no como una cámara. Así que
+`universo/ruta.js` reparte el scroll al final de cada calibración: le da a
+cada tramo el ancho que su distancia necesita para no pasar de
+`VELOCIDAD_OBJETIVO = 1.2` unidades por píxel, y le cobra ese ancho al resto
+en proporción a lo que cada uno tenía de sobra.
+
+| | Sin reparto | Con reparto |
+|---|---|---|
+| Tramo más rápido del viaje | 4,11 u/px | 1,20 u/px |
+| El más lento | 0,08 u/px | 0,08 u/px |
+| Reparto entre el más rápido y la media | 6,1× | 1,8× |
+
+Lo que NO hace el reparto es mover un fotograma. La dirección de arte es
+tuya; el reparto solo garantiza que se pueda ver.
+
+**Si el guion no cabe, se avisa.** Si entre todos los tramos piden más scroll
+del que el documento tiene, el objetivo es imposible —no es un fallo del
+algoritmo, es un guion que no cabe— y sale un aviso en la consola que dice
+cuánto faltaría. Cuando lo veas, el arreglo es tuyo y es de datos: acerca el
+cuerpo, acorta la distancia entre fotogramas o alarga la sección.
+
+```text
+[universo] el guion no cabe en el documento: a 1.2 u/px harían falta
+21352 px de recorrido y el documento solo tiene 9500. La cámara irá a
+2.70 u/px por todos los tramos, que es parejo pero por encima del diseño.
+Aleja los cuerpos o alarga las secciones.
+```
+
+**Un número que sí puedes cambiar**, si quieres subir o bajar el carácter del
+viaje entero, está en `universo/ruta.js`:
+
+```js
+const VELOCIDAD_OBJETIVO = 1.2;   // unidades de mundo por píxel de scroll
+```
+
+Por debajo de `0,9` el arranque pierde el golpe; por encima de `1,4` los
+cambios de cuerpo empiezan a notarse como tirón. La transición de la portada
+al planeta de Perfil recorre 950 unidades, y con `0,9` recibiría 1055 px de
+recorrido: el viaje se alarga y esa parte deja de sentirse como un barrido.
+
+### Cuánto mide el plano de cierre
+
+Da recorrido al cierre con un espaciador al final de la sección. En
+`05-sections.css`:
 
 ```css
 /* El retroceso final necesita recorrido para no ir a toda velocidad. */
@@ -289,6 +340,39 @@ cambio de veinte minutos.
 
 ## 7. Calidad
 
+### El selector de la cabecera
+
+Hay un selector en la cabecera, junto a la marca: **Auto · Alta · Media ·
+Ligera · Sin 3D**. Está en la cabecera y no en el HUD del 3D a propósito: el
+HUD solo existe si el universo se montó, y si el 3D está apagado el visitante
+sigue teniendo que poder cambiarlo.
+
+Lo pilota `modules/calidadVisual.js` y la preferencia vive en
+`localStorage`, en `odisea:calidad`.
+
+| Valor | Qué hace |
+|---|---|
+| `auto` | Lo decide `universo/calidad.js`. Es el valor por defecto. |
+| `alto` · `medio` · `bajo` | Fuerza ese nivel. **Recarga la página.** |
+| `off` | Apaga el 3D **en vivo**, sin recargar. |
+
+**Por qué elegir un nivel recarga y apagar no.** Los presupuestos de calidad
+no son ajustes de un objeto que ya existe: son triángulos, puntos de estrella
+y capas de atmósfera que se cuentan al construir la escena. La densidad de
+píxeles, el grano y el desenfoque sí se pueden cambiar en caliente, pero un
+nivel que solo baja la resolución y deja los 4 000 puntos igual no es el
+nivel que el selector promete. Reconstruir la escena a media travesía es un
+salto visible de medio mundo, y recargar un sitio de este tamaño cuesta
+menos de un segundo. "Sin 3D" sí tiene un camino en vivo ya probado —el
+mismo que usa el botón "Vista simple" del HUD— y por eso no recarga.
+
+Un aviso explica siempre lo que va a pasar, antes de que pase.
+
+**Para volver atrás a automático**, elige "Auto". La clave antigua
+`odisea:simple` se sigue leyendo al arrancar —para que el sitio no le cambie
+el comportamiento a quien ya la tenía— pero ya no se escribe, y
+`localStorage.removeItem('odisea:simple')` ya no hace falta.
+
 ### Cambiar el nivel a mano
 
 Fuerza un nivel con el atributo en el `<html>`, desde la consola:
@@ -313,6 +397,11 @@ número de ahí es un presupuesto:
 | `resplandor` | Sprites aditivos (el sustituto del bloom) |
 | `dpr` | Límite de densidad de píxeles |
 | `objetivoFps` | Umbral que dispara la degradación automática |
+
+Las que llevan la palabra "objetivo" son presupuestos y las demás son
+interruptores. Si añades una clave, decide en cuál de los dos grupos entra: la
+sonda de framerate solo mira las de objetivo, y un interruptor que se contara
+como objetivo degradaría el sitio entero.
 
 ### Forzar un nivel concreto siempre
 
@@ -350,16 +439,26 @@ el fallback.
 
 ### Para un visitante concreto
 
-Botón **"Vista simple"**, en la esquina inferior derecha del HUD. Borra el
-universo, quita el lienzo y deja el sitio con el campo de partículas en 2D. La
-elección se guarda y sobrevive a la recarga.
+Dos caminos, y los dos están en pantalla:
 
-Para volver atrás, desde la consola:
+- El botón **"Vista simple"**, en la esquina inferior derecha del HUD.
+- El selector de la cabecera, en **"Sin 3D"**.
+
+Los dos hacen lo mismo por el mismo camino: borran el universo, quitan el
+lienzo y dejan el sitio con el campo de partículas en 2D. La elección se
+guarda en `localStorage`, en `odisea:calidad` con el valor `off`, y sobrevive
+a la recarga.
+
+Para volver atrás, elige **"Auto"** en el selector. O desde la consola:
 
 ```js
-localStorage.removeItem('odisea:simple');
+localStorage.removeItem('odisea:calidad');
 location.reload();
 ```
+
+La clave antigua `odisea:simple` se sigue leyendo al arrancar, para que el
+sitio no le cambie el comportamiento a quien ya la tenía de una visita
+anterior, pero ya no se escribe nada en ella.
 
 ### Para todo el sitio, siempre
 
@@ -369,10 +468,16 @@ En `assets/js/main.js`, quita esta línea:
 import { montarUniverso } from './universo/index.js';   // dentro de montarUniverso()
 ```
 
-Y en `index.html`, quita el `<canvas id="universo-lienzo">` y el `<link>` a
-`06-universo.css`. El sitio funciona sin los dos. También puedes añadir
-`prefers-reduced-motion` a la lista de simulación en las DevTools para ver cómo
-queda la versión sin movimiento.
+Y en `index.html`, quita el `<canvas id="universo-lienzo">` y los `<link>` a
+`06-universo.css` y `07-interfaz.css`. El sitio funciona sin los tres.
+
+`07-interfaz.css` contiene la cortina de cine y el panel del recorrido
+guiado, que no tienen sentido sin el 3D; quitarla también es correcto si
+quitas `modules/viaje.js` de la lista de montajes.
+
+También puedes añadir `prefers-reduced-motion` a la lista de simulación en
+las DevTools para ver cómo queda la versión sin movimiento: el universo no se
+monta y el botón del recorrido desaparece.
 
 ### Desactivar solo el sonido
 
@@ -390,14 +495,133 @@ de `main.js`. El sitio vuelve al scroll nativo sin tocar nada más.
 
 ---
 
-## 9. Problemas
+## 9. La apertura: el sol que estalla
+
+La portada no empieza en el espacio. Empieza **pegada a una estrella**: un sol
+de fotosfera granulada, con oscurecimiento en el limbo y un borde que se
+calienta. Se ve arder, se hincha, se apaga en blanco y deja una onda de choque
+que la cámara atraviesa. De esa onda sale el planeta de Perfil.
+
+Lo pilota `universo/cuerpos/bigbang.js`, con cuatro piezas y **un solo
+número** —`expansion`, de 0 a 1— que las gobierna a la vez. Que todas salgan
+del mismo número es lo que hace que se lea como un fenómeno y no como cuatro
+animaciones que empiezan a la vez.
+
+| Pieza | Qué es | Cuándo se ve |
+|---|---|---|
+| `sol` | La estrella: fotosfera con granulado, rampa blanco-naranja-rojo, limbo que se oscurece. | Desde el primer píxel |
+| `corona` | El halo: fresnel sobre la cara interior de una esfera un 25 % mayor. | Con el sol encendido |
+| `onda` | El frente de choque. Solo el limbo; el interior, transparente. | Desde la detonación |
+| `materia` | Los escombros: puntos de 2 a 14 px con un frente nítido. | Al pasar la onda |
+
+### Los cuatro cortes
+
+Están juntos al principio de `bigbang.js`:
+
+```js
+const ARDE_HASTA = 0.16;     // el sol arde y se acerca
+const DETONA_EN = 0.24;      // aquí estalla
+const SOL_SE_APAGA = 0.46;   // la estrella ya no está
+```
+
+### EL RADIO MANDA MÁS QUE EL BRILLO
+
+Este es el número que más se nota, y el que peor estaba. A 212 unidades de la
+cámara, un radio de 78 mide 47° contra 36° de campo: la estrella ocupa más que
+la pantalla y se lee como una roca marrón. Ahora va de 34 a 58, o sea de 18°
+a 29°: un disco grande **con espacio alrededor**, que es como se lee un sol.
+
+### Si lo cambias a mano
+
+| Qué | Dónde | Efecto |
+|---|---|---|
+| Tamaño del sol | `radioBase = 34 + crece * 24` | Por debajo de 30 es una estrella lejana; por encima de 70 vuelve a ser una pared. |
+| Cuándo estalla | `DETONA_EN` | Antes, más tensión; después, la explosión se pierde. |
+| Radio de la onda | `radioMax` de `PRESENTACION` | Es el radio del campo de estrellas. Si lo bajas, la onda se va antes que las estrellas y el cielo se queda a oscuras. |
+| Apertura completa | `escena.js`, `explosion = avanceOrigen / 0.82` | El 0,82 es `ZONA_DE_CAMBIO`. Sin él, la explosión se acaba en el 82 % de la portada y el resto queda vacío. |
+
+---
+
+
+## 10. El recorrido guiado
+
+El botón **"Iniciar viaje"** de la portada deja el sitio en manos del
+visitante durante un minuto: la cortina de cine cierra, la cabecera se apaga
+y la página se va sola de sistema en sistema, parándose en cada uno para que
+el texto se pueda leer.
+
+Lo pilota `assets/js/modules/viaje.js`. No es un módulo del universo: funciona
+igual con 3D y en vista simple.
+
+### Los tres números que lo definen
+
+Están juntos al principio del archivo, y no repartidos:
+
+```js
+const DURACION_MINIMA = 1500;   // ms de un salto corto
+const DURACION_MAXIMA = 3600;   // ms de un salto largo
+const PAUSA_EN_PARADA = 2000;   // ms de lectura en cada sistema
+```
+
+La duración de cada salto **crece con la distancia**, con topes:
+
+```js
+700 + distancia / 2.2
+```
+
+Tres mil píxeles en 1,5 segundos son dos mil píxeles por segundo, y eso se lee
+como un teletransporte, no como una cámara. Y un tramo corto no puede
+quedarse tirante esperando a que venza un plazo fijo.
+
+### Las paradas
+
+Se sacan de `data/universo.js`, del campo `etiqueta` de cada sistema. No de
+una lista escrita en el módulo: el recorrido, el HUD del 3D y la barra de
+sistema llaman a cada lugar por la misma palabra, y si cada una
+tuviera su propia lista, las tres se desincronizarían sin avisar.
+
+**Si añades una sección**, no hay que tocar nada: el recorrido la recoge
+automáticamente, con su nombre y su sitio en la cuenta.
+
+### Cómo se para
+
+Cuatro vías, y todas hacen lo mismo:
+
+- el botón **Detener** del panel;
+- la tecla `Escape`;
+- **cualquier gesto del visitante**: rueda, dedo, flechas, `Re Pág`, `Av Pág`,
+  `Inicio`, `Fin`, espacio, o un clic en cualquier enlace;
+- llegar al final.
+
+Al parar, el foco vuelve al botón del recorrido, para que quien esté usando el
+teclado no se quede perdido.
+
+### Por qué no se monta con movimiento reducido
+
+Un avance automático de la página es exactamente lo que
+`prefers-reduced-motion: reduce` dice que no se haga, así que
+`modules/viaje.js` retira el botón y las reglas de la cortina. Con esa
+preferencia activa, el sitio se recorre a scroll.
+
+### Un solo motor de scroll
+
+El recorrido **no escribe `scrollY`**. Pide cada parada a
+`core/desplazar.js`, que es el único módulo del sitio que mueve el scroll, y
+deja que sea Lenis quien anime. Un módulo que escribiera `window.scrollTo`
+por su cuenta sería una segunda autoridad sobre el scroll, y las dos se
+pelearían por el mismo píxel.
+
+## 11. Problemas
 
 ### "No se ve nada" / la página está en negro
 
 1. ¿Hay errores en la consola? Busca `[universo]`.
 2. Comprueba `document.documentElement.dataset.universo`. Debería ser `activo`.
 3. Si es `inactivo`, mira el motivo: `sin-webgl`, `movimiento`, `simple`.
-4. Prueba `document.documentElement.dataset.calidad = 'bajo'` por si es un
+4. Comprueba `document.documentElement.dataset.calidad`. Si no es `alto`,
+   `medio` o `bajo`, la decisión no llegó a `universo/calidad.js`: mira qué
+   hay guardado en `localStorage` con la clave `odisea:calidad`.
+5. Prueba `document.documentElement.dataset.calidad = 'bajo'` por si es un
    problema de rendimiento.
 
 ### El texto se ve mal sobre el planeta
@@ -431,6 +655,22 @@ export const CONTACTO = {
 };
 ```
 
+### "El botón de Iniciar viaje no aparece"
+
+Solo hay tres motivos, y los tres son intencionados:
+
+- `prefers-reduced-motion: reduce` está activo. Un avance automático de la
+  página es justo lo que esa preferencia pide que no pase.
+- El sitio tiene menos de tres secciones con sistema en el universo.
+- El selector de calidad está en `Sin 3D` o guardado como tal.
+
+### "La cámara va demasiado rápido en un tramo"
+
+Mira la salida de `node tools/probar-ruta.mjs`, la tabla de velocidad por
+tramo. Si algún tramo pasa de 1,2 u/px, mira si la consola avisa de que el
+guion no cabe: eso significa que hay que acercar un cuerpo o alargar su
+sección, no tocar el reparto. Ver [Ritmo](#4-ritmo).
+
 ### "Las 21 lunas no se ven"
 
 Probablemente estás en el nivel `bajo` y estás lejos del gigante. En el nivel
@@ -450,7 +690,7 @@ siempre empieza arriba. Si prefieres que respete la posición, quita esa línea.
 Pero entonces la cámara arranca en medio del recorrido con progreso 0 y hay un
 salto visible de varios cientos de unidades.
 
-## 10. Dos cosas que dependen del dominio de producción
+## 12. Dos cosas que dependen del dominio de producción
 
 Hay dos archivos que **no** se pueden escribir bien sin saber la URL final.
 Se dejaron prepared y se documentan aquí en vez de inventarse.
@@ -502,7 +742,7 @@ algún día hay varias rutas.
 
 ---
 
-## 11. Estructura
+## 13. Estructura
 
 ```
 index.html                        Todo el contenido. Es el archivo que se edita.
@@ -514,15 +754,17 @@ assets/
     00-fonts.css                  Las tres familias
     01-tokens.css            ★    LA PALETA. Se cambia aquí.
     02-base.css                   Reset, tipografía raíz, utilidades
-    03-components.css             Botones, campos, chips, avisos
+    03-components.css             Botones, campos, chips, avisos, barra de lectura
     04-animations.css             Keyframes
     05-sections.css               Cabecera, portada, perfil, proceso, contacto
     06-universo.css               Lienzo, HUD, velo de texto, tarjetas
+    07-interfaz.css               Índice del menú, calidad, cortina, avisos
   js/
     core/
       loop.js                     El único requestAnimationFrame del sitio
-      util.js                     clamp, lerp, suavizar,almacen, prefers-reduced-motion
-      dom.js                      $, $$, crear, delegar
+      util.js                     clamp, lerp, suavizar, almacen, reloj
+      dom.js                      $, $$, crear
+      calidad.js             ★    El CONTRATO de la calidad: clave y eventos
       desplazar.js            ★    El único sitio del que sale un scroll
     data/
       stack.js               ★    Las 21 habilidades y sus notas
@@ -541,18 +783,21 @@ assets/
       proceso.js                  Scrollytelling de las 5 etapas
       contacto.js            ★    Formulario con envío real y respaldo
       proyectos.js                Monta la sección de proyectos
+      aviso.js                    Avisos efímeros
+      calidadVisual.js       ★    El selector de calidad de la cabecera
+      viaje.js               ★    El recorrido guiado
     universo/
       index.js               ★    La puerta de entrada. Decide qué se monta
       calidad.js            ★    Detección de GPU y tres perfiles
       escena.js                   Ensambla y mueve todo
       camara.js                   Amortiguación, velocidad, FOV
-      ruta.js               ★    Scroll → punto de la curva
+      ruta.js               ★★   Scroll → punto de la curva, y su reparto
       colores.js                  Lee la paleta de los tokens CSS
       audio.js                    Sonido sintetizado, sin archivos
       hud.js                      Indicador de sistema, puntos, botones
-      capas/                      estrellas · nebulosa · polvo
+      capas/                      estrellas · nebulosa · polvo · galaxias
       cuerpos/                    planeta · atmosfera · anillos · lunas
-                                 campo · baliza
+                                 campo · baliza · bigbang
       shaders/comunes.js          Ruido, fbm y fresnel compartidos
   vendor/
     three/0.186.1/                Three.js (MIT)
@@ -563,8 +808,11 @@ tools/
   verificar-grafo.mjs              Grafo de imports desde main.js
   verificar-contenido.mjs          Nada perdido respecto a la versión anterior
   verificar-a11y.mjs               Encabezados, nombres, contraste, SEO
+  verificar-exports.mjs            Exports que nadie llama
+  verificar-shaders.mjs            Los shaders compilan y declaran lo que usan
   probar-calidad.mjs               14 casos del sistema de calidad
-  probar-ruta.mjs                  7 grupos sobre la ruta y la cámara
+  probar-ruta.mjs                  Velocidad por tramo, amortiguación, menú
+  probar-dom.mjs                   Arranque del sitio en un DOM de verdad
   generar-og.py                    Regenera la tarjeta social
 ```
 
@@ -573,15 +821,15 @@ tools/
 
 ---
 
-## 12. Antes de publicar
+## 14. Antes de publicar
 
 ```bash
-node tools/comprobar.mjs            # pasa las siete comprobaciones
+node tools/comprobar.mjs            # pasa las nueve comprobaciones
 python3 tools/generar-og.py         # solo si cambiaste la imagen social
 ```
 
-`comprobar.mjs` sale con código 1 si algo falla, así que vale como puerta en un
-`pre-commit` o en la integración continua. Para correrlas por separado:
+`comprobar.mjs` sale con código 1 si algo falla, así que vale como puerta en
+un `pre-commit` o en la integración continua. Para correrlas por separado:
 
 ```bash
 node tools/verificar-texto.mjs      # caracteres ajenos, rutas, sintaxis, console.log
@@ -589,12 +837,34 @@ node tools/verificar-grafo.mjs      # el grafo de imports entero desde main.js
 node tools/verificar-contenido.mjs  # nada perdido respecto a la versión anterior
 node tools/verificar-a11y.mjs       # encabezados, nombres, contraste, SEO
 node tools/verificar-exports.mjs    # exports que nadie llama
+node tools/verificar-shaders.mjs    # los shaders compilan y declaran lo que usan
 node tools/probar-calidad.mjs       # 14 casos del sistema de calidad
-node tools/probar-ruta.mjs          # 7 grupos sobre la ruta y la cámara
+node tools/probar-ruta.mjs          # velocidad por tramo, amortiguación, menú
+node tools/probar-dom.mjs           # el sitio arranca y responde (necesita jsdom)
 ```
 
 El de exports avisa, no falla: hay nueve exports sin uso que ya estaban antes
 de este trabajo y que están en su línea base. Los nuevos sí los falla.
+
+### La novena comprobación necesita una cosa instalada
+
+`probar-dom.mjs` es la única que no es estática: monta el `index.html` real
+en un DOM, ejecuta el grafo completo de módulos y hace lo que haría una
+persona — pulsar el recorrido, pararlo de tres maneras, cambiar la calidad.
+Es la que encuentra los fallos que no se ven leyendo el código: un `id` mal
+escrito, un módulo que lanza al montar, un nombre tapado por otro dentro de
+una función.
+
+Necesita `jsdom`, y es la ÚNICA dependencia de todo el repositorio. El sitio
+que se publica no tiene `package.json` ni `node_modules`.
+
+```bash
+npm install --no-save jsdom     # no guarda nada en el repositorio
+node tools/probar-dom.mjs
+```
+
+Sin ella se salta sola y lo dice, marcada como **omitida** y no como "pasa":
+contarla como aprobada sería mentir, porque no se ha comprobado nada.
 
 **Lo que estas herramientas NO comprueban, y hay que mirar en el navegador:**
 el orden real de tabulación, si el foco se ve sobre el planeta, si un panel se
@@ -605,13 +875,18 @@ Y a mano, en el navegador:
 
 1. Recarga con la consola abierta: cero errores.
 2. Desplázate de arriba abajo, despacio y rápido. Después sube. Sin saltos.
-3. Recarga a media página.
-4. Redimensiona a 360, 768, 1024, 1440 y 1920.
-5. Activa `prefers-reduced-motion: reduce` en las DevTools.
-6. Desactiva WebGL en las DevTools y comprueba que el sitio sigue entero.
-7. Navega solo con el teclado: `Tab`, `Enter`, `Escape`. El foco se ve siempre.
-8. Manda un mensaje de prueba desde el formulario.
-9. Pégalo en un chat de WhatsApp a un móvil y mira la tarjeta.
+3. Pulsa **Iniciar viaje** y déjalo correr entero. Luego páralo con `Escape`,
+   con la rueda y con el botón: los tres tienen que funcionar.
+4. Cambia la calidad a Ligera y a Sin 3D, y comprueba que el aviso dice la
+   verdad y que el sitio sigue entero en los dos casos.
+5. Recarga a media página.
+6. Redimensiona a 360, 768, 1024, 1440 y 1920.
+7. Activa `prefers-reduced-motion: reduce` en las DevTools: el botón del
+   recorrido tiene que desaparecer y el resto seguir igual.
+8. Desactiva WebGL en las DevTools y comprueba que el sitio sigue entero.
+9. Navega solo con el teclado: `Tab`, `Enter`, `Escape`. El foco se ve siempre.
+10. Manda un mensaje de prueba desde el formulario.
+11. Pégalo en un chat de WhatsApp a un móvil y mira la tarjeta.
 
 Si algo falla, casi siempre es una de dos cosas: un `id` de sección que no
 coincide con el HTML, o el endpoint del formulario sin pegar.

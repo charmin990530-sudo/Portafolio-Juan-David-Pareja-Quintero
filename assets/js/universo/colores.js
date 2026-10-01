@@ -15,8 +15,18 @@ import { Color } from '../../vendor/three/0.186.1/three.module.js';
 
 /** Convierte `#4fe3ff` en un `THREE.Color` en espacio lineal. */
 function desdeToken(nombre, porDefecto) {
-  const bruto = getComputedStyle(document.documentElement).getPropertyValue(nombre).trim();
-  return new Color(bruto || porDefecto);
+  return new Color(leerToken(nombre, porDefecto));
+}
+
+/**
+ * Lee un token CSS por su nombre crudo, tal y como está escrito en la hoja.
+ *
+ * Es pública porque `data/stack.js` —que también usa el HTML para pintar los
+ * grupos de habilidades— guarda sus colores como `var(--accent)`, y quien
+ * los lleva al shader necesita el valor resuelto, no el nombre.
+ */
+export function leerToken(nombre, porDefecto = '#ffffff') {
+  return getComputedStyle(document.documentElement).getPropertyValue(nombre).trim() || porDefecto;
 }
 
 /**

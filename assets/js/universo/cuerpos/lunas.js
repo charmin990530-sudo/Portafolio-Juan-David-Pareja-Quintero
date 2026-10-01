@@ -216,9 +216,11 @@ export function crearLunas({
 
         // Giro propio de la luna, distinto del orbital: si coincidieran,
         // la luna parecería girada por el vacío.
-        cuaternio(cuaternion, EJE, segundos * 0.24 + luna.indice);
-
-        matriz.compose(posicion, quaternion, escala);
+        matriz.compose(
+          posicion,
+          cuaternio(cuaternion, EJE, segundos * 0.24 + luna.indice),
+          escala,
+        );
         malla.setMatrixAt(luna.indice, matriz);
       }
       malla.instanceMatrix.needsUpdate = true;

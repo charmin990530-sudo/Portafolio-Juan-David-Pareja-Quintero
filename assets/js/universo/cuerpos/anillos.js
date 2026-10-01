@@ -92,12 +92,12 @@ const FRAGMENT = /* glsl */ `
        de disco proyectada, y con una normal y una distancia sale barata. */
     vec3 luz = normalize(uLuz);
     vec3 desdeCentro = vMundo - uCentro;
-    float aTravés = dot(desdeCentro, luz);
-    float perpendicular = length(desdeCentro - luz * aTravés);
+    float aTraves = dot(desdeCentro, luz);
+    float perpendicular = length(desdeCentro - luz * aTraves);
 
-    // aTravés < 0 significa que el punto está en el hemisferio opuesto al
+    // aTraves < 0 significa que el punto está en el hemisferio opuesto al
     // sol, que es el único donde el planeta puede proyectar sombra.
-    float sombra = aTravés < 0.0
+    float sombra = aTraves < 0.0
       ? smoothstep(uRadioPlaneta * 0.86, uRadioPlaneta * 1.1, perpendicular)
       : 1.0;
     float factorSombra = mix(0.16, 1.0, sombra);

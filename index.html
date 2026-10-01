@@ -47,6 +47,15 @@
       property="og:description"
       content="Desarrollador web full stack. HTML, CSS, JavaScript, Angular, Node.js, Express y MongoDB."
     />
+    <!--
+      `og:url` faltaba, y sin él el que comparte el enlace no sabe qué
+      URL announces: la tarjeta se puede generar con la URL de la persona
+      que comparte, no con la del sitio. Se declara con el mismo valor
+      relativo que la canonical, por el mismo motivo: sin el dominio de
+      producción no hay una URL absoluta que no sea inventada, y los
+      buscadores resuelven un `./` contra la URL actual sin problema.
+    -->
+    <meta property="og:url" content="./" />
     <meta name="twitter:card" content="summary_large_image" />
     <meta property="og:locale" content="es_CO" />
     <meta property="og:site_name" content="Juan David Pareja Quintero" />
@@ -134,6 +143,7 @@
     <link rel="stylesheet" href="assets/css/03-components.css" />
     <link rel="stylesheet" href="assets/css/05-sections.css" />
     <link rel="stylesheet" href="assets/css/06-universo.css" />
+    <link rel="stylesheet" href="assets/css/07-interfaz.css" />
 
     <noscript>
       <!-- Sin JavaScript la cortina de carga no se retira sola por script. -->
@@ -209,11 +219,6 @@
          apaga y el sitio se ve igual. -->
     <div class="grano" aria-hidden="true"></div>
 
-    <!-- Barra de progreso de lectura -->
-    <div class="progreso" aria-hidden="true">
-      <div class="progreso__barra" id="progreso-barra"></div>
-    </div>
-
     <!-- =========================================================
          CABECERA
          ========================================================= -->
@@ -232,16 +237,60 @@
 
       <nav class="nav" aria-label="Navegación principal">
         <ul class="nav__lista">
-          <li><a class="nav__enlace" href="#inicio">Inicio</a></li>
-          <li><a class="nav__enlace" href="#perfil">Perfil</a></li>
-          <li><a class="nav__enlace" href="#proceso">Proceso</a></li>
-          <li><a class="nav__enlace" href="#stack">Habilidades</a></li>
-          <li><a class="nav__enlace" href="#contacto">Contacto</a></li>
-          <span class="nav__marca" id="nav-marca" aria-hidden="true"></span>
+          <!--
+            El índice `01`, `02`… no es adorno de maquetación: es el mismo
+            número que imprime el HUD del universo ("SISTEMA 03 / 07") y el
+            que cuenta el recorrido guiado. Los tres leen el guion de
+            `data/universo.js`, así que el orden de la lista y el orden del
+            viaje no pueden desincronizarse: si mañana se inserta una
+            sección, los tres cambian a la vez.
+          -->
+          <li><a class="nav__enlace" href="#inicio"><span class="nav__indice" aria-hidden="true">01</span>Inicio</a></li>
+          <li><a class="nav__enlace" href="#perfil"><span class="nav__indice" aria-hidden="true">02</span>Perfil</a></li>
+          <li><a class="nav__enlace" href="#proceso"><span class="nav__indice" aria-hidden="true">03</span>Proceso</a></li>
+          <li><a class="nav__enlace" href="#stack"><span class="nav__indice" aria-hidden="true">04</span>Habilidades</a></li>
+          <li><a class="nav__enlace" href="#contacto"><span class="nav__indice" aria-hidden="true">05</span>Contacto</a></li>
         </ul>
+        <!--
+          La píldora deslizante va como hermana de la lista y no dentro de
+          ella: un `<ul>` solo admite `<li>` y un `<span>` suelto es HTML
+          inválido. Como hija de `.nav`, y con `.nav` siendo su bloque
+          contenedor, `cabecera.js` mide el desplazamiento contra el mismo
+          origen que usa el CSS.
+        -->
+        <span class="nav__marca" id="nav-marca" aria-hidden="true"></span>
       </nav>
 
       <div class="cabecera__acciones">
+        <!--
+          El selector de calidad. Es un `<select>` y no un grupo de botones
+          por tres razones que son las mismas por las que el sitio entero
+          es HTML: funciona sin JavaScript, se maneja con el teclado sin
+          código añadido, y en móvil abre el selector nativo, que es lo que
+          el dedo espera. El control lo pilota `modules/calidadVisual.js`.
+
+          El `<label>` envuelve al `<select>` en vez de usar `for`: así el
+          nombre accesible viaja con el control aunque alguien reorganice
+          el marcado, y no depende de que el `id` siga siendo el mismo.
+        -->
+        <label class="calidad" id="calidad-visual" for="calidad-selector">
+          <span class="sr-only">Calidad visual de la experiencia 3D</span>
+          <svg class="calidad__icono" aria-hidden="true" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round">
+            <path d="M12 3v3M12 18v3M3 12h3M18 12h3M5.6 5.6l2.1 2.1M16.3 16.3l2.1 2.1M5.6 18.4l2.1-2.1M16.3 7.7l2.1-2.1" />
+            <circle cx="12" cy="12" r="3.2" />
+          </svg>
+          <select class="calidad__selector" id="calidad-selector" name="calidad">
+            <option value="auto">Auto</option>
+            <option value="alto">Alta</option>
+            <option value="medio">Media</option>
+            <option value="bajo">Ligera</option>
+            <option value="off">Sin 3D</option>
+          </select>
+          <svg class="calidad__flecha" aria-hidden="true" viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="m6 9 6 6 6-6" />
+          </svg>
+        </label>
+
         <a class="btn btn--primary btn--sm cabecera__cta" href="#contacto">
           <span class="btn__label">Hablemos</span>
         </a>
@@ -249,6 +298,17 @@
         <button class="hamburguesa" id="hamburguesa" type="button" aria-expanded="false" aria-controls="menu" aria-label="Abrir menú">
           <span class="hamburguesa__barras" aria-hidden="true"><span></span><span></span><span></span></span>
         </button>
+      </div>
+
+      <!--
+        La barra de lectura vive DENTRO de la cabecera y no suelta por
+        debajo de la página. Antes estaba en el `<body>` como un elemento
+        fijo aparte: era el mismo píxel ocupando dos capas del compositor,
+        y en el hueco entre el borde inferior de la cabecera y el contenido
+        se veía una franja sin nada, que es justo lo que la barra tapaba.
+      -->
+      <div class="progreso" aria-hidden="true">
+        <div class="progreso__barra" id="progreso-barra"></div>
       </div>
     </header>
 
@@ -301,17 +361,41 @@
           </p>
 
           <div class="hero__acciones">
-            <a class="btn btn--primary" href="#stack">
-              <span class="btn__label">Ver habilidades</span>
-              <span class="btn__icon" aria-hidden="true">
-                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
-                  <path d="M5 12h13M12 5l7 7-7 7" />
+            <!--
+              El botón del recorrido guiado. Va primero y es el más grande
+              a propósito: es la acción que cuenta el sitio entero, y las
+              otras dos —ver habilidades, contactar— son atajos a una parte.
+
+              Es un `<button>` y no un `<a>` porque no cambia de página ni de
+              ancla: mueve el scroll que ya está ahí. Y lleva su nombre
+              accesible en el propio texto, de modo que sin CSS sigue
+              leyéndose "Iniciar viaje" y no un círculo sin etiqueta.
+
+              Con `prefers-reduced-motion` lo retira `modules/viaje.js`: un
+              avance automático de la página es exactamente lo que esa
+              preferencia pide que no ocurra.
+            -->
+            <button class="viaje-boton" id="viaje-iniciar" type="button">
+              <span class="viaje-boton__orbita" aria-hidden="true"></span>
+              <span class="viaje-boton__lanzador" aria-hidden="true">
+                <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor">
+                  <path d="M8 5.5v13a1 1 0 0 0 1.5.86l10.4-6.5a1 1 0 0 0 0-1.72L9.5 4.64A1 1 0 0 0 8 5.5Z" />
                 </svg>
               </span>
-            </a>
-            <a class="btn btn--ghost" href="#contacto">
-              <span class="btn__label">Hablemos</span>
-            </a>
+              <span class="viaje-boton__texto">
+                <span class="viaje-boton__rotulo">Iniciar viaje</span>
+                <span class="viaje-boton__pista">Recorrido guiado · 1 min</span>
+              </span>
+            </button>
+
+            <div class="hero__enlaces">
+              <a class="btn btn--ghost" href="#stack">
+                <span class="btn__label">Ver habilidades</span>
+              </a>
+              <a class="btn btn--ghost" href="#contacto">
+                <span class="btn__label">Hablemos</span>
+              </a>
+            </div>
           </div>
 
           <ul class="hero__chips">
@@ -682,10 +766,23 @@
       </section>
     </main>
 
+    <!--
+      La pila de avisos. La crea `modules/aviso.js` en cuanto se monta, así
+      que en el HTML no hay ningún nodo de aviso: si el módulo no llegara a
+      ejecutarse —sin JavaScript, error previo— no queda una caja vacía en el
+      documento ni un `role="status"` que no anuncia nada.
+    -->
+
     <!-- =========================================================
          PIE
          ========================================================= -->
-    <footer class="pie">
+    <!--
+      El `id` no es decorativo: es el ancla que el sistema "final" de
+      `data/universo.js` usa para encontrar el tramo del cierre. Sin él el
+      universo descartaba los cuatro fotogramas finales y el viaje terminaba
+      en la baliza, sin el travelling de vuelta que enseña el sistema entero.
+    -->
+    <footer class="pie" id="pie">
       <div class="shell">
         <div class="pie__marca" data-revelar>
           <p class="eyebrow">Fin de la transmisión</p>

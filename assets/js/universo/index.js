@@ -29,11 +29,17 @@
  * sitio. El universo aparece después, y aparece encima.
  */
 
-import { movimientoReducido, almacen, esperar } from '../core/util.js';
+import { movimientoReducido, almacen } from '../core/util.js';
+import {
+  CALIDAD,
+  CLAVE_CALIDAD,
+  CLAVE_SIMPLE,
+  EVENTO_APAGAR,
+  EVENTO_CALIDAD,
+  NIVELES_REALES,
+  esCalidadValida,
+} from '../core/calidad.js';
 import { SISTEMAS } from '../data/universo.js';
-
-const CLAVE_SIMPLE = 'odisea:simple';
-const CLAVE_SONIDO = 'odisea:sonido';
 
 export const ESTADOS = {
   COMPLETO: 'completo',
@@ -41,6 +47,22 @@ export const ESTADOS = {
   MOVIMIENTO: 'movimiento',
   SIMPLE: 'simple',
 };
+
+const CLAVE_SONIDO = 'odisea:sonido';
+
+/**
+ * Estado de 3D que pidió el visitante, si es que pidió alguno.
+ *
+ * `auto` y `null` significan lo mismo: que la máquina decida. Devolver el
+ * valor crudo en vez de un booleano deja que `montarUniverso` distinga
+ * entre "no eligió" y "eligió automático", que es lo que necesita para no
+ * borrar una preferencia cada vez que se recarga.
+ */
+function calidadPreferida() {
+  const guardada = almacen.get(CLAVE_CALIDAD, null);
+  if (esCalidadValida(guardada)) return guardada;
+  return almacen.get(CLAVE_SIMPLE, false) === true ? CALIDAD.OFF : CALIDAD.AUTO;
+}
 
 /* ------------------------------------------------------------------
    Comprobaciones previas
@@ -89,7 +111,13 @@ export async function montarUniverso({ lienzo, forzar = false } = {}) {
   /* --- Decisiones que no requieren Three.js ------------------------- */
   if (!lienzo) return { estado: ESTADOS.SIN_WEBGL, motivo: 'sin-lienzo' };
 
-  const yaSimple = !forzar && almacen.get(CLAVE_SIMPLE, false) === true;
+  const preferido = calidadPreferida();
+
+  /* La vista simple mandada por el visitante se comprueba PRIMERO, antes que
+     la compatibilidad. Si alguien la pidió, es porque su equipo no puede con
+     el 3D o porque no lo quiere: en los dos casos la respuesta es la misma
+     aunque el navegador sí sepa dibujar. */
+  const yaSimple = !forzar && preferido === CALIDAD.OFF;
   if (yaSimple) {
     await aplicarVistaSimple();
     return { estado: ESTADOS.SIMPLE, motivo: 'preferido' };
@@ -132,7 +160,14 @@ export async function montarUniverso({ lienzo, forzar = false } = {}) {
     const { crearAudio } = await import('./audio.js');
 
     const gpu = calidad.probarWebGL();
-    const nivel = calidad.detectarNivel({ gpu: gpu?.gpu ?? '' });
+
+    /* Una preferencia explícita gana a la detección, y no la pisa. Elegir
+       "Ligera" en un equipo que la detección daría por capable es
+       justamente el caso de uso: el visitante sabe algo que el script no,
+       o simplemente prefiero que el sitio se mueva más. */
+    const forzado = NIVELES_REALES.includes(preferido) ? preferido : null;
+    const nivel = forzado ?? calidad.detectarNivel({ gpu: gpu?.gpu ?? '' });
+    if (forzado) document.documentElement.dataset.calidadElegida = '1';
 
     /* El orden importa y no es arbitrario. El HUD y el audio se declaran
        ANTES de la escena porque la escena los invoca en su primer
@@ -174,13 +209,39 @@ export async function montarUniverso({ lienzo, forzar = false } = {}) {
       hud.sincronizarSonido(resultado);
     });
 
-    hud.onVistaSimple(async () => {
-      almacen.set(CLAVE_SIMPLE, true);
-      escena.dispose();
-      hud.destroy();
-      audio.destroy();
-      await aplicarVistaSimple();
+    /* --- Un solo camino para apagar el 3D -----------------------------
+       Lo usan el botón "Vista simple" del HUD y el selector de calidad de
+       la cabecera. Que sea uno solo es lo que hace que las dos piezas
+       sepan siempre lo mismo: si cada una tuviera su propio desmontaje,
+       la segunda se quedaría apuntando a una escena que ya no existe. */
+    let apagando = null;
+
+    const apagar = async () => {
+      if (apagando) return apagando;
+      almacen.set(CLAVE_CALIDAD, CALIDAD.OFF);
+      almacen.borrar(CLAVE_SIMPLE);
+      // El selector de la cabecera se pone al día: sin esto, volvería a
+      // marcar "Auto" sobre un sitio que ya no tiene 3D.
+      document.dispatchEvent(new CustomEvent(EVENTO_CALIDAD, { detail: { estado: CALIDAD.OFF } }));
+
+      apagando = (async () => {
+        escena.dispose();
+        hud.destroy();
+        audio.destroy();
+        await aplicarVistaSimple();
+      })();
+      return apagando;
+    };
+
+    hud.onVistaSimple(() => {
+      apagar();
     });
+
+    document.addEventListener(EVENTO_APAGAR, alApagar);
+
+    function alApagar() {
+      apagar();
+    }
 
     // El audio sigue a la visibilidad de la pestaña, igual que la escena.
     const alCambiarVisibilidad = () => audio.visibility(!document.hidden);
@@ -190,6 +251,7 @@ export async function montarUniverso({ lienzo, forzar = false } = {}) {
     document.documentElement.dataset.calidad = nivel;
 
     const desmontar = async () => {
+      document.removeEventListener(EVENTO_APAGAR, alApagar);
       document.removeEventListener('visibilitychange', alCambiarVisibilidad);
       escena.dispose();
       hud.destroy();

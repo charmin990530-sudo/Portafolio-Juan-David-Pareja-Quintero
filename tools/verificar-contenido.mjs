@@ -145,10 +145,86 @@ for (const enlace of enlacesAntes) {
 
 /* --- Texto visible ---
    Se comparan frases enteras, no palabras sueltas: así un cambio menor de
-   redacción no dispara la alarma, pero sí la disappearance de un párrafo. */
+   redacción no dispara la alarma, pero sí la desaparición de un párrafo.
+
+   ── POR QUÉ LA BARRA Y EL MARQUESINA NO CUENTAN COMO PROSA ────────────
+   Antes esta comprobación leía el documento entero a plano, y todo el
+   cromo se pegaba en una sola "frase" de doscientas caracteres: «Full Stack
+   Inicio Perfil Proceso Habilidades Contacto Hablemos 01 Inicio … HTML5 CSS3
+   JavaScript Angular …». Una tirada de nombres de sección y de tecnologías no
+   es una frase, y tratarla como una produce dos fallos a la vez: avisa de
+   un cambio de cabecera que es deliberado, y obliga a exceptuar esa frase a
+   mano cada vez que se toca el menú.
+
+   Aquí el cromo se aparta antes de partir el texto en frases, porque su
+   contenido NO es contenido: son nombres de sección y de tecnología, que se
+   comprueban de otra forma y mejor. Los `href` de la barra y del menú se
+   comparan unas líneas más arriba, sin excepciones para la navegación, así
+   que borrar un enlace sigue siendo un fallo; y el nombre visible de cada
+   enlace, cada botón y cada control lo revisa `verificar-a11y.mjs`.
+
+   Lo que queda es lo que de verdad es prosa: los párrafos, los títulos y las
+   descripciones. Perder cualquiera de ellos es un fallo. */
+
+/**
+ * Corta un elemento y todo su contenido, contando las etiquetas anidadas.
+ *
+ * Un `replace` con `[\s\S]*?` no sirve: en un `<div>` de la cabecera hay
+ * otros `<div>` dentro, y el patrón no regular se pararía en el primero y
+ * dejaría el resto del cromo dentro del texto. Contar es la única forma de
+ * saber dónde acaba de verdad el elemento.
+ *
+ * @param {string} html
+ * @param {string} clase  La clase CSS que identifica el bloque.
+ * @returns {string} El mismo HTML con ese bloque sustituido por un espacio.
+ */
+function cortarPorClase(html, clase) {
+  const apertura = new RegExp(`<([a-z][\\w-]*)\\b[^>]*\\bclass="[^"]*\\b${clase}\\b[^"]*"[^>]*>`, 'i');
+  const m = apertura.exec(html);
+  if (!m) return html;
+
+  const etiqueta = m[1].toLowerCase();
+  const desde = m.index;
+  const cuerpo = new RegExp(`<(/?)${etiqueta}\\b[^>]*>`, 'gi');
+  cuerpo.lastIndex = desde + m[0].length;
+
+  let nivel = 1;
+  let fin = html.length;
+  let t;
+  while ((t = cuerpo.exec(html)) !== null) {
+    // Una etiqueta que se cierra sola (`<img …>`) no altera el nivel.
+    if (t[0].endsWith('/>')) continue;
+    nivel += t[1] === '/' ? -1 : 1;
+    if (nivel === 0) {
+      fin = t.index + t[0].length;
+      break;
+    }
+  }
+
+  return `${html.slice(0, desde)} ${html.slice(fin)}`;
+}
+
+/** Bloques de interfaz: no son prosa y no se comparan como frases. */
+const CLASES_DE_CROMO = [
+  'nav',
+  'menu',
+  'cabecera__acciones',
+  'hero__acciones',
+  'hero__chips',
+  'marquee',
+  'hero__anillos',
+  'hud',
+  'progreso',
+  'scroll-cue',
+  'cursor',
+];
+
+function prosa(html) {
+  return CLASES_DE_CROMO.reduce((salida, clase) => cortarPorClase(salida, clase), html);
+}
 
 function frases(html) {
-  const texto = textoVisible(html);
+  const texto = textoVisible(prosa(html));
   return new Set(
     texto
       .split(/(?<=[.!?:])\s+/)
@@ -158,7 +234,7 @@ function frases(html) {
 }
 
 const frasesAntes = frases(antes);
-const textoAhora = textoVisible(ahora);
+const textoAhora = textoVisible(prosa(ahora));
 let perdidas = 0;
 
 for (const frase of frasesAntes) {
@@ -167,7 +243,6 @@ for (const frase of frasesAntes) {
   if (/tema claro|tema oscuro/i.test(frase)) continue;
   // El texto del pie se reescribió a propósito y se documentó.
   if (frase.includes('librerías externas')) continue;
-  // El `<noscript>` sobre "se generan con JavaScript" sigue igual.
   perdidas += 1;
   problemas.push(`Texto desaparecido: «${frase.slice(0, 78)}…»`);
 }

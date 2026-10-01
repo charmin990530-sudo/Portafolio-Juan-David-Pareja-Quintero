@@ -131,13 +131,28 @@
   --t-story: 1100ms;
 
   /* ---------- Profundidad ----------
-     La cabecera va por encima del menú a propósito: si no, el menú de
-     pantalla completa taparía el propio botón que lo cierra. */
+     El orden va de atrás a delante, y hay un escalón entre `--z-menu` y
+     `--z-header` a propósito: el menú de pantalla completa tiene que quedar
+     POR DEBAJO de la cabecera, porque si no taparía el propio botón que lo
+     cierra.
+
+     `--z-viaje` va por encima de la cabecera y del menú, y no por encima
+     del preloader: el recorrido no se puede empezar con la cortina de carga
+     puesta, y si se pulsara el botón con el preloader delante, el preloader
+     gana.
+
+     `--z-aviso` va por encima del HUD y por debajo del menú. Encima del
+     HUD, porque un aviso tiene que poder hablar aunque haya puntos de
+     navegación cerca; por debajo del menú de pantalla completa, porque un
+     aviso flotando sobre el menú es ruido: con el menú abierto no hay nada
+     que confirmar. */
   --z-bg: 0;
   --z-content: 10;
   --z-rail: 60;
+  --z-aviso: 65;
   --z-menu: 70;
   --z-header: 80;
+  --z-viaje: 88;
   --z-cursor: 95;
   --z-preloader: 100;
 }

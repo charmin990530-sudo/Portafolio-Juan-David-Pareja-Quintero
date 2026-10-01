@@ -23,7 +23,7 @@ export const NIVELES = { ALTO: 'alto', MEDIO: 'medio', BAJO: 'bajo' };
 const PERFILES = {
   [NIVELES.ALTO]: {
     detallePlaneta: 4, // icosaedro: 2 562 triángulos
-    puntosEstrella: 4000,
+    puntosEstrella: 4200,
     puntosPolvo: 900,
     rocasCampo: 320,
     atmosfera: 2, // fresnel + dispersión Rayleigh
@@ -38,7 +38,7 @@ const PERFILES = {
   },
   [NIVELES.MEDIO]: {
     detallePlaneta: 3, // 642 triángulos
-    puntosEstrella: 2200,
+    puntosEstrella: 2800,
     puntosPolvo: 500,
     rocasCampo: 180,
     atmosfera: 1, // solo fresnel
@@ -53,7 +53,7 @@ const PERFILES = {
   },
   [NIVELES.BAJO]: {
     detallePlaneta: 2, // 162 triángulos
-    puntosEstrella: 1200,
+    puntosEstrella: 1800,
     puntosPolvo: 240,
     rocasCampo: 90,
     atmosfera: 0, // sin shell: el planeta se tiñe en su propio shader

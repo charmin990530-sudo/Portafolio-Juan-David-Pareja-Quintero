@@ -31,6 +31,28 @@ export function suavizar(actual, objetivo, factor, delta = 16.67) {
 
 const consultaMovimiento = matchMedia('(prefers-reduced-motion: reduce)');
 
+/* ── EL ENCUADRE EN VERTICAL ─────────────────────────────────────────
+
+   El guion de la cámara está escrito para un monitor horizontal. En un móvil
+   el mismo FOV a la misma distancia hace que el sujeto se coma la pantalla:
+   medido, el gigante gaseoso ocupaba los 390 px de alto y el pie de página
+   quedaba sobre un lavanda casi blanco.
+
+   No se corrige abriendo el ángulo —abrirlo mete más ancho de lado y
+   deforma el roll— sino ALEJANDO la cámara del eje de mira, que es como
+   está compuesta la escena: todos los fotogramas miran al mismo origen.
+
+   Vive aquí, y no dentro de la cámara, por una razón: es una regla de
+   encuadre, y las reglas se prueban. Es la comprobación que faltaba cuando
+   esto se discovered mirando una captura de móvil. */
+export const ANCHUREferencia = 1.6;
+export const MAX_SEPARACION = 2.15;
+
+export function separacionParaEncuadre(aspect) {
+  if (!(aspect > 0)) return 1;
+  return clamp(ANCHUREferencia / aspect, 1, MAX_SEPARACION);
+}
+
 export const movimientoReducido = () => consultaMovimiento.matches;
 
 export function alCambiarMovimiento(callback) {

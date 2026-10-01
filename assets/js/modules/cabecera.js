@@ -6,9 +6,8 @@
  * · Menú de pantalla completa en móvil con trampa de foco básica.
  */
 
-import { $, $$, crear } from '../core/dom.js';
-import { clamp } from '../core/util.js';
-import { desplazarAlPrincipio } from '../core/desplazar.js';
+import { $, $$, crear, on } from '../core/dom.js';
+import { desplazarAlPrincipio, progresoDeLectura } from '../core/desplazar.js';
 
 export function montarCabecera() {
   const cabecera = $('#cabecera');
@@ -19,7 +18,12 @@ export function montarCabecera() {
   const botonMenu = $('#hamburguesa');
   const menu = $('#menu');
 
-  if (!cabecera) return null;
+  if (!cabecera) return () => {};
+
+  /* Cada listener se registra con `on`, que devuelve su baja. Antes se
+     declaraban en línea y no había forma de retirarlos: `main.js` llama a
+     la limpieza en `pagehide`, así que aquí faltaban cinco. */
+  const bajas = [];
 
   /* ---------- Estado compacto ---------- */
   function compacta() {
@@ -58,20 +62,39 @@ export function montarCabecera() {
     moverIndicador(activo);
   }
 
-  /* ---------- Observador de secciones ---------- */
+  /* ---------- Observador de secciones ----------
+     Un fallo que tenía: el callback solo recibía las secciones cuyo estado
+     ACABABA de cambiar. Con dos secciones Solapadas en la franja central,
+     la que entraba podía ser la menor y se marcaba como activa aunque la
+     otra ocupara más pantalla. Ahora el conjunto se lleva aparte y se
+     consulta el registro completo, que además es el que sobrevive cuando
+     el visitante salta con el menú o con la barra espaciadora y el
+     observador no dispara nada. */
+  const seccionesVisibles = new Map();
+
   const observador = new IntersectionObserver(
     (entradas) => {
-      // La sección que más ocupe la franja central manda.
-      const visibles = entradas
-        .filter((e) => e.isIntersecting)
-        .sort((a, b) => b.intersectionRatio - a.intersectionRatio);
+      for (const entrada of entradas) {
+        if (entrada.isIntersecting) seccionesVisibles.set(entrada.target, entrada.intersectionRatio);
+        else seccionesVisibles.delete(entrada.target);
+      }
 
-      if (visibles.length) marcarActivo(visibles[0].target.id);
+      let mejor = null;
+      let mejorRatio = -1;
+      for (const [seccion, ratio] of seccionesVisibles) {
+        if (ratio > mejorRatio) {
+          mejor = seccion;
+          mejorRatio = ratio;
+        }
+      }
+
+      if (mejor) marcarActivo(mejor.id);
     },
     { rootMargin: '-45% 0px -45% 0px', threshold: [0, 0.25, 0.5, 1] },
   );
 
   secciones.forEach((seccion) => observador.observe(seccion));
+  bajas.push(() => observador.disconnect());
 
   /* ---------- Menú móvil ---------- */
   function abrirMenu(abrir) {
@@ -88,41 +111,50 @@ export function montarCabecera() {
     }
   }
 
-  botonMenu?.addEventListener('click', () => {
-    abrirMenu(menu.dataset.abierto !== '1');
-  });
-
-  menu?.addEventListener('click', (evento) => {
-    if (evento.target instanceof Element && evento.target.closest('a')) abrirMenu(false);
-  });
-
-  document.addEventListener('keydown', (evento) => {
-    if (evento.key === 'Escape' && menu?.dataset.abierto === '1') abrirMenu(false);
-  });
+  bajas.push(
+    on(botonMenu, 'click', () => {
+      abrirMenu(menu?.dataset.abierto !== '1');
+    }),
+    on(menu, 'click', (evento) => {
+      if (evento.target instanceof Element && evento.target.closest('a')) abrirMenu(false);
+    }),
+    on(document, 'keydown', (evento) => {
+      if (evento.key === 'Escape' && menu?.dataset.abierto === '1') abrirMenu(false);
+    }),
+  );
 
   /* ---------- Indicador al pasar el ratón y al redimensionar ---------- */
-  enlaces.forEach((enlace) => {
-    enlace.addEventListener('mouseenter', () => moverIndicador(enlace));
-  });
+  for (const enlace of enlaces) {
+    bajas.push(on(enlace, 'mouseenter', () => moverIndicador(enlace)));
+  }
 
-  navLista?.addEventListener('mouseleave', () => {
-    const activo = $('.nav__enlace[aria-current="true"]', navLista);
-    moverIndicador(activo);
-  });
+  bajas.push(
+    on(navLista, 'mouseleave', () => {
+      const activo = $('.nav__enlace[aria-current="true"]', navLista);
+      moverIndicador(activo);
+    }),
+    on(
+      window,
+      'resize',
+      () => {
+        compacta();
+        const activo = $('.nav__enlace[aria-current="true"]');
+        moverIndicador(activo);
+      },
+      { passive: true },
+    ),
+    on(window, 'scroll', compacta, { passive: true }),
+  );
 
-  window.addEventListener('resize', () => {
-    compacta();
-    const activo = $('.nav__enlace[aria-current="true"]');
-    moverIndicador(activo);
-  });
-
-  window.addEventListener('scroll', compacta, { passive: true });
   compacta();
 
   // Retroceso suave a la posición 0 al recargar a media página.
   if ('scrollRestoration' in history) history.scrollRestoration = 'manual';
 
-  return { abrirMenu, marcarActivo };
+  return () => {
+    for (const baja of bajas) baja();
+    bajas.length = 0;
+  };
 }
 
 /**
@@ -135,24 +167,37 @@ export function montarProgreso() {
   const vapor = crear('span', { class: 'subir__riel', 'aria-hidden': 'true' });
   subir?.append(vapor);
 
-  function actualizar() {
-    const alto = document.documentElement.scrollHeight - window.innerHeight;
-    const avance = clamp(alto > 0 ? window.scrollY / alto : 0, 0, 1);
+  /* El último avance escrito, para no tocar el DOM si no ha cambiado de
+     forma visible. A `--avance` se le escribía cuatro decimales en cada
+     evento de scroll: cuarenta escrituras por segundo para un número que
+     a ojo solo se mueve cuando cambia. */
+  let ultimoAvance = -1;
 
-    if (barra) barra.style.setProperty('--avance', avance.toFixed(4));
+  function actualizar() {
+    const avance = progresoDeLectura();
+
+    if (barra && Math.abs(avance - ultimoAvance) > 0.001) {
+      ultimoAvance = avance;
+      barra.style.setProperty('--avance', avance.toFixed(4));
+    }
+
     if (subir) subir.dataset.visible = window.scrollY > window.innerHeight * 0.8 ? '1' : '0';
   }
 
-  subir?.addEventListener('click', () => {
+  const bajaSubir = on(subir, 'click', () => {
     // Va por el helper y no por `window.scrollTo`: con Lenis montado, un
     // `scrollTo` nativo compite con el suavizado y el salto se ve a tirones.
     desplazarAlPrincipio();
     $('.nav__enlace')?.focus({ preventScroll: true });
   });
 
-  window.addEventListener('scroll', actualizar, { passive: true });
-  window.addEventListener('resize', actualizar, { passive: true });
+  const bajaScroll = on(window, 'scroll', actualizar, { passive: true });
+  const bajaResize = on(window, 'resize', actualizar, { passive: true });
   actualizar();
 
-  return { actualizar };
+  return () => {
+    bajaScroll();
+    bajaResize();
+    bajaSubir();
+  };
 }

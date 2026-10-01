@@ -53,12 +53,57 @@ const DIVISIONES_ARCO = 400;
  */
 const ZONA_DE_CAMBIO = 0.18;
 
+/**
+ * VELOCIDAD DE DISEÑO DE LA CÁMARA: unidades de mundo por píxel de scroll.
+ *
+ * Es el número que impide que un tramo de la curva se recorra sin scroll.
+ * La `ZONA_DE_CAMBIO` de arriba reparte el hueco ENTRE secciones como una
+ * fracción de la altura de cada una, y ahí está el problema: la fracción es
+ * la misma para todas, pero la DISTANCIA que hay que cubrir no lo es. Un
+ * cambio de cuerpo cercano se gasta la misma reserva que uno a mil unidades,
+ * y el segundo acaba cruzándose a cuatro o cinco veces la velocidad del
+ * primero.
+ *
+ * Medido sobre el guion de `data/universo.js`: la transición de la portada
+ * al planeta de Perfil recorre 950 unidades y recibía 231 px de scroll, o
+ * 4,1 unidades por píxel, cuando el resto de la película va entre 0,1 y
+ * 1,7. El ojo lo lee como un tirón, no como un travelling.
+ *
+ * El valor sale de la propia película: el tramo más rápido DEL DISEÑO es
+ * la aproximación inicial de la portada, y ese es justo el techo. Por
+ * debajo de 0,9 el arranque perdería el golpe; por encima de 1,4 los
+ * cambios de cuerpo empezarían a notarse como tirón y no como movimiento.
+ */
+const VELOCIDAD_OBJETIVO = 1.2;
+
+/**
+ * ANCHO MÍNIMO DE UN TRAMO, en progreso normalizado del documento.
+ *
+ * Red de seguridad para el caso degenerado: dos fotogramas en el mismo
+ * punto de la curva dan distancia cero, y un tramo de anchura cero hace
+ * que la cámara salte de un cuerpo al siguiente dentro del mismo fotograma.
+ */
+const ANCHO_MINIMO = 0.0004;
+
+/**
+ * CUÁNTAS VECES SE REPARTE EL HOLGURA.
+ *
+ * El reparto es una proyección sobre el conjunto {ancho ≥ mínimo por
+ * distancia} ∩ {suma = 1}. Ese conjunto es convexo, así que el reparto
+ * converge, pero no en un solo paso: al subir los tramos cortos hay que
+ * encoger el resto, y al encoger el resto alguno puede volver a quedarse
+ * corto. Veinticuatro vueltas de sobra —cada una reduce el error un orden
+ * de magnitud— y el bucle sale antes en cuanto no queda nada que subir.
+ */
+const PASOS_REPACING = 24;
+
 export function crearRuta(sistemas) {
   /* ----------------------------------------------------------------
      1. Recopilar fotogramas de todos los sistemas
      ---------------------------------------------------------------- */
 
   const anclas = [];
+  const ventanas = new Map();
 
   sistemas.forEach((sistema, indiceSistema) => {
     sistema.fotogramas.forEach((f) => {
@@ -110,6 +155,110 @@ export function crearRuta(sistemas) {
   for (const [i, ancla] of anclas.entries()) {
     const muestra = Math.round((i / segmentos) * muestras);
     ancla.u = total > 0 ? longitudes[clamp(muestra, 0, muestras)] / total : 0;
+  }
+
+  /* ----------------------------------------------------------------
+     3 bis. Repacing: que ningún tramo se recorra sin scroll
+     ----------------------------------------------------------------
+
+     Hasta aquí los desplazamientos salen de las alturas de las secciones,
+     que es lo correcto: la cámara va donde está el texto. Lo que no
+     garantiza es la velocidad, y esa es la mitad de lo que hace que un
+     travelling se lea como travelling.
+
+     Esta función NO cambia los fotogramas ni el guion: se limita a repartir
+     el mismo scroll entre los mismos tramos. Lo que hace es dar a cada
+     tramo el ancho que su distancia necesita para no ir más rápido que
+     `VELOCIDAD_OBJETIVO`, y cobrar ese ancho al resto en proporción a lo
+     que cada uno tenía de sobra.
+
+     El efecto es el que se busca y es dos cosas a la vez:
+
+       · El tramo que se cruzaba a 4,1 u/px se abre hasta 1,2 u/px, que
+         es a ritmo de la película.
+       · Los tramos lentos se estrechan proporcionalmente, así que la
+         sección de skills o la de contacto no pierden más recorrido del
+         que ya tenían: el reparto es conservativo en el conjunto, solo
+         redistribuye.
+
+     Lo que NO hace —y por eso se llama repacing y no rediseño— es mover un
+     fotograma. La dirección de arte es del guion; aquí solo se garantiza
+     que esa dirección sea legible. */
+  function repacear(altoTotal) {
+    const nTramos = anclas.length - 1;
+    if (nTramos < 1 || altoTotal <= 0 || total <= 0) return;
+
+    const anchos = new Array(nTramos);
+    const minimos = new Array(nTramos);
+    let sumaMinimos = 0;
+
+    for (let i = 0; i < nTramos; i += 1) {
+      /* Distancia REAL sobre la curva, no la distancia en línea recta entre
+         los dos fotogramas. La CatmullRom se desvía de la cuerda, y con 950
+         unidades de recorrido esa desviación es de decenas de unidades: con
+         la recta el tramo salía más rápido de lo que realmente va. */
+      const distancia = Math.max(0, anclas[i + 1].u - anclas[i].u) * total;
+      minimos[i] = Math.max(distancia / VELOCIDAD_OBJETIVO / altoTotal, ANCHO_MINIMO);
+      anchos[i] = Math.max(0, anclas[i + 1].desplazamiento - anclas[i].desplazamiento);
+      sumaMinimos += minimos[i];
+    }
+
+    /* Si el guion pide más scroll del que el documento tiene, la velocidad
+       objetivo es matemáticamente imposible: no es un fallo del reparto, es
+       un guion que no cabe. Se reparte lo que hay, se escala el objetivo a
+       lo que se puede, y se AVISA en consola nombrando el tramo que no
+       llega — porque un repo con ese tramo se ve como un tirón y el arreglo
+       es de datos, no de algoritmo, y eso hay que saberlo al escribir el
+       fotograma y no tres meses después. */
+    if (sumaMinimos >= 1) {
+      const correccion = 1 / sumaMinimos;
+      for (let i = 0; i < nTramos; i += 1) minimos[i] *= correccion;
+
+      /* Con el objetivo escalado TODOS los tramos quedan exactamente a la
+         misma velocidad —`VELOCIDAD_OBJETIVO / correccion`—, así que no hay
+         un "peor": los tramos se reparten parejos, que es lo único que se
+         puede hacer cuando no cabe. Lo que sí hay que señalar es cuánto
+         scroll pediría en total, que es el número que dice si el arreglo es
+         de una sección o de todas. */
+      console.warn(
+        `[universo] el guion no cabe en el documento: a ${VELOCIDAD_OBJETIVO} u/px ` +
+          `harían falta ${(total / VELOCIDAD_OBJETIVO).toFixed(0)} px de recorrido y el ` +
+          `documento solo tiene ${altoTotal}. La cámara irá a ` +
+          `${(VELOCIDAD_OBJETIVO / correccion).toFixed(2)} u/px por todos los tramos, ` +
+          'que es parejo pero por encima del diseño. Aleja los cuerpos o alarga las secciones.',
+      );
+    }
+
+    for (let paso = 0; paso < PASOS_REPACING; paso += 1) {
+      let suma = 0;
+      let subir = 0;
+
+      for (let i = 0; i < nTramos; i += 1) {
+        if (anchos[i] < minimos[i]) {
+          anchos[i] = minimos[i];
+          subir += 1;
+        }
+        suma += anchos[i];
+      }
+
+      if (suma <= 0) return;
+      const escala = 1 / suma;
+      for (let i = 0; i < nTramos; i += 1) anchos[i] *= escala;
+
+      /* Ni nada que subir ni nada que encoger de más: se ha repartido. */
+      if (subir === 0 && Math.abs(1 - suma) < 1e-6) break;
+    }
+
+    /* Reconstruye los desplazamientos desde los anchos. La suma es 1 por
+       construcción del bucle, así que el último fotograma cae exactamente en
+       el final del documento, que es lo que necesita el plano de cierre. */
+    let acumulado = 0;
+    for (let i = 0; i < nTramos; i += 1) {
+      acumulado += anchos[i];
+      anclas[i + 1].desplazamiento = Math.min(acumulado, 1);
+    }
+    anclas[0].desplazamiento = 0;
+    anclas[anclas.length - 1].desplazamiento = 1;
   }
 
   /* ----------------------------------------------------------------
@@ -294,6 +443,67 @@ export function crearRuta(sistemas) {
         }
       }
       anclas[0].desplazamiento = 0;
+
+      /* Repacing: el scroll ya está bien repartido por secciones, pero
+         todavía hay tramos que la cámara recorre más rápido de lo que el
+         ojo sigue. Va DESPUÉS de la corrección de crecimiento —que solo
+         garantiza el orden— y ANTES de calcular las ventanas, porque las
+         ventanas se deducen de los desplazamientos finales y si se
+         calcularan antes medirían un reparto que luego cambia. */
+      repacear(altoTotal);
+
+      /* Ventanas de cada sistema en el recorrido.
+
+         El intervalo de scroll que ocupa cada sistema. La escena lo usa para
+         decidir CUÁNDO se enciende un cuerpo: sin esto, en la portada —que
+         mira hacia el fondo del corredor— se veían a la vez el planeta de
+         arranque y el gigante con anillos del final, superpuestos en el mismo
+         punto de la pantalla, que se lee como un fallo de render. */
+      ventanas.clear();
+      for (const ancla of anclas) {
+        const v = ventanas.get(ancla.indiceSistema);
+        if (!v) {
+          ventanas.set(ancla.indiceSistema, {
+            desde: ancla.desplazamiento,
+            hasta: ancla.desplazamiento,
+          });
+        } else {
+          v.desde = Math.min(v.desde, ancla.desplazamiento);
+          v.hasta = Math.max(v.hasta, ancla.desplazamiento);
+        }
+      }
+    },
+
+    /**
+     * Margen de la ventana de un sistema, en progreso del documento.
+     *
+     * POR QUÉ SON DOS Y DISTINTOS. Adelante se enciende pronto, para que el
+     * cuerpo se vea venir: es lo que da profundidad al corredor y lo que hace
+     * que el recorrido se entienda como un viaje y no como una lista de
+     * secciones. Detrás se apaga despacio, porque el plano de cierre mira
+     * hacia atrás por el espacio ya recorrido y necesita encontrarlo entero.
+     */
+    margenAdelante: 0.32,
+    margenAtras: 0.75,
+
+    /** Ventanas por índice de sistema. Se rellenan en `recalibrar()`. */
+    ventanas,
+
+    /**
+     * Dónde está el recorrido dentro de la ventana de UN sistema, en 0..1.
+     *
+     * Es lo que necesitan las cosas que siguen el ritmo de su propia sección
+     * y no el del documento entero: el Big Bang de la portada, que tiene que
+     * estar terminado justo cuando empieza "Perfil".
+     *
+     * @param {number} indiceSistema
+     * @param {number} progreso Progreso del documento, 0..1.
+     */
+    localDe(indiceSistema, progreso) {
+      const v = ventanas.get(indiceSistema);
+      if (!v) return 0;
+      const ancho = v.hasta - v.desde;
+      return ancho > 0 ? clamp((progreso - v.desde) / ancho, 0, 1) : 0;
     },
   };
 }
