@@ -1,5 +1,42 @@
 # PENDIENTES
 
+## PARA EMPEZAR MAÑANA
+
+**En vivo:** https://portafolio-juan-david-pareja-quinte.vercel.app
+
+**En local:** `python3 -m http.server 8099` y abrir `http://localhost:8099`.
+Hace falta un servidor porque los módulos ES no cargan desde `file://`.
+
+**Comprobaciones:** `ln -sfn /tmp/opencode/node_modules node_modules`,
+`node tools/comprobar.mjs`, `rm -f node_modules`. Salen las once en verde, con
+un aviso de exports sin uso que es lo esperado.
+
+**Publicación:** `vercel --prod`. Todo está pusheado en `main`; el árbol de
+trabajo está limpio salvo `promt`, que es un archivo de trabajo sin seguimiento
+y no debe subirse.
+
+### Lo primero que hay que decidir: las dos fuentes de Space Grotesk
+
+`space-grotesk-500-latin.woff2` y `space-grotesk-700-latin.woff2` son **el
+mismo archivo**, con **Light** dentro, mientras el CSS declara 500 y 700. Está
+en git y no es de esta sesión. El titular de todo el sitio se ve en Light.
+Detalle y las tres opciones en la **sección 8**; la que no cambia el aspecto y
+ahorra 22 KB es bajar el `@font-face` a 300 y borrar el duplicado.
+
+### Después
+
+| Qué | Dónde |
+|---|---|
+| Endpoint de Formspree | `CONTACTO.endpoint` en `assets/js/data/universo.js`, hoy vacío a propósito |
+| Dominio propio | `canonical` y `og:url` en `index.html`, descritas en `UNIVERSO.md` §12. Ahora son relativas y funcionan en cualquier dominio |
+| Repetir la tabla 6.2 en otra GPU | Ya verificada en hardware real: 37 draw calls, 17/17/16 programas |
+
+**Nada del sitio está roto.** No hay ningún defecto abierto.
+
+---
+
+## RESUMEN DE LA SESIÓN
+
 Estado al cerrar la sesión del 2 de octubre, segunda parte.
 
 La primera parte arregló el arco de `og.png`, el recorrido que no visitaba
