@@ -386,7 +386,7 @@ número de ahí es un presupuesto:
 
 | Clave | Qué controla |
 |---|---|
-| `detallePlaneta` | Triángulos de la esfera: 4 → 2 562, 3 → 642, 2 → 162 |
+| `detallePlaneta` | Triángulos de la esfera: 4 → 500, 3 → 320, 2 → 180 |
 | `puntosEstrella` | Estrellas del campo |
 | `puntosPolvo` | Partículas de polvo cercano |
 | `rocasCampo` | Escombros del tramo de Proceso |
@@ -421,7 +421,7 @@ Por orden de impacto:
    píxeles, que es lo que agota una GPU móvil.
 2. **`puntosEstrella` a 800.** Cuatro mil puntos con mezcla aditiva son
    RUPTURA en gama baja.
-3. **`detallePlaneta` a 2.** 162 triángulos se ven perfectamente a la
+3. **`detallePlaneta` a 2.** 180 triángulos se ven perfectamente a la
    distancia a la que está un planeta.
 4. **`resplandor: false`.** Los sprites aditivos cubren mucha pantalla.
 
@@ -810,7 +810,9 @@ tools/
   verificar-a11y.mjs               Encabezados, nombres, contraste, SEO
   verificar-exports.mjs            Exports que nadie llama
   verificar-shaders.mjs            Los shaders compilan y declaran lo que usan
-  probar-calidad.mjs               14 casos del sistema de calidad
+  verificar-velos.mjs              Ningún velo deja una línea al acabar su caja
+  verificar-limpiezas.mjs          Todo montar* suelta lo que registró
+  probar-calidad.mjs               13 casos del sistema de calidad + la geometría real
   probar-ruta.mjs                  Velocidad por tramo, amortiguación, menú
   probar-dom.mjs                   Arranque del sitio en un DOM de verdad
   generar-og.py                    Regenera la tarjeta social
@@ -824,7 +826,7 @@ tools/
 ## 14. Antes de publicar
 
 ```bash
-node tools/comprobar.mjs            # pasa las nueve comprobaciones
+node tools/comprobar.mjs            # pasa las once comprobaciones
 python3 tools/generar-og.py         # solo si cambiaste la imagen social
 ```
 
@@ -838,7 +840,9 @@ node tools/verificar-contenido.mjs  # nada perdido respecto a la versión anteri
 node tools/verificar-a11y.mjs       # encabezados, nombres, contraste, SEO
 node tools/verificar-exports.mjs    # exports que nadie llama
 node tools/verificar-shaders.mjs    # los shaders compilan y declaran lo que usan
-node tools/probar-calidad.mjs       # 14 casos del sistema de calidad
+node tools/verificar-velos.mjs      # ningún velo deja costura al terminar su caja
+node tools/verificar-limpiezas.mjs  # todo montar* devuelve su limpieza de verdad
+node tools/probar-calidad.mjs       # 13 casos + la geometría que dice cada nivel
 node tools/probar-ruta.mjs          # velocidad por tramo, amortiguación, menú
 node tools/probar-dom.mjs           # el sitio arranca y responde (necesita jsdom)
 ```
@@ -846,7 +850,7 @@ node tools/probar-dom.mjs           # el sitio arranca y responde (necesita jsdo
 El de exports avisa, no falla: hay nueve exports sin uso que ya estaban antes
 de este trabajo y que están en su línea base. Los nuevos sí los falla.
 
-### La novena comprobación necesita una cosa instalada
+### La comprobación de arranque necesita una cosa instalada
 
 `probar-dom.mjs` es la única que no es estática: monta el `index.html` real
 en un DOM, ejecuta el grafo completo de módulos y hace lo que haría una
@@ -871,7 +875,38 @@ el orden real de tabulación, si el foco se ve sobre el planeta, si un panel se
 lee bien con la escena detrás, el framerate real en un móvil y el aspecto en
 un portátil con GPU integrada. Lo estático no llega hasta ahí.
 
-Y a mano, en el navegador:
+### Los once puntos se pueden automatizar, y merece la pena
+
+Hasta hace poco esto era una lista para hacer a mano. Se puede hacer sola con
+un navegador de verdad, y **eso es lo que encuentra los fallos grandes**: la
+sonda estática no puede ver nada que solo exista mientras hay una animación.
+
+Los once puntos de abajo se cubrieron todos con Chromium + Playwright, con
+cero errores de consola. Y aparecieron dos bugs que ninguna de las once
+comprobaciones veía: el recorrido guiado no se movía —`duracion` en
+milisegundos donde Lenis anima en segundos, así que cada parada duraba de 25 a
+60 minutos— y el selector de calidad degradaba el nivel que el visitante había
+elegido a mano.
+
+El detalle está en `PENDIENTES.md`. Lo que hay que saber para repetirlo:
+
+```bash
+python3 -m http.server 8099          # los módulos ES no cargan desde file://
+npx playwright install chromium
+```
+
+y Chromium necesita estos flags, **o sale SwiftShader y los fps no significan
+nada**:
+
+```
+--use-gl=angle --ignore-gpu-blocklist --enable-gpu-rasterization
+--enable-unsafe-swiftshader
+```
+
+Con eso se obtiene WebGL 2.0 sobre la GPU de verdad, que es lo que permite
+medir el presupuesto de `§6.2` y no solo quedarse con una cifra de software.
+
+Los puntos, para hacerlo a mano o automatizado:
 
 1. Recarga con la consola abierta: cero errores.
 2. Desplázate de arriba abajo, despacio y rápido. Después sube. Sin saltos.

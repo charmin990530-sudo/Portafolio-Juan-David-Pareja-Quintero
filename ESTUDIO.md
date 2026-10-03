@@ -228,28 +228,97 @@ B se habría descartado por la meta de calidad. C se descarta por peso.
 
 ## 6. Presupuesto de rendimiento
 
-### 6.1 Cero texturas
+### 6.1 Cero texturas DE IMAGEN
 
-La decisión de mayor impacto del proyecto. **No hay ni una sola textura.** Ni
-HDRI, ni glTF, ni KTX2, ni PNG de superficie. Toda superficie, atmósfera,
-anillo, nebulosa y glow se calcula en el shader o se genera en un canvas de
-2 píxeles de radio en tiempo de carga.
+La decisión de mayor impacto del proyecto. **No hay ni una sola textura
+cargada.** Ni HDRI, ni glTF, ni KTX2, ni PNG de superficie. Toda superficie,
+atmósfera, anillo, nebulosa y glow se calcula en el shader o se dibuja en un
+canvas y se sube como `CanvasTexture` de 64 a 256 px.
 
 Consecuencia: el "modelo" de cada planeta pesa **0 KB**, no hay pipeline de
 assets, y no hay riesgo de que un `.hdr` de 6 MB rompa el presupuesto.
 
+Medido: **0 texturas de imagen** en los tres niveles. Lo que hay son las ocho
+texturas de relleno de 1×1 que Three.js crea para los uniformes sin asignar, y
+las `CanvasTexture` generadas en tiempo de carga —el brillo del halo, la lámpara
+de las balizas, las nubes y las galaxias, de 64 a 256 px— que suman menos de
+100 KB de VRAM. La tabla decía "Texturas: 0", que es cierto para lo que
+importa —nada que subir por la red— y engañoso para lo demás, y por eso ahora
+tiene las dos filas.
+
 ### 6.2 Presupuesto por nivel
+
+Todas las filas están **medidas**, no calculadas. La sección 6.2 bis explica
+cómo y qué estaba mal antes. Los máximos son de todo el recorrido en 26
+muestras, no de un punto concreto: un presupuesto que solo dice cuánto se
+dibuja en la portada no dice cuánto se dibuja en el peor momento.
 
 | Métrica | Alto | Medio | Bajo | Sin WebGL |
 |---|---|---|---|---|
-| Triángulos de planeta (icosaedro) | 2 562 | 642 | 162 | — |
-| Triángulos totales | ~48 000 | ~24 000 | ~11 000 | — |
-| Puntos de estrellas | 4 000 | 2 200 | 1 200 | — |
-| Draw calls | ≤ 22 | ≤ 16 | ≤ 10 | 0 |
-| Texturas | 0 | 0 | 0 | 0 |
+| Triángulos de planeta (icosaedro) | 500 | 320 | 180 | — |
+| **Triángulos, máximo del recorrido** | **14 992** | **9 490** | **5 310** | — |
+| Puntos dibujados, máximo | 13 200 | 7 800 | 4 200 | — |
+| **Draw calls, máximo del recorrido** | **39** | **38** | **38** | 0 |
+| Programas de shader | 17 | 17 | 16 | 0 |
+| Texturas de imagen | 0 | 0 | 0 | 0 |
+| Texturas creadas en total | 12-15 | 12-15 | 12-15 | 0 |
 | DPR máximo | 1.75 | 1.5 | 1.25 | — |
-| Objetivo de fps | 60 estable | 60 estable | ≥ 30 estable | 60 (CSS) |
-| VRAM pico estimada | < 40 MB | < 26 MB | < 14 MB | 0 |
+| Objetivo de fps | 55 | 50 | 30 | 60 (CSS) |
+
+Medido en escritorio (1440×900) y en móvil (390×844). Las cifras no cambian
+entre viewports: es el mismo presupuesto, y ese es justamente el punto del
+apartado 6.5, que bajar el nivel tiene que cambiar la precisión y no lo que se
+ve. El número de texturas **subido** entre 12 y 15 según el recorrido porque
+las `CanvasTexture` se crean la primera vez que su pieza se dibuja: no se
+crean todas al montar.
+
+### 6.2 bis · CÓMO SE MEDIÓ, Y POR QUÉ ESTA TABLA CAMBIÓ
+La primera versión de esta tabla decía 2 562 / 642 / 162 triángulos por
+planeta y ~48 000 en total, y estaba **inventada**: nadie la había medido. Los
+tres números del icosaedro estaban mal, y el total era cuatro veces lo real.
+
+Se mide interceptando el contexto WebGL antes de que Three.js lo pida, desde
+la propia página, sin tocar el código del sitio: se cuentan las llamadas que
+llegan al driver (`drawElements`, `drawArrays` y sus variantes instanciadas),
+los triángulos que cada una dibuja, y los cambios de estado. El recorrido se
+muestrea en 26 pasos y se queda el máximo, porque un presupuesto que solo dice
+cuánto se dibuja en la portada no dice cuánto se dibuja en el peor momento.
+
+**LOS TRES ERRORES, y por qué los tres son el mismo error:**
+
+1. **El icosaedro.** Un `IcosahedronGeometry` de detalle `d` tiene
+   `20 × (d + 1)²` triángulos, no `20 × 4^d`. Con detalle 4 son 500, no
+   2 562. Verificado contra la geometría real de la librería vendorizada.
+2. **El total.** Salió de multiplicar triángulos por planeta × número de
+   planetas y sumar el resto a ojo. El real es 15 000 en alto, no 48 000. La
+   diferencia está en que las piezas caras —el campo de rocas y las 21 lunas—
+   van en `InstancedMesh`, así que son muchas más geometrías pero **una sola
+   llamada de dibujo** cada una. Contar geometría como si costara lo mismo que
+   una llamada es el error que inflaba el número.
+3. **Los draw calls.** Decía ≤ 22 en alto y el máximo real es 39. Aquí la tabla
+   iba al revés de la realidad, que es peor: prometía un presupuesto que el
+   sitio no cumplía.
+
+**Y por qué la tabla nueva no se queda igual que la vieja.** El icosaedro y su
+triángulo están ahora comprobados contra la geometría real de la librería
+vendorizada en `tools/probar-calidad.mjs`, así que el comentario de cada nivel
+no puede volver a mentir: si se cambia `detallePlaneta`, la comprobación falla
+hasta que el número del comentario cambie con él. Los totales y las llamadas no
+se comprueban en `tools/` porque necesitan un navegador y una GPU, y un número
+que solo se puede comprobar a mano acaba como estaba. Lo que sí queda escrito
+es **cómo se miden**, que es lo que hace falta para repetirlas.
+
+**LO QUE NO SE MIDió, y sigue sin medirse:** los fps. Chromium headless renderiza
+por software con SwiftShader, así que los 16-60 fps que se ven ahí no dicen
+nada. El framerate solo se mide en una máquina con GPU.
+
+**Y que 39 draw calls no sean un problema.** La regla de oro de un móvil es que
+el coste lo domina el *fill rate*, no el número de llamadas: 39 llamadas de
+pocos miles de píxeles cada una es un presupuesto de GPU trivial. Lo que sí
+importa es que las piezas grandes se dibujen pocas veces, y por eso las rocas,
+las lunas y las estrellas están en una llamada cada una. La tabla anterior
+medía la cosa equivocada como si fuera la importante, que es exactamente el
+tipo de números inventados que hacen que una medición se quede sin hacer.
 
 ### 6.3 Peso total
 
@@ -296,7 +365,7 @@ framerate real. Si la media cae por debajo del umbral del nivel, se degrada
 El principio de la referencia 5 se respeta en la forma de degradar: baja la
 precisión (triángulos, puntos, capas de atmósfera), nunca la paleta ni el guion.
 
-### 6.6 Presupuesto deallocate
+### 6.6 Presupuesto de asignación
 
 - Geometrías de esfera y de debris compartidas y reutilizadas.
 - `InstancedMesh` para las 21 lunas de habilidades y las rocas del campo.
@@ -501,5 +570,103 @@ producto entero.
 Por eso ahora hay una novena comprobación que ejecuta el sitio, y por eso las
 invariantes que se rompieron —la cámara dentro de un cuerpo, la velocidad
 de un tramo— están ahora en `tools/` como aserciones, y no solo explicadas en
-un comentario. Un defecto que se midió una vez y se写下 como prueba no
+un comentario. Un defecto que se midió una vez y se escribió como prueba no
 vuelve a colarse por el mismo sitio.
+
+---
+
+## 13. La costura del sol: un defecto de una sesión entera en trece líneas de CSS
+
+La portada tenía una línea horizontal a media altura con el sol apagado
+encima y entero debajo. Medido sobre la captura: `rgb(43,43,48)` en `y=459` y
+`rgb(204,199,195)` en `y=468`. Un salto de 42 a 198 en nueve píxeles: no era
+un degradado, era un corte.
+
+**LO QUE SE DESCARTÓ, y por qué estaba bien descartarlo.** Todas las capas de
+`bigbang.js` mezclan con `AdditiveBlending`, y con mezcla aditiva nada puede
+oscurecer a otra capa. El shader del sol usa `mu = clamp(dot(n, vision), 0, 1)`
+sobre un `FrontSide` cuya normal mira a cámara. La corona usa `abs(dot(...))`
+a propósito, con el comentario que explica que sin el absoluto el halo se
+invertiría. Y `ruta.js` se comprobó aparte: `recalibrar` es idempotente, tres
+calibraciones seguidas dan lo mismo que una. Todo eso era cierto. **El defecto
+no estaba en ningún sitio donde se buscó.**
+
+**LO QUE LO ENCONTRÓ.** Un puente de depuración temporal que exponía la
+escena, la lista de hijos visibles y la posición de cada uno proyectada a
+pantalla. Con eso la pregunta dejó de ser «¿qué objeto dibuja esto?» y pasó a
+ser «¿qué nodo del DOM tapa este píxel?». `document.elementsFromPoint(720, 420)`
+devolvió el scrim `.hero__contenido::before` con `bottom: 560,1`. La costura
+estaba en `y=560`.
+
+**LA CAUSA, que es geométrica y no misteriosa.** Un scrim es un
+`radial-gradient` dentro de una caja. Si el radio del gradiente es mayor que
+la distancia del centro al borde de la caja, el gradiente no ha llegado a su
+último stop cuando la caja se acaba, y a partir de ahí no se dibuja nada. La
+declaración era `radial-gradient(116% 108% at 50% 50%, ...)`: un radio un 16 %
+más grande que la caja. Al borde le quedaban 0,82 de alfa. El salto de 0,82 a
+0 es exactamente lo que se veía.
+
+**POR QUÉ NO SE ARREGLÓ BAJANDO EL RADIO.** Con el centro al 50 %, que el
+stop transparente caiga dentro de la caja exige un radio del 50 % o menos. Y
+con un radio del 50 % las esquinas del bloque de texto quedan SIEMPRE fuera
+del núcleo opaco, porque la distancia normalizada en dos ejes es una suma de
+cuadrados: para un texto de 1 020 × 586 px habría que extender el scrim 400 px
+por cada lado, y eso ya no es un scrim sino una capa negra sobre casi toda la
+portada. **La elipse no podía arreglarlo. La forma estaba mal.**
+
+**EL ARREGLO.** Un rectángulo con los bordes difuminados no es una elipse, y
+CSS lo tiene hecho: dos degradados lineales cruzados, uno por eje, con
+`mask-composite: intersect`. El scrim resultante es opaco donde los dos lo son
+y transparente en cuanto uno deja de serlo, así que los cuatro bordes quedan
+a 0 por construcción y no queda ningún número que pueda volver a cortar.
+
+**Y LA TRAMPA DE SEGUNDO ORDEN.** La difuminación tiene que caber entera en el
+margen que sobresale del bloque de texto. La primera versión la puso en 7rem y
+5rem con un `inset` de 2,75rem y 1,75rem, así que la rampa se metía dentro del
+texto: la entradilla de Perfil bajó de **7,79:1 a 2,98:1**. Arreglar la
+geometría sin medir el contraste después habría sido cambiar un defecto
+visible por otro, y este último es más difícil de ver que el primero.
+
+**LO QUE SE ESCRIBIÓ.** `tools/verificar-velos.mjs`, que lee el CSS y
+comprueba que todo velo se apague antes de que su caja se acabe. Es
+estática a propósito: el defecto es una relación entre dos números escritos
+en el archivo, y esa relación se lee sin abrir un navegador. Una captura lo
+encontraría tarde y de forma intermitente, porque depende de dónde caiga la
+estrella, que depende del scroll.
+
+**LA MEDICIÓN DEL CONTRASTE, Y CÓMO SE HIZO MAL CUATRO VECES.** El principio
+del que parte todo: `getComputedStyle` da el color del texto y el fondo es el
+píxel que tiene debajo. El fondo hay que sacarlo de una captura con el texto
+oculto, porque el búfer WebGL se vacía al componer y `drawImage` mide el texto
+contra negro. Y ahí están las cuatro trampas, en orden:
+
+1. **Restar dos capturas sin congelar nada.** El granulado de la estrella se
+   anima con el reloj: entre dos capturas cambia un píxel de cada dos y la
+   diferencia se confunde con el texto.
+2. **Medir la caja entera.** El hueco entre dos palabras no es letra, y su
+   fondo no dice nada de si esa palabra se lee. Salía 1,00:1 siempre.
+3. **Medir el borde de la letra.** Una letra no es una mancha de un solo
+   color: su borde contra el fondo es siempre más claro y siempre tiene menos
+   contraste. Medirlo daba 2,5:1 con el texto perfectamente legible.
+4. **Mirar solo la luminancia para decidir qué píxel es letra.** Dejaba pasar
+   el anillo del logo de la cabecera, que es claro y cambia entre capturas, y
+   su "contraste" contra el titular salía 1,04:1 sin que hubiera ni una letra
+   ahí.
+
+La medición que sí vale congela la escena engañando a `document.hidden` —
+`escena.js` para su bucle y el lienzo conserva su último fotograma—, decide
+qué píxel es letra en COLOR y no en luminancia, y recorta por debajo de la
+cabecera, porque al desplazarse la portada la caja del titular la invade por
+arriba.
+
+**RESULTADO, en escritorio y en móvil:** 19 zonas medidas, la más baja
+**8,63:1**, todas por encima de AAA. El titular sobre el sol encendido:
+18,26:1.
+
+**LO QUE ESTE DEFECTO ENSEÑA, y es lo mismo que la sección anterior.** La
+comprobación que faltaba no era "el CSS está bien formado": el `radial-gradient`
+era perfectamente válido. Faltaba la que pregunta si el RESULTADO se apaga antes
+de que su soporte se acabe. Y la segunda lección es peor: arreglar la forma sin
+medir el efecto sobre el texto habría dejado el sitio igual de roto y con un
+defecto nuevo encima. **Una corrección de una capa decorativa es un cambio de
+contraste hasta que se mide.**
