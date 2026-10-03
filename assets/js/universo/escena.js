@@ -135,7 +135,7 @@ function cambioDeTamanoRelevante() {
    Escena
    ------------------------------------------------------------------ */
 
-export function crearEscena({ lienzo, nivelInicial, alInformar, alDegradar, alAcelerar }) {
+export function crearEscena({ lienzo, nivelInicial, nivelElegido = false, alInformar, alDegradar, alAcelerar }) {
   const paleta = leerPaleta();
   let nivel = nivelInicial ?? NIVELES.MEDIO;
   let conf = perfil(nivel);
@@ -699,6 +699,10 @@ export function crearEscena({ lienzo, nivelInicial, alInformar, alDegradar, alAc
       nivel,
       objetivo: conf.objetivoFps,
       fotogramas: 90,
+      /* Si el nivel lo eligió el visitante, la sonda mide pero no baja. La
+         sonda no se apaga: el HUD muestra los fotogramas y eso hace falta
+         igual. Lo que se respeta es la decisión. Ver `crearSonda`. */
+      puedeDegradar: !nivelElegido,
       alDegradar: (nuevo) => {
         nivel = nuevo;
         conf = perfil(nivel);

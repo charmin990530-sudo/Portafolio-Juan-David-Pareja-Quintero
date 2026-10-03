@@ -15,7 +15,7 @@
  * solo declara los cinco elementos y el CSS los reparte en el anillo.
  */
 
-import { $, $$, crear } from '../core/dom.js';
+import { $, $$, crear, on } from '../core/dom.js';
 import { alFotograma } from '../core/loop.js';
 import { clamp, mapear, movimientoReducido } from '../core/util.js';
 import { PROCESO, TOTAL_ETAPAS } from '../data/proceso.js';
@@ -31,7 +31,35 @@ export function montarProceso() {
   const pasos = $('#proceso-pasos');
   const riel = $('#proceso-riel');
 
-  if (!escena || !diagrama || !pasos || !cajaDatos) return null;
+  /* ── TODOS los nodos que se tocan tienen que estar aquí ──────────────
+
+     Antes solo se comprobaban cuatro, y `escribir()` escribía en
+     `campos.indice` sin comprobación: si faltara `#proceso-indice`, el
+     `aplicar(0)` del montaje reventaba y el resto de la sección se
+     quedaba en blanco. Un `montar*` que lanza se lleva por delante todo lo
+     que `main.js` monta después, así que la lista es la de TODO lo que el
+     módulo lee, no la de lo que parece importante. */
+  const campos = {
+    indice: $('#proceso-indice'),
+    claim: $('#proceso-claim'),
+    titulo: $('#proceso-titulo-etapa'),
+    descripcion: $('#proceso-descripcion'),
+  };
+  const lista = $('#proceso-puntos');
+  const lineaRiel = $('#proceso-riel-avance');
+
+  const faltaAlgo =
+    !escena || !diagrama || !pasos || !cajaDatos || !riel || !lineaRiel || !lista ||
+    !campos.indice || !campos.claim || !campos.titulo || !campos.descripcion;
+
+  if (faltaAlgo) return () => {};
+
+  /* Todo lo que este módulo registra, para poder devolverlo. La regla del
+     sitio es que cada `montar*` devuelve su función de limpieza, y esta es
+     la razón: sin esto, `main.js` la invocaba como si fuera función, le
+     llegaba un objeto y el `TypeError` lo silenciaba su propio `catch`. */
+  const bajas = [];
+  const creados = [];
 
   /* ---------- Núcleo del diagrama ---------- */
   const nucleo = crear('div', { class: 'proceso__nucleo' }, [
@@ -39,6 +67,7 @@ export function montarProceso() {
     crear('span', { class: 'proceso__nucleo-rol', id: 'proceso-nucleo-rol', text: '' }),
   ]);
   diagrama.append(nucleo);
+  creados.push(nucleo);
 
   const nucleoNum = nucleo.querySelector('.proceso__nucleo-num');
   const nucleoRol = nucleo.querySelector('.proceso__nucleo-rol');
@@ -49,11 +78,14 @@ export function montarProceso() {
   const anguloBase = -90;
 
   PROCESO.forEach((etapa, indice) => {
-    pasos.append(crear('li', { class: 'proceso__paso', 'aria-hidden': 'true' }));
+    const paso = crear('li', { class: 'proceso__paso', 'aria-hidden': 'true' });
+    pasos.append(paso);
+    creados.push(paso);
 
     const marca = crear('span', { class: 'proceso__marca' });
     pasos.append(marca);
     marcas.push(marca);
+    creados.push(marca);
 
     const nodo = crear(
       'button',
@@ -75,13 +107,16 @@ export function montarProceso() {
         ]),
       ],
     );
-    nodo.addEventListener('click', () => irAProgreso((indice + 0.5) / TOTAL_ETAPAS));
+    // `on()` devuelve la baja. Con `addEventListener('click', () => …)` la
+    // flecha era nueva en cada etapa y no había forma de retirarla.
+    bajas.push(on(nodo, 'click', () => irAProgreso((indice + 0.5) / TOTAL_ETAPAS)));
     diagrama.append(nodo);
     nodos.push(nodo);
+    creados.push(nodo);
 
     // El riel replica los pasos: en móvil se convierte en una tira
     // horizontal de progreso y pasa a ser la única navegación visible.
-    const paso = crear(
+    const marcaRiel = crear(
       'button',
       {
         class: 'riel__nodo',
@@ -91,21 +126,12 @@ export function montarProceso() {
       },
       [crear('span', { class: 'riel__nombre', text: `0${indice + 1}` })],
     );
-    paso.addEventListener('click', () => irAProgreso((indice + 0.5) / TOTAL_ETAPAS));
-    riel?.append(paso);
+    bajas.push(on(marcaRiel, 'click', () => irAProgreso((indice + 0.5) / TOTAL_ETAPAS)));
+    riel.append(marcaRiel);
+    creados.push(marcaRiel);
   });
 
-  const lineaRiel = $('#proceso-riel-avance');
-
   /* ---------- Panel de textos ---------- */
-  const campos = {
-    indice: $('#proceso-indice'),
-    claim: $('#proceso-claim'),
-    titulo: $('#proceso-titulo-etapa'),
-    descripcion: $('#proceso-descripcion'),
-  };
-
-  const lista = $('#proceso-puntos');
   const CLAVE_COLOR = ['--proceso-1', '--proceso-2', '--proceso-3', '--proceso-4', '--proceso-5'];
 
   /* ---------- Estado ---------- */
@@ -138,7 +164,7 @@ export function montarProceso() {
       nodo.dataset.estado = i < indice ? 'hecho' : i === indice ? 'activo' : 'pendiente';
     });
 
-    riel?.querySelectorAll('.riel__nodo').forEach((n, i) => {
+    riel.querySelectorAll('.riel__nodo').forEach((n, i) => {
       n.dataset.estado = i < indice ? 'hecho' : i === indice ? 'activo' : 'pendiente';
     });
 
@@ -198,8 +224,8 @@ export function montarProceso() {
     const escala = 1 + Math.sin(continua * Math.PI) * 0.05;
     diagrama.style.setProperty('--diagrama-escala', escala.toFixed(4));
 
-    if (riel) riel.style.setProperty('--riel-avance', avance.toFixed(4));
-    if (lineaRiel) lineaRiel.style.transform = `scaleY(${avance.toFixed(4)})`;
+    riel.style.setProperty('--riel-avance', avance.toFixed(4));
+    lineaRiel.style.transform = `scaleY(${avance.toFixed(4)})`;
 
     const masCerca = Math.round(continua);
     marcas.forEach((marca, i) => {
@@ -207,14 +233,25 @@ export function montarProceso() {
     });
   }
 
-  alFotograma(medir);
+  bajas.push(alFotograma(medir));
 
   aplicar(0);
 
-  return {
-    irAProgreso,
-    get avance() {
-      return enVista;
-    },
+  /* ── LA LIMPIEZA ────────────────────────────────────────────────────
+
+     Devuelve una FUNCIÓN, como todos los `montar*` del sitio. Antes
+     devolvía `{ irAProgreso, avance }` y nadie usaba ninguna de las dos:
+     `main.js` la metía en su lista de limpiezas y la invocaba, le llegaba
+     un objeto y el `TypeError` lo silenciaba su propio `catch` de
+     `pagehide`. El fallo no se veía porque solo pasaba al descargar.
+
+     Lo que se libera: el temporizador del fundido, el suscriptor del
+     bucle, los diez `click` y los dieciséis nodos que este módulo creó.
+     Los nodos que ya estaban en el HTML se dejan donde están. */
+  return () => {
+    window.clearTimeout(temporizador);
+    for (const baja of bajas) baja();
+    for (const nodo of creados) nodo.remove();
+    for (const clave of CLAVE_COLOR) escena.style.removeProperty(clave);
   };
 }

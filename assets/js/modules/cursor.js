@@ -12,13 +12,11 @@
  * interactivo. Cero transformaciones, cero posibilidad de quedarse pegado.
  */
 
-import { $$, crear } from '../core/dom.js';
+import { crear, on } from '../core/dom.js';
 import { alFotograma } from '../core/loop.js';
 import { lerp, movimientoReducido } from '../core/util.js';
 
 const SELECCION = 'a, button, input, textarea, select, [role="button"], .chip, label';
-const FUERZA = 0.22;
-const ALCANCE_RELATIVO = 0.85;
 
 export function montarCursor() {
   if (!matchMedia('(pointer: fine)').matches || movimientoReducido()) return () => {};
@@ -60,12 +58,26 @@ export function montarCursor() {
     cursor.style.transform = `translate3d(${x.toFixed(2)}px, ${y.toFixed(2)}px, 0) translate(-50%, -50%)`;
   }
 
-  alFotograma(cuadro);
+  const bajas = [];
 
-  window.addEventListener('mousemove', seguir, { passive: true });
-  window.addEventListener('mouseover', evaluar, { passive: true });
-  document.addEventListener('mouseleave', ocultar);
-  window.addEventListener('blur', ocultar);
+  bajas.push(alFotograma(cuadro));
 
-  return () => cursor.remove();
+  bajas.push(on(window, 'mousemove', seguir, { passive: true }));
+  bajas.push(on(window, 'mouseover', evaluar, { passive: true }));
+  bajas.push(on(document, 'mouseleave', ocultar));
+  bajas.push(on(window, 'blur', ocultar));
+
+  /* Antes esto era `return () => cursor.remove()`: quitaba el nodo y dejaba
+     los cuatro escuchadores vivos, apuntando a un elemento que ya no estaba
+     en el documento. `evaluar` seguía escribiendo `dataset` en un nodo
+     huérfano y `cuadro` seguía escribiendo `transform` en él en cada
+     fotograma, para siempre.
+
+     Y un arreglo a medias no sirve: cambiar a `on()` sin GUARDAR la baja que
+     devuelve deja la fuga igual de intacta, solo que con más código. Las
+     cinco bajas se guardan y se sueltan juntas. */
+  return () => {
+    for (const baja of bajas) baja();
+    cursor.remove();
+  };
 }

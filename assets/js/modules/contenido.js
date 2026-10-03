@@ -9,7 +9,7 @@
  * generan aquí desde los datos, para no duplicar información.
  */
 
-import { $, $$, crear } from '../core/dom.js';
+import { $, $$, crear, on } from '../core/dom.js';
 import { movimientoReducido } from '../core/util.js';
 import { STACK } from '../data/stack.js';
 
@@ -21,6 +21,7 @@ import { STACK } from '../data/stack.js';
 
 export function montarMarquesina() {
   const pistas = $$('.marquee__pista');
+  const creados = [];
 
   for (const pista of pistas) {
     if (pista.dataset.clonado === '1') continue;
@@ -37,6 +38,7 @@ export function montarMarquesina() {
     }
 
     pista.append(clon);
+    creados.push(clon);
   }
 
   if (movimientoReducido()) {
@@ -45,6 +47,13 @@ export function montarMarquesina() {
       pista.style.flexWrap = 'wrap';
     }
   }
+
+  /* Antes no devolvía nada. La pista original del HTML se queda, y solo
+     se retiran las copias que este módulo añadió: sin esto, un remontaje
+     del sitio duplicaba la cinta y el bucle se volvía el doble de largo. */
+  return () => {
+    for (const clon of creados) clon.remove();
+  };
 }
 
 /* =============================================================
@@ -90,6 +99,15 @@ export function montarStack() {
   const filtros = $('#stack-filtros');
   if (!contenedor) return () => {};
 
+  /* Todas las bajas y todos los nodos que este módulo crea, para devolverlos
+     o retirarlos juntos. `#stack-grupos` y `#stack-filtros` vienen vacíos del
+     HTML, así que todo lo que hay dentro lo puso esta función: se puede
+     devolver el sitio al estado en que estaba. Antes solo se soltaban los
+     escuchadores y los grupos se quedaban, que es un remonte del módulo
+     duplicado. */
+  const bajas = [];
+  const creados = [];
+
   /* ---------- Proyección de los grupos ---------- */
   for (const grupo of STACK) {
     const panel = crear('section', {
@@ -120,6 +138,7 @@ export function montarStack() {
     }
     panel.append(lista);
     contenedor.append(panel);
+    creados.push(panel);
   }
 
   /* ---------- Filtros ---------- */
@@ -136,9 +155,13 @@ export function montarStack() {
       });
       boton.style.setProperty('--grupo-color', opcion.color);
       filtros.append(boton);
+      creados.push(boton);
     }
 
-    filtros.addEventListener('click', (evento) => {
+    /* El manejador se nombra para poder retirarlo. Con una flecha en línea,
+       `removeEventListener` recibía una función distinta y no soltaba
+       nada: el contenedor de filtros se quedaba escuchando para siempre. */
+    const alFiltrar = (evento) => {
       const boton = evento.target instanceof Element ? evento.target.closest('.stack__filtro') : null;
       if (!boton) return;
 
@@ -151,7 +174,9 @@ export function montarStack() {
       for (const panel of $$('.grupo', contenedor)) {
         panel.hidden = activo !== 'todos' && panel.dataset.grupo !== activo;
       }
-    });
+    };
+
+    bajas.push(on(filtros, 'click', alFiltrar));
   }
 
   /* ---------- Animación de las barras al entrar en vista ---------- */
@@ -163,9 +188,16 @@ export function montarStack() {
     }
   };
 
+  /* Una sola forma de devolver el sitio, para los tres caminos: con barras
+     animadas, sin ellas y con `IntersectionObserver`. */
+  const devolver = () => {
+    for (const baja of bajas) baja();
+    for (const nodo of creados) nodo.remove();
+  };
+
   if (movimientoReducido() || !('IntersectionObserver' in window)) {
     activar(rellenos);
-    return () => {};
+    return devolver;
   }
 
   const observador = new IntersectionObserver(
@@ -183,7 +215,10 @@ export function montarStack() {
 
   rellenos.forEach((nodo) => observador.observe(nodo));
 
-  return () => observador.disconnect();
+  return () => {
+    observador.disconnect();
+    devolver();
+  };
 }
 
 /* =============================================================

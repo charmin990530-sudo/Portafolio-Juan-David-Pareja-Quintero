@@ -146,7 +146,12 @@ export function montarFondo() {
 
   medir();
   activo = true;
-  alFotograma(cuadro);
+  /* La baja se guarda. Antes se llamaba a `alFotograma(cuadro)` sin
+     conservarla, así que el suscriptor se quedaba en el `Set` de
+     `core/loop.js` para siempre: la limpieza retiraba los dos
+     escuchadores y dejaba el fotograma puesto, así que tras un
+     remontaje el lienzo se dibujaba dos veces por cuadro. */
+  const baja = alFotograma(cuadro);
 
   const alRedimensionar = () => medir();
   const alCambiarVisibilidad = () => {
@@ -159,6 +164,7 @@ export function montarFondo() {
 
   return () => {
     activo = false;
+    baja();
     window.removeEventListener('resize', alRedimensionar);
     document.removeEventListener('visibilitychange', alCambiarVisibilidad);
   };

@@ -87,13 +87,34 @@ export function montarViaje({ avisar = () => {} } = {}) {
   const boton = $('#viaje-iniciar');
   const raiz = document.documentElement;
 
-  const paradas = SISTEMAS.filter((s) => document.getElementById(s.seccion) !== null).map(
-    (sistema) => ({
-      id: sistema.seccion,
-      nombre: sistema.etiqueta,
-      nodo: document.getElementById(sistema.seccion),
-    }),
-  );
+  /* ── LAS PARADAS SE DECIDEN AL MEDIR, NO AL MONTAR ───────────────────
+
+     Esta lista se construía una vez, aquí, y eso era un error de
+     dependencias. `#proyectos` NO está en el HTML: lo inserta
+     `modules/proyectos.js`, que en `main.js` se monta DESPUÉS que este
+     módulo. Así que al filtrar por `getElementById` el sistema de
+     proyectos no existía todavía y quedaba fuera del recorrido.
+
+     No se notaba porque `data/proyectos.js` está vacío y la sección no se
+     crea. Pero en cuanto se descomente el bloque de ejemplo —que es
+     justo lo que el propio archivo pide— aparecería la sección después de
+     que esta lista ya estuviera decidida, y el "cúmulo de planetas" se
+     quedaría fuera del viaje sin ningún error.
+
+     La lista se vuelve a calcular cada vez que se miden los puntos, que es
+     lo que ya se hacía con las posiciones por el mismo motivo: entre el
+     montaje y el arranque pasan el preloader y el universo, y los dos
+     cambian la altura del documento. */
+  let paradas = seccionesPresentes();
+
+  function seccionesPresentes() {
+    const encontradas = [];
+    for (const sistema of SISTEMAS) {
+      const nodo = document.getElementById(sistema.seccion);
+      if (nodo) encontradas.push({ id: sistema.seccion, nombre: sistema.etiqueta, nodo });
+    }
+    return encontradas;
+  }
 
   /* Con menos de tres secciones el recorrido no es un recorrido: es un
      salto, y un salto ya lo hacen los enlaces del menú. Y con movimiento
@@ -148,6 +169,11 @@ export function montarViaje({ avisar = () => {} } = {}) {
   let puntos = [];
 
   function medirParadas() {
+    /* La lista se vuelve a leer aquí, y no solo por el alto: para cuando se
+       mide ya existen todas las secciones, incluidas las que otro módulo
+       insertó después de que este se montó. */
+    paradas = seccionesPresentes();
+
     const cabecera = alturaCabecera();
     const maximo = Math.max(0, altoDesplazable());
     puntos = paradas.map((parada) => {
@@ -309,8 +335,13 @@ export function montarViaje({ avisar = () => {} } = {}) {
     if (evento.target instanceof Element && evento.target.closest('a[href]')) parar();
   };
 
+  /* Con nombre y no en línea. `removeEventListener` compara por identidad,
+     así que la flecha de aquí abajo era una función distinta de la del
+     registro y el retiro no retiraba nada. */
+  const alParar = () => parar({ notificar: true });
+
   boton.addEventListener('click', arrancar);
-  botonParar.addEventListener('click', () => parar({ notificar: true }));
+  botonParar.addEventListener('click', alParar);
 
   const GESTOS = ['wheel', 'touchstart'];
   for (const gesto of GESTOS) window.addEventListener(gesto, alGesto, { passive: true });
@@ -320,7 +351,7 @@ export function montarViaje({ avisar = () => {} } = {}) {
   return () => {
     parar({ devolverFoco: false });
     boton.removeEventListener('click', arrancar);
-    botonParar.removeEventListener('click', () => parar({ notificar: true }));
+    botonParar.removeEventListener('click', alParar);
     for (const gesto of GESTOS) window.removeEventListener(gesto, alGesto);
     window.removeEventListener('keydown', alTecla);
     document.removeEventListener('click', alClic);

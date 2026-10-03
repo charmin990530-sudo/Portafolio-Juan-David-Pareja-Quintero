@@ -9,6 +9,7 @@
  */
 
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
 
 /* ---- Falsear el navegador ---- */
 
@@ -31,6 +32,12 @@ const { NIVELES, perfil, detectarNivel, densidadUI, dprEfectivo, admite, crearSo
 
 /* ---- Perfiles ---- */
 
+/* Se importa antes de imprimirlos: el número de triángulos de cada nivel sale
+   de la geometría real, y verlo junto al nivel es justo lo que hace útil la
+   comprobación de más abajo. */
+const { IcosahedronGeometry } = await import('../assets/vendor/three/0.186.1/three.module.js');
+const triangulosDe = (d) => new IcosahedronGeometry(1, d).getAttribute('position').count / 3;
+
 const ALTO = perfil(NIVELES.ALTO);
 const MEDIO = perfil(NIVELES.MEDIO);
 const BAJO = perfil(NIVELES.BAJO);
@@ -38,10 +45,12 @@ const BAJO = perfil(NIVELES.BAJO);
 console.log('\nPerfiles');
 for (const [nombre, p] of [['alto', ALTO], ['medio', MEDIO], ['bajo', BAJO]]) {
   console.log(
-    `  ${nombre.padEnd(5)} icosa=${p.detallePlaneta}  estrellas=${String(p.puntosEstrella).padStart(4)}` +
+    `  ${nombre.padEnd(5)} icosa=${p.detallePlaneta} (${triangulosDe(p.detallePlaneta)} triángulos)` +
+      `  estrellas=${String(p.puntosEstrella).padStart(4)}` +
       `  dpr=${p.dpr}  atmósfera=${p.atmosfera}  fps=${p.objetivoFps}`,
   );
 }
+console.log('  ✓ el icosaedro mide 20·(d+1)², y el comentario de cada nivel lo dice');
 
 // La identidad visual NO puede variar con el nivel: es el principio de ESTUDIO.md §6.5.
 assert.equal(admite(NIVELES.ALTO, 'nubes'), true, 'nubes en alto');
@@ -55,6 +64,55 @@ assert.ok(ALTO.puntosEstrella > MEDIO.puntosEstrella, 'menos estrellas al bajar'
 assert.ok(MEDIO.puntosEstrella > BAJO.puntosEstrella, 'menos estrellas en bajo');
 assert.ok(ALTO.detallePlaneta > MEDIO.detallePlaneta, 'menos geometría al bajar');
 assert.ok(ALTO.dpr >= MEDIO.dpr && MEDIO.dpr >= BAJO.dpr, 'DPR monótono');
+
+/* ── LA GEOMETRÍA REAL DE CADA NIVEL ──────────────────────────────────────
+ *
+ * Los comentarios de `calidad.js` dicen cuántos triángulos cuesta cada nivel, y
+ * durante dos sesiones esos tres números estaban mal: se calcularon con 20·4^d, y un
+ * `IcosahedronGeometry` de detalle `d` tiene 20·(d+1)². Con detalle 4 son 500 y
+ * no 2 562.
+ *
+ * Aquí se comprueba contra la geometría de verdad, la de la librería
+ * vendorizada, sin escribir ningún número a mano. Así el comentario no puede
+ * volver a mentir: si algún día se cambia `detallePlaneta`, el número que dice
+ * el comentario tiene que cambiar con él, o esta comprobación falla.
+ */
+/* La fuente se lee una vez: `calidad.js` declara los tres perfiles seguidos y
+   hay que emparejarlos por el número de detalle, no buscarlos por orden. */
+const fuenteCalidad = readFileSync(new URL('../assets/js/universo/calidad.js', import.meta.url), 'utf8');
+const lineasDetalle = fuenteCalidad
+  .split('\n')
+  .filter((l) => l.includes('detallePlaneta:') && l.includes('triángulos'));
+
+for (const [nombre, p] of [['alto', ALTO], ['medio', MEDIO], ['bajo', BAJO]]) {
+  const reales = triangulosDe(p.detallePlaneta);
+
+  /* La fórmula, comprobada contra la geometría de verdad. No basta con
+     comprobar los tres detalles que se usan: si algún día se añade uno nuevo,
+     la fórmula tiene que seguir valiendo para él. */
+  for (let d = 0; d <= 5; d += 1) {
+    assert.equal(
+      triangulosDe(d),
+      20 * (d + 1) ** 2,
+      `20·(d+1)² para detalle ${d}`,
+    );
+  }
+
+  /* Y el comentario del perfil tiene que decir ESE número. Es lo que falló:
+     el comentario decía 2 562 y la geometría tenía 500. */
+  const linea = lineasDetalle.find((l) => l.includes(`detallePlaneta: ${p.detallePlaneta},`));
+  assert.ok(linea, `el perfil ${nombre} declara detallePlaneta: ${p.detallePlaneta}`);
+
+  const dicho = linea.match(/([\d\s]+)\s*triángulos/);
+  assert.ok(dicho, `el comentario de detalle ${p.detallePlaneta} dice cuántos triángulos`);
+
+  const normalizado = dicho[1].replace(/[\s ]/g, '');
+  assert.equal(
+    normalizado,
+    String(reales),
+    `el comentario dice ${normalizado} triángulos y la geometría tiene ${reales}`,
+  );
+}
 
 /* ---- Puntuación ---- */
 
@@ -104,12 +162,13 @@ console.log('  ✓ DPR acotado por perfil y por dispositivo');
 
 console.log('\nSonda de framerate');
 
-function correrSonda({ nivel, deltaMs, fotogramas = 90, objetivo }) {
+function correrSonda({ nivel, deltaMs, fotogramas = 90, objetivo, puedeDegradar }) {
   const eventos = [];
   const sondear = crearSonda({
     nivel,
     objetivo,
     fotogramas,
+    puedeDegradar,
     alDegradar: (nuevo) => eventos.push({ tipo: 'degradar', nivel: nuevo }),
     alTerminar: (r) => eventos.push({ tipo: 'terminar', ...r }),
   });
@@ -135,6 +194,23 @@ console.log(`  ✓ 16 ms/quadro (60 fps) → no degrada, reporta ${rapido.find((
 const yaBajo = correrSonda({ nivel: NIVELES.BAJO, deltaMs: 60, objetivo: 30 });
 assert.equal(yaBajo.find((e) => e.tipo === 'degradar'), undefined, 'ya está en el nivel mínimo: no hay dónde bajar');
 console.log('  ✓ ya en nivel bajo → no intenta degradar por debajo del mínimo');
+
+/* El caso que faltaba y que se encontró mirando el sitio en un navegador
+   de verdad: si el visitante eligió el nivel a mano, la sonda mide pero NO
+   degrada. Medido en una máquina con GPU real: se elegía "Alta" y el sitio
+   se quedaba en "Media", y se elegía "Media" y se quedaba en "Baja". El
+   selector de la cabecera era un control que no controlaba. */
+const elegido = correrSonda({ nivel: NIVELES.ALTO, deltaMs: 33, objetivo: 55, puedeDegradar: false });
+assert.equal(
+  elegido.find((e) => e.tipo === 'degradar'),
+  undefined,
+  'con el nivel elegido por el visitante no debe degradar, aunque no llegue al objetivo',
+);
+assert.ok(
+  elegido.find((e) => e.tipo === 'terminar'),
+  'con el nivel elegido la sonda sigue midiendo: el HUD muestra los fps',
+);
+console.log(`  ✓ nivel ELEGIDO (30 fps contra un objetivo de 55) → no degrada, pero mide y reporta ${elegido.find((e) => e.tipo === 'terminar').fps.toFixed(1)} fps`);
 
 console.log('\nTodas las pruebas pasaron.\n');
 

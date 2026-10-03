@@ -26,7 +26,7 @@
  * siempre por el camino del correo y no depende de ningún tercero.
  */
 
-import { $, $$ } from '../core/dom.js';
+import { $, $$, on } from '../core/dom.js';
 import { mostrarAviso } from './contenido.js';
 import { clamp } from '../core/util.js';
 import { CONTACTO } from '../data/universo.js';
@@ -161,24 +161,34 @@ export function montarContacto() {
   const estadoTexto = $('#form-estado');
   const campos = $$('[data-campo]', formulario);
 
+  /* Cada escuchador se registra con `on()`, que devuelve su baja. Antes
+     todos eran flechas anónimas: inmutables por fuera e irretirables, así
+     que la limpieza no podía soltar nada. */
+  const bajas = [];
+
   /* ---------- Validación en vivo ---------- */
   for (const campo of campos) {
-    campo.addEventListener('blur', () => {
-      const regla = REGLAS[campo.dataset.campo];
-      if (!regla) return;
-      const valor = campo.value;
-      if (!valor.trim()) return;
-      marcarCampo(campo, regla.validar(valor) ? 'ok' : 'error', regla.etiqueta);
-    });
+    bajas.push(
+      on(campo, 'blur', () => {
+        const regla = REGLAS[campo.dataset.campo];
+        if (!regla) return;
+        const valor = campo.value;
+        if (!valor.trim()) return;
+        marcarCampo(campo, regla.validar(valor) ? 'ok' : 'error', regla.etiqueta);
+      }),
+    );
 
-    campo.addEventListener('input', () => {
-      const contenedor = campo.closest('.campo');
-      if (contenedor?.dataset.estado === 'error') marcarCampo(campo, 'ok', '');
-    });
+    bajas.push(
+      on(campo, 'input', () => {
+        const contenedor = campo.closest('.campo');
+        if (contenedor?.dataset.estado === 'error') marcarCampo(campo, 'ok', '');
+      }),
+    );
   }
 
   /* ---------- Envío ---------- */
-  formulario.addEventListener('submit', async (evento) => {
+  bajas.push(
+    on(formulario, 'submit', async (evento) => {
     evento.preventDefault();
 
     const datos = {};
@@ -244,7 +254,8 @@ export function montarContacto() {
     for (const campo of campos) marcarCampo(campo, '', '');
 
     mostrarAviso(explicar(resultado.motivo), 7000);
-  });
+    }),
+  );
 
   /* ---------- Contador de caracteres ---------- */
   const mensaje = formulario.elements.mensaje;
@@ -256,9 +267,15 @@ export function montarContacto() {
       contador.textContent = `${largo}/600`;
       contador.dataset.estado = largo >= 600 ? 'limite' : 'ok';
     };
-    mensaje.addEventListener('input', actualizar);
+    bajas.push(on(mensaje, 'input', actualizar));
     actualizar();
   }
 
-  return () => {};
+  /* Antes era `return () => {}`: cumplía la firma y no soltaba nada.
+     Este módulo registra dos escuchadores por campo más los del formulario
+     y el del contador, y todos se quedan vivos apuntando al formulario
+     aunque el sitio se haya desmontado. */
+  return () => {
+    for (const baja of bajas) baja();
+  };
 }

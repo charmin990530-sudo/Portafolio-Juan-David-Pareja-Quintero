@@ -21,6 +21,13 @@ export function montarContadores() {
 
   const pendientes = new Set();
 
+  /* Las bajas de los fotogramas en marcha. `quitar` se guarda en una
+     closure dentro de `animar()` y la limpieza no la alcanzaba: tras un
+     `pagehide` los suscriptores seguían corriendo hasta 1,5 s y `numero()`
+     seguía escribiendo en nodos que ya no estaban en pantalla. Ahora se
+     guardan en un `Map` y la limpieza puede soltarlos todos. */
+  const bajas = new Map();
+
   if (movimientoReducido() || !('IntersectionObserver' in window)) {
     for (const nodo of objetivos) {
       nodo.textContent = `${numero(Number(nodo.dataset.contador))}${nodo.dataset.sufijo ?? ''}`;
@@ -41,10 +48,12 @@ export function montarContadores() {
       if (t >= 1) {
         nodo.textContent = `${numero(destino)}${sufijo}`;
         quitar();
+        bajas.delete(nodo);
         pendientes.delete(nodo);
       }
     });
 
+    bajas.set(nodo, quitar);
     pendientes.add(nodo);
   }
 
@@ -63,6 +72,9 @@ export function montarContadores() {
 
   return () => {
     observador.disconnect();
+    for (const baja of bajas.values()) baja();
+    bajas.clear();
     for (const nodo of pendientes) nodo.textContent = `${numero(Number(nodo.dataset.contador))}${nodo.dataset.sufijo ?? ''}`;
+    pendientes.clear();
   };
 }

@@ -132,18 +132,42 @@ class IntersectionObserverStub {
   }
 }
 
-window.matchMedia = (consulta) => ({
-  matches: false,
-  media: consulta,
-  onchange: null,
-  addEventListener() {},
-  removeEventListener() {},
-  addListener() {},
-  removeListener() {},
-  dispatchEvent() {
-    return false;
-  },
-});
+/* `matchMedia` responde a CADA consulta por separado.
+
+   Antes devolvía `matches: false` para todo, y eso era más cómodo pero
+   mentía: el sitio lee tres consultas al arrancar, y con todas en `false`
+   `cursor.js` y `montarScrollSuave` salían por su puerta de capacidad y no
+   montaban nada. Las comprobaciones sobre sus limpiezas pasaban sin haber
+   montado nada, que es la forma más cómoda de no comprobar nada.
+
+   Aquí el sitio se presenta como lo que la prueba quiere ser: un escritorio
+   con puntero fino y ventana ancha. Y `prefers-reduced-motion` sigue en
+   `false` a propósito, porque el camino de movimiento reducido es una de las
+   cuatro salidas del universo y se prueba en otra parte. */
+const MEDIA = [
+  { consulta: '(prefers-reduced-motion: reduce)', matches: false },
+  { consulta: '(pointer: fine)', matches: true },
+  { consulta: '(pointer: coarse)', matches: false },
+  { query: '(min-width: 900px)', matches: true, como: '(min-width: 900px)' },
+  { query: '(min-width: 820px)', matches: true, como: '(min-width: 820px)' },
+  { query: '(min-width: 360px)', matches: true, como: '(min-width: 360px)' },
+];
+
+window.matchMedia = (consulta) => {
+  const encontrada = MEDIA.find((m) => m.consulta === consulta || m.query === consulta);
+  return {
+    matches: encontrada?.matches ?? false,
+    media: consulta,
+    onchange: null,
+    addEventListener() {},
+    removeEventListener() {},
+    addListener() {},
+    removeListener() {},
+    dispatchEvent() {
+      return false;
+    },
+  };
+};
 
 window.requestIdleCallback = (fn) => window.setTimeout(() => fn({ didTimeout: false, timeRemaining: () => 50 }), 0);
 window.cancelIdleCallback = (id) => window.clearTimeout(id);
@@ -263,6 +287,57 @@ Object.defineProperty(window, 'scrollY', {
    4. Ejecutar el sitio
    ------------------------------------------------------------------ */
 
+/* ── INSTRUMENTACIÓN DE ESCUCHADORES ──────────────────────────────────
+
+   Se cuenta cada `addEventListener` y cada `removeEventListener` que el
+   sitio haga, para poder exigir al final que `pagehide` los solte todos.
+
+   Es la forma de comprobar en ejecución la regla de que todo `montar*`
+   devuelve su limpieza, sin tocar el código del sitio: no hace falta que
+   `main.js` exponga su lista de limpiezas ni que ningún módulo mute para
+   poder observarlo. Se cuenta por PAR de tipo y manejador, que es como
+   funciona `removeEventListener` —por identidad—, y no solo por tipo: si
+   un módulo retira un manejador distinto del que puso, el contador no baja
+   y el fallo queda al descubierto.
+
+   Antes de esto, cinco módulos del sitio retinaban listeners que nunca
+   soltaron: cuatro de `cursor.js`, seis de `contacto.js`, diez de
+   `proceso.js` y uno de `contenido.js`. Todos con la misma forma: un
+   `return () => {}` que cumplía la firma sin hacer nada. */
+
+const vivos = new Map();
+
+function idDe(tipo, manejador, opciones) {
+  return `${tipo}|${manejador}|${opciones?.capture ?? false}`;
+}
+
+const addOriginal = window.EventTarget.prototype.addEventListener;
+const removeOriginal = window.EventTarget.prototype.removeEventListener;
+
+window.EventTarget.prototype.addEventListener = function (tipo, manejador, opciones) {
+  const id = idDe(tipo, manejador, opciones);
+  vivos.set(id, (vivos.get(id) ?? 0) + 1);
+  return addOriginal.call(this, tipo, manejador, opciones);
+};
+
+window.EventTarget.prototype.removeEventListener = function (tipo, manejador, opciones) {
+  const id = idDe(tipo, manejador, opciones);
+  vivos.set(id, (vivos.get(id) ?? 0) - 1);
+  return removeOriginal.call(this, tipo, manejador, opciones);
+};
+
+/* `core/loop.js` se importa ANTES de instrumentar a propósito. Es el módulo
+   que ES el bucle: su escuchador de `visibilitychange` vive hasta que se
+   cierra la página, porque no hay nada que lo desmonte. Importándolo aquí
+   queda en la línea base y no se cuenta como una fuga del sitio. */
+try {
+  await import(pathToFileURL(resolve(RAIZ, 'assets/js/core/loop.js')).href);
+} catch {
+  /* si falla, la línea base simplemente valdrá cero */
+}
+
+const lineaBase = new Map(vivos);
+
 try {
   await import(pathToFileURL(resolve(RAIZ, 'assets/js/main.js')).href);
 } catch (e) {
@@ -334,11 +409,42 @@ if (viaje) {
     doc.activeElement === doc.querySelector('.viaje-panel__parar'),
     doc.activeElement?.className,
   );
-  comprobar_(
-    'el contador nombra el sistema en el que se está',
-    /Planeta hogar|El origen|Campo de escombros/.test(doc.querySelector('.viaje-panel__nombre')?.textContent ?? ''),
-    doc.querySelector('.viaje-panel__nombre')?.textContent,
-  );
+comprobar_(
+  'el contador nombra el sistema en el que se está',
+  /Planeta hogar|El origen|Campo de escombros/.test(doc.querySelector('.viaje-panel__nombre')?.textContent ?? ''),
+  doc.querySelector('.viaje-panel__nombre')?.textContent,
+);
+
+/* El número de paradas tiene que coincidir con las secciones que HAY.
+
+   Es la comprobación que faltaba para un defecto real: `#proyectos` no está
+   en el HTML, lo inserta `modules/proyectos.js`, y ese módulo se monta
+   DESPUÉS que `viaje` en `main.js`. `viaje.js` decidía su lista de paradas al
+   montarse, filtrando por `getElementById`, así que el sistema de proyectos
+   quedaba fuera aunque la sección existiera.
+
+   No se notaba con `data/proyectos.js` vacío, porque la sección no se crea y
+   los dos números salían a 6 por casualidad. En cuanto se añade el primer
+   proyecto, el contador se quedaba en `06` mientras existían siete secciones
+   con sistema: el "cúmulo de planetas" desaparecía del recorrido sin un solo
+   error en consola.
+
+   La comparación es contra el DOM, no contra una constante: así vale igual con
+   seis secciones que con siete. */
+const { SISTEMAS } = await import(pathToFileURL(resolve(RAIZ, 'assets/js/data/universo.js')).href);
+const seccionesConSistema = SISTEMAS.filter((s) => doc.getElementById(s.seccion) !== null).length;
+const totalEnElContador = Number(/(\d+)\s*\/\s*(\d+)/.exec(doc.querySelector('.viaje-panel__lectura')?.textContent ?? '')?.[2]);
+
+comprobar_(
+  'el recorrido cuenta tantas paradas como secciones con sistema hay',
+  totalEnElContador === seccionesConSistema,
+  `el contador dice ${totalEnElContador} y hay ${seccionesConSistema} secciones con sistema`,
+);
+comprobar_(
+  'el recorrido incluye la sección de proyectos si existe',
+  !doc.getElementById('proyectos') || totalEnElContador === seccionesConSistema,
+  'la sección existe y el recorrido no la incluye',
+);
 
   doc.dispatchEvent(new window.KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true }));
   await new Promise((r) => setTimeout(r, 250));
@@ -405,6 +511,56 @@ comprobar_('ningún enlace interno apunta a nada', rotas.length === 0, rotas.joi
 
 /* --- Consola --- */
 comprobar_('la consola está limpia: cero errores', erroresConsola.length === 0, erroresConsola.slice(0, 2).join(' | '));
+
+/* --- Apagar el sitio: todo `montar*` devuelve su limpieza ---
+
+   Se dispara `pagehide`, que es lo que hace `main.js` para soltar el sitio,
+   y se exige que no quede ningún escuchador colgado por encima de la línea
+   base. Es la versión de ejecución de la regla que `verificar-limpiezas.mjs`
+   comprueba por lectura: aquí importa que la limpieza se LLAME, que es lo
+   único que no se puede ver leyendo el archivo.
+
+   Se comparan contra la línea base en vez de contra cero, y se perdona un
+   único `pagehide`, por dos razones escritas:
+
+     · la línea base es `core/loop.js`, que no tiene ciclo de vida;
+     · el `pagehide` que cuelga es el de `main.js`, que es el QUE LLAMA a
+       las limpiezas. Pedirle que se retire a sí mismo sería pedirle que se
+       desconecte antes de desconectarse. */
+window.dispatchEvent(new window.Event('pagehide'));
+await new Promise((r) => setTimeout(r, 60));
+
+const colgados = [...vivos.entries()]
+  .map(([id, n]) => ({ tipo: id.split('|')[0], id, n: n - (lineaBase.get(id) ?? 0) }))
+  .filter(({ tipo, n }) => n > 0 && tipo !== 'pagehide')
+  .map(({ tipo, n }) => `${tipo} ×${n}`);
+
+comprobar_(
+  '`pagehide` suelta todos los escuchadores que el sitio registró',
+  colgados.length === 0,
+  colgados.slice(0, 6).join(', '),
+);
+
+/* Que no queden escuchadores solo demuestra que se retiraron los que se
+   podían retirar. Falta lo importante: que la limpieza SE EJECUTÓ. Con solo
+   el conteo de escuchadores, el defecto original de `proceso.js` pasaba
+   limpio: devolvía un objeto, `main.js` leía un `TypeError` y lo silenciaba,
+   así que su limpieza no llegaba a correr y sus nodos se quedaban en el
+   documento sin que nada lo delatara.
+
+   Estos nodos los crea el sitio al montar y ningún módulo los borra salvo su
+   limpieza, así que si siguen aquí es que la limpieza no se ejecutó. */
+const shouldHaveRemoved = [
+  ['.proceso__nucleo', 'la limpieza de proceso.js se ejecutó'],
+  ['.cursor', 'la limpieza de cursor.js se ejecutó'],
+  ['.viaje-panel', 'la limpieza de viaje.js se ejecutó'],
+  ['.marquee__pista [data-clonado]', 'la limpieza de la marquesina se ejecutó'],
+  ['#stack-grupos .grupo', 'la limpieza de contenido.js se ejecutó'],
+];
+
+for (const [selector, nombre] of shouldHaveRemoved) {
+  comprobar_(nombre, !doc.querySelector(selector), `sigue en el documento: ${selector}`);
+}
 
 /* ------------------------------------------------------------------ */
 

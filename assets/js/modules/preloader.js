@@ -97,9 +97,15 @@ export function montarPreloader() {
 
   const listo = esperarListo();
 
-  on(window, 'load', () => {
-    destino = 1;
-  });
+/* La baja se guarda y se usa en cuanto el preloader deja de hacer falta.
+   Antes se llamaba a `on()` sin conservarla: el escuchador de `load` se
+   quedaba vivo apuntando a `destino`, que es una variable de este módulo ya
+   retirado. */
+const bajaCarga = on(window, 'load', () => {
+  destino = 1;
+});
 
-  return listo.then(() => cerrar(100));
+return listo
+  .then(() => cerrar(100))
+  .finally(() => bajaCarga());
 }

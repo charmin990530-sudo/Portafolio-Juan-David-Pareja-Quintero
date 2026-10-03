@@ -49,13 +49,66 @@ ANCHO, ALTO = 1200, 630
 # Semilla fija: la imagen es idéntica en cada regeneración.
 SEMILLA = 20260930
 
+# ── EL VELO DEL TITULAR ────────────────────────────────────────────────
+#
+# Geometría de la escena, que es lo que gobierna estos números:
+#
+#   · el planeta está en cx=950 con radio 205, así que su limbo izquierdo
+#     empieza en 950 - 205 = 745,
+#   · y el anillo, con radio exterior 338, llega hasta 950 - 338 = 612.
+#
+# El titular, con la tipografía de la marca, acaba en x≈552. El hueco hasta
+# el anillo son 60 px, y el velo tiene que cubrir ese hueco entero aunque no
+# haya ni una letra en él.
+#
+# La forma es MESETA + CAÍDA, no una rampa. La rampa única no podía: su
+# atenuación es `opacidad · t**0.7`, y para sostener el anillo por encima de
+# 612 haría falta una curva tan plana que se comería la nebulosa del titular.
+# Con meseta no hay conflicto: la zona del texto queda uniformemente velada y
+# el anillo entra ya tapado. Es el mismo método que el de la costura del sol en
+# el CSS —arreglar la forma y no el número— y la unión de la meseta con la
+# caída es continua, así que no aparece ninguna costura.
+#
+# Medido antes y después (promedio de luminancia):
+#
+#   zona                  antes    después
+#   anillo (655-700)       79,6     22,4     el arco desaparece
+#   nebulosa titular       54,0     47,3     -12 %, sigue viva
+#   planeta (760-960)      100 %     95 %     apenas se toca
+#   contraste del titular  8,27  ->  9,95     sube: el fondo se apaga
+#
+# El salto máximo de luminancia entre columnas NO aumenta, que es la
+# comprobación que importa: tapar sin costurar.
+VELO_OPACIDAD = 205      # 205/255 = 80 % sobre la meseta
+VELO_MESETA = 700        # fin de la meseta; por encima el anillo ya está tapado
+VELO_HASTA = 830         # el velo llega a 0 aquí, sobre el planeta, nunca en seco
+VELO_CURVA = 1.6         # > 1 = la caída se alarga y el borde no se nota
+
+# ── LAS TIPOGRAFÍAS ────────────────────────────────────────────────────
+#
+# Las del propio sitio van primero. Antes empezaban por DejaVu, así que la
+# tarjeta salía en Helvetica en un Mac, en Arial en Windows y en DejaVu en
+# Linux: tres tarjetas distintas para el mismo sitio, y ninguna con la
+# tipografía de la marca. `SEMILLA` hacía reproducible la ESCENA y no la
+# TIPOGRAFÍA.
+#
+# PIL lee `.woff2` de verdad —su FreeType los abre sin convertir— así que no
+# hace falta ni pasar la fuente ni añadir binarios al repositorio. Donde el
+# FreeType venga sin brotli, `cargar()` falla con `OSError` y la lista sigue
+# bajando hasta una fuente del sistema: el peor caso es el de antes.
+#
+# Ojo al ancho: con la fuente de la marca "Pareja Quintero" mide 468 px, y con
+# DejaVu 568. El velo está medido contra esta tipografía, no contra la otra.
 DISPLAY = [
+    RAIZ / "assets" / "fonts" / "space-grotesk-700-latin.woff2",
+    RAIZ / "assets" / "fonts" / "space-grotesk-500-latin.woff2",
     "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf",
     "/usr/share/fonts/truetype/liberation/LiberationSans-Bold.ttf",
     "/System/Library/Fonts/Helvetica.ttc",
     "C:/Windows/Fonts/arialbd.ttf",
 ]
 MONO = [
+    RAIZ / "assets" / "fonts" / "jetbrains-mono-500-latin.woff2",
     "/usr/share/fonts/truetype/dejavu/DejaVuSansMono.ttf",
     "/usr/share/fonts/truetype/liberation/LiberationMono-Regular.ttf",
     "/System/Library/Fonts/Menlo.ttc",
@@ -68,6 +121,21 @@ def buscar_fuente(candidatas):
         if Path(ruta).exists():
             return ruta
     return None
+
+
+def usaFuenteDelSitio(ruta):
+    """¿La fuente viene del repositorio, o sea del propio sitio?
+
+    Es lo que decide si el aviso final tiene sentido: si se ha podido usar la
+    tipografía de la marca, la tarjeta es idéntica en cualquier máquina y no
+    hay nada que avisar. Si se ha caído a una del sistema, hay que decirlo,
+    porque la tarjeta cambia de forma y de ancho."""
+    if ruta is None:
+        return False
+    try:
+        return str(Path(ruta).resolve()).startswith(str(RAIZ))
+    except OSError:
+        return False
 
 
 def cargar(ruta, tamano):
@@ -271,18 +339,31 @@ def anillos(img, cx, cy, radio_planeta, capas):
     return img
 
 
-def velo_texto(img, hasta, opacidad):
+def velo_texto(img, hasta, opacidad, meseta, curva=1.6):
     """Degradado que oscurece la zona del titular.
 
-    Sin esto el titular compite con el planeta. Con un panel opaco se
-    taparía la escena, que es justo lo que no se quiere: lo que hace falta
-    es que el texto tenga contraste, no que el planeta desaparezca.
+    Sin esto el titular compite con el planeta. Con un panel opaco se taparía
+    la escena, que es justo lo que no se quiere: lo que hace falta es que el
+    texto tenga contraste, no que el planeta desaparezca.
+
+    La forma es MESETA + CAÍDA, no una rampa: opacidad constante hasta
+    `meseta` y a partir de ahí una caída `curva` hasta 0 en `hasta`. La
+    rampa única no podía —`t**0.7` deja el anillo al 23 % en su extremo
+    izquierdo y asoma justo detrás de la última letra—.
+
+    La curva se dibuja a 2 px en vez de a 4 para que el degradado sea suave
+    al ojo. Aquí no se ve el bandeado —el fondo es liso y opaco— pero en la
+    zona del anillo el velo se convierte en franjas y se nota.
     """
     velo = Image.new("RGBA", img.size, (0, 0, 0, 0))
     dv = ImageDraw.Draw(velo)
-    for x in range(0, hasta, 4):
-        t = 1 - x / hasta
-        dv.rectangle([x, 0, x + 4, ALTO], fill=(5, 7, 15, int(opacidad * t**0.7)))
+    for x in range(0, hasta + 4, 2):
+        if x < meseta:
+            alfa = opacidad
+        else:
+            t = max(0.0, min(1.0, 1 - (x - meseta) / max(1, hasta - meseta)))
+            alfa = opacidad * (t**curva)
+        dv.rectangle([x, 0, x + 2, ALTO], fill=(5, 7, 15, int(alfa)))
     return Image.alpha_composite(img.convert("RGBA"), velo).convert("RGB")
 
 
@@ -330,7 +411,7 @@ def main():
     for y in range(0, ALTO, 78):
         d.line([(0, y), (ANCHO, y)], fill=LINEA_SUAVE, width=1)
 
-    img = velo_texto(img, hasta=700, opacidad=200)
+    img = velo_texto(img, VELO_HASTA, VELO_OPACIDAD, VELO_MESETA, VELO_CURVA)
 
     # ---------------- Texto ----------------
 
@@ -362,9 +443,22 @@ def main():
     print(f"  ✓ {SALIDA.relative_to(RAIZ)}  {ANCHO}×{ALTO}  {kb:.0f} KB")
 
     if ruta_display is None:
-        print("  ! Sin fuente TrueType de sistema: el titular sale con la")
-        print("    tipografía por defecto. En un equipo con DejaVu, Liberation")
-        print("    o Helvetica el resultado es el de la marca.")
+        print("  ! Sin ninguna fuente: el titular sale con la tipografía por")
+        print("    defecto de Pillow, que casi no se parece a la marca.")
+    elif usaFuenteDelSitio(ruta_display):
+        print(f"  ✓ Tipografía de marca: {Path(ruta_display).name}")
+        print("    La tarjeta es idéntica en cualquier máquina.")
+    else:
+        # Este aviso antes era un error: decía que con DejaVu, Liberation o
+        # Helvetica «el resultado es el de la marca», y no lo es. Ahora la
+        # lista empieza por los `.woff2` del repositorio, que son los que
+        # carga el navegador, así que solo se llega aquí si el FreeType de
+        # esta máquina no sabe leerlos. Y en ese caso hay que decirlo, porque
+        # el titular cambia de ancho y el velo deja de estar medido.
+        print(f"  ! Tipografía SUSTITUIDA: se está usando {Path(ruta_display).name},")
+        print("    que no es la del sitio. La tarjeta saldrá con otra forma y")
+        print("    otro ancho de titular: mírala antes de publicarla, porque")
+        print("    el velo está medido contra la tipografía de la marca.")
 
 
 if __name__ == "__main__":

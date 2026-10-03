@@ -33,6 +33,14 @@ export function montarHero() {
   const fecha = $('#hud-fecha');
   const reducido = movimientoReducido();
 
+  /* Todo lo que este módulo deja corriendo, para poder pararlo. Antes no
+     devolvía NADA: la limpieza de `main.js` era un no-op silencioso y el
+     paralaje seguía escribiendo `transform` en el aura para siempre. */
+  const bajas = [];
+  const intervalos = [];
+  let temporizadorEscritor = 0;
+  let escribiendo = true;
+
   /* ---------- Título letra por letra ---------- */
   if (titulo) {
     const texto = titulo.dataset.texto || titulo.textContent.trim();
@@ -70,7 +78,13 @@ export function montarHero() {
     if (reducido) {
       maquina.textContent = ROLES[0];
     } else {
+      /* El ciclo es una cadena de `setTimeout` recursivos. Para poder
+         pararla hay que tener en la mano el id del temporizador vivo y una
+         bandera que el propio ciclo compruebe al entrar: limpiar solo el
+         temporizador no basta, porque el que ya estaba agendado se dispara
+         igualmente y la cadena vuelve a empezar sola. */
       const ciclo = () => {
+        if (!escribiendo) return;
         const actual = ROLES[indice];
 
         if (!borrando) {
@@ -78,7 +92,7 @@ export function montarHero() {
           if (posicion > actual.length) {
             borrando = true;
             pintar();
-            window.setTimeout(ciclo, PAUSA_ESCRITO);
+            temporizadorEscritor = window.setTimeout(ciclo, PAUSA_ESCRITO);
             return;
           }
         } else {
@@ -87,33 +101,32 @@ export function montarHero() {
             borrando = false;
             indice = (indice + 1) % ROLES.length;
             pintar();
-            window.setTimeout(ciclo, PAUSA_BORRADO);
+            temporizadorEscritor = window.setTimeout(ciclo, PAUSA_BORRADO);
             return;
           }
         }
 
         pintar();
-        window.setTimeout(ciclo, borrando ? VELOCIDAD_BORRA : VELOCIDAD_ESCRIBE);
+        temporizadorEscritor = window.setTimeout(ciclo, borrando ? VELOCIDAD_BORRA : VELOCIDAD_ESCRIBE);
       };
 
       pintar();
-      window.setTimeout(ciclo, 900);
+      temporizadorEscritor = window.setTimeout(ciclo, 900);
     }
   }
 
   /* ---------- HUD ---------- */
   if (reloj) {
     reloj.textContent = horaUTC();
-    const intervalo = window.setInterval(() => {
-      if (!document.hidden) reloj.textContent = horaUTC();
-    }, 1000);
-    window.addEventListener('pagehide', () => clearInterval(intervalo), { once: true });
+    intervalos.push(
+      window.setInterval(() => {
+        if (!document.hidden) reloj.textContent = horaUTC();
+      }, 1000),
+    );
   }
   if (fecha) fecha.textContent = fechaUTC();
 
   /* ---------- Paralaje ---------- */
-  if (reducido || !aura) return;
-
   function paralaje() {
     const actual = window.scrollY;
     if (actual > window.innerHeight * 1.2) return;
@@ -129,5 +142,16 @@ export function montarHero() {
     }
   }
 
-  alFotograma(paralaje);
+  /* Con movimiento reducido el título y la máquina de escribir ya están
+     resueltos arriba, pero el paralaje no se registra: una traslación por
+     scroll es justo lo que esa preferencia pide que no pase. Por eso el
+     `return` está al final y no antes. */
+  if (!reducido && aura) bajas.push(alFotograma(paralaje));
+
+  return () => {
+    escribiendo = false;
+    window.clearTimeout(temporizadorEscritor);
+    for (const intervalo of intervalos) window.clearInterval(intervalo);
+    for (const baja of bajas) baja();
+  };
 }

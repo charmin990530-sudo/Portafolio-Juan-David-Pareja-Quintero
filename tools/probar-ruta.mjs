@@ -38,6 +38,7 @@ globalThis.document = {
    contrato está documentado en el JSDoc de `resolver`. */
 
 const { SISTEMAS, CAMARA } = await import('../assets/js/data/universo.js');
+const { milisegundosASegundos } = await import('../assets/js/core/util.js');
 const { crearRuta } = await import('../assets/js/universo/ruta.js');
 const { separacionParaEncuadre } = await import('../assets/js/core/util.js');
 
@@ -615,5 +616,41 @@ console.log(`  ✓ En móvil el cuerpo más grande pasa del ${(rellenoHorizontal
    todo estaba compuesto y medido. */
 assert.strictEqual(separacionParaEncuadre(MONITOR), 1, 'horizontal no debe moverse');
 assert.ok(mayorRelleno(1) === rellenoHorizontal, 'horizontal debe ser exactamente lo que era');
+
+/* ------------------------------------------------------------------
+   10. Las unidades de la duración del scroll
+   ------------------------------------------------------------------ */
+
+console.log('\n10. Unidades de la duración del scroll:');
+
+/* El sitio habla en milisegundos y Lenis anima en segundos. La conversión
+   es la razón de que el recorrido guiado funcionara, y su ausencia es la
+   razón de que no funcionara: `duracionPara` pedía 1 500–3 600 y Lenis lo
+   leía como 1 500–3 600 SEGUNDOS, de modo que cada parada duraba entre 25 y
+   60 minutos. Lo que se ve es la página Advanced eight píxeles por segundo.
+
+   Lo que se comprueba aquí es que la conversión existe y es correcta. Que
+   además el recorrido la use es cosa del navegador: en un DOM de prueba no
+   hay Lenis ni interpolación, así que el error era invisible para toda
+   comprobación y solo apareció al abrirlo de verdad. */
+const DURACION_MINIMA = 1500;
+const DURACION_MAXIMA = 3600;
+
+assert.strictEqual(milisegundosASegundos(undefined), undefined,
+  'sin duración explícita se deja undefined para que el valor por defecto del sitio siga mandando');
+assert.strictEqual(milisegundosASegundos(1500), 1.5, '1500 ms son 1,5 s');
+assert.strictEqual(milisegundosASegundos(3600), 3.6, '3600 ms son 3,6 s');
+assert.strictEqual(milisegundosASegundos(1050), 1.05, 'el valor por defecto del sitio ya venía en segundos');
+assert.strictEqual(milisegundosASegundos(-500), 0, 'una duración negativa se controla en cero, no se pasa tal cual');
+
+/* Y la trampa real: si alguien volviera a pasar los milisegundos tal cual,
+   estas dos comparaciones tienen que delatarlo. */
+const slowest = milisegundosASegundos(DURACION_MAXIMA);
+const fastest = milisegundosASegundos(DURACION_MINIMA);
+assert.ok(slowest > 1 && slowest < 5, `una parada lejana debe tardar segundos, no minutos (${slowest})`);
+assert.ok(1 <= fastest && fastest < slowest, 'una parada corta no puede tardar más que una lejana');
+assert.ok(slowest / fastest < 4, 'la diferencia entre paradas tiene que ser perceptible, no de un orden de magnitud');
+console.log(`  ✓ 1500–3600 ms se convierten en ${fastest}–${slowest} s, que es lo que Lenis entiende`);
+console.log('  ✓ La duración del recorrido está en segundos, no en minutos');
 
 console.log('\nTodas las pruebas de la ruta pasaron.\n');

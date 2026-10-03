@@ -22,7 +22,7 @@ export const NIVELES = { ALTO: 'alto', MEDIO: 'medio', BAJO: 'bajo' };
 /** Perfiles. Estos números son el presupuesto; ver ESTUDIO.md §6.2. */
 const PERFILES = {
   [NIVELES.ALTO]: {
-    detallePlaneta: 4, // icosaedro: 2 562 triángulos
+    detallePlaneta: 4, // icosaedro: 500 triángulos (20 × (d+1)²)
     puntosEstrella: 4200,
     puntosPolvo: 900,
     rocasCampo: 320,
@@ -37,7 +37,7 @@ const PERFILES = {
     objetivoFps: 55,
   },
   [NIVELES.MEDIO]: {
-    detallePlaneta: 3, // 642 triángulos
+    detallePlaneta: 3, // icosaedro: 320 triángulos (20 × (d+1)²)
     puntosEstrella: 2800,
     puntosPolvo: 500,
     rocasCampo: 180,
@@ -52,7 +52,7 @@ const PERFILES = {
     objetivoFps: 50,
   },
   [NIVELES.BAJO]: {
-    detallePlaneta: 2, // 162 triángulos
+    detallePlaneta: 2, // icosaedro: 180 triángulos (20 × (d+1)²)
     puntosEstrella: 1800,
     puntosPolvo: 240,
     rocasCampo: 90,
@@ -183,7 +183,7 @@ export function detectarNivel({ gpu = '' } = {}) {
  *   - No decide con los 2 primeros fotogramas: el arranque de Three.js
  *     tarda y daría un falso negativo.
  */
-export function crearSonda({ nivel, objetivo, fotogramas = 90, alDegradar, alTerminar }) {
+export function crearSonda({ nivel, objetivo, fotogramas = 90, puedeDegradar = true, alDegradar, alTerminar }) {
   let acumulado = 0;
   let cuenta = 0;
   let anterior = 0;
@@ -216,6 +216,27 @@ export function crearSonda({ nivel, objetivo, fotogramas = 90, alDegradar, alTer
     terminado = true;
     const medio = 1000 / (acumulado / (cuenta - 12));
     alTerminar?.({ nivel: vigente, fps: medio });
+
+    /* ── POR QUÉ EXISTE `puedeDegradar` ────────────────────────────────
+
+       La sonda MIDRE siempre, porque el HUD muestra los fps y eso hace
+       falta en cualquier nivel. Lo que hace solo cuando puede es BAJAR.
+
+       No baja si el visitante eligió el nivel a mano. Elegir "Alta" en la
+       cabecera es una orden, no una sugerencia: el sitio hasta se marca
+       `data-calidad-elegida="1"` para acordarse de que la decisión fue
+       suya. Si después la sonda lo baja sola, el selector no sirve para
+       nada: es un control que no controla. Y es exactamente el fallo que
+       ESTUDIO.md §3 describe como el motivo de que el selector exista —
+       "un sistema que degrada solo, sin que el visitante pueda exigirle
+       nada, es un sistema que se equivoca solo"—, pero aplicado al revés:
+       aquí el sistema degradaba con o sin permiso.
+
+       Medido en esta máquina, con la sonda degradando sola: se elegía "Alta"
+       y el sitio se quedaba en "Media"; se elegía "Media" y se quedaba en
+       "Baja". Dos de los tres niveles del selector no hacían lo que
+       decían. */
+    if (!puedeDegradar) return true;
 
     if (medio < objetivo && degradaciones === 0) {
       degradaciones += 1;

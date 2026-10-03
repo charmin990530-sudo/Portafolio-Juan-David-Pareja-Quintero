@@ -180,6 +180,7 @@ export async function montarUniverso({ lienzo, forzar = false } = {}) {
     const escena = crearEscena({
       lienzo,
       nivelInicial: nivel,
+      nivelElegido: Boolean(forzado),
       alInformar: (datos) => hud.actualizar(datos),
       alDegradar: (nuevo) => {
         document.documentElement.dataset.calidad = nuevo;

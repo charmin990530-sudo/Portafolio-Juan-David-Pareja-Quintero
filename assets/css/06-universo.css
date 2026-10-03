@@ -175,17 +175,42 @@
    el diseño no pide: un degradado radial suave, con el mismo color de fondo
    del sitio, que se diluye en los cuatro lados y no se lee como una caja.
 
-   ── EL NÚMERO ──────────────────────────────────────────────────────────
+── POR QUÉ UNA MÁSCARA Y NO UN RADIAL ────────────────────────────────
 
-   88 % en el centro, 78 % al 62 % del radio, transparente en el borde. Sale
-   de medir contra el peor caso medido —un píxel del planeta más claro que
-   aparece detrás del texto— y no de una regla: `--text-soft`
-   (#a9b6d4) sobre el resultado queda por encima de 4,5:1, que es lo que
-   pide WCAG AA para texto corrido.
+    La primera versión pintaba el scrim con un `radial-gradient` de radio
+    `116% 108%`. Parecía una manchadura suave y no lo era: el radio era mayor
+    que la caja, así que al terminar la caja el gradiente todavía tenía 0,82 de
+    alfa y se cortaba en seco. Medido sobre la captura de la portada: una línea
+    horizontal exacta a `y=560`, con `rgb(43,43,48)` encima y `rgb(204,199,195)`
+    debajo — el borde inferior del scrim, a `bottom: 560,1`. Encima de la línea
+    el sol estaba apagado y debajo entero, y durante una sesión se buscó el
+    defecto en los shaders sin hallarlo. Estaba aquí.
 
-   `isolation: isolate` es lo que hace que funcione: crea un contexto de
-   apilamiento EN el bloque, de modo que el `z-index: -1` del scrim queda
-   encerrado dentro y no se va detrás de la página entera. */
+    La elipse además no podía arreglarlo por sí sola, y esto es lo importante:
+    para que el degradado se apagara dentro de la caja hacía falta un radio
+    del 50 %, y con un radio del 50 % las esquinas del bloque de texto quedan
+    SIEMPRE fuera del núcleo opaco —por muy grande que sea el `inset`— porque
+    para dos ejes la distancia normalizada es una suma de cuadrados. Con un
+    texto de 1 020 × 586 px habría que extender el scrim 400 px por cada lado
+    para que la esquina del texto siguiera dentro, y eso ya no es un scrim sino
+    una capa negra sobre casi toda la portada.
+
+    Un rectángulo con los bordes difuminados no es una elipse, y CSS lo tiene
+    hecho: dos degradados lineales cruzados, uno por eje, con `intersect` para
+    que el resultado sea el producto. Opaco en el centro, 0 en los cuatro
+    bordes por construcción, y el ancho de la difuminación se decide en rem y
+    no depende del tamaño del texto.
+
+    ── EL NÚMERO ──────────────────────────────────────────────────────────
+
+    88 % de fondo. Sale de medir contra el peor caso medido —un píxel del
+    planeta más claro que aparece detrás del texto— y no de una regla:
+    `--text-soft` (#a9b6d4) sobre el resultado queda por encima de 4,5:1, que es
+    lo que pide WCAG AA para texto corrido.
+
+    `isolation: isolate` es lo que hace que funcione: crea un contexto de
+    apilamiento EN el bloque, de modo que el `z-index: -1` del scrim queda
+    encerrado dentro y no se va detrás de la página entera. */
 
 .section-head,
 .perfil__bio,
@@ -206,6 +231,23 @@
   overflow-x: clip;
 }
 
+/* ── EL TAMAÑO DE LA DIFUMINACIÓN, Y POR QUÉ ES MENOR QUE EL `inset` ─────
+
+   La difuminación tiene que caber ENTERA en el margen que sobresale del bloque
+   de texto. Si es más ancha, la rampa se mete dentro del texto y lo deja a
+   media luz: medido, la entradilla de Perfil bajó de 7,79:1 a 2,98:1 al poner
+   una difuminación de 5rem con un `inset` vertical de 1,75rem.
+
+   Los dos números van declarados uno al lado del otro para que se vea la
+   desigualdad. Subir la difuminación sin subir el `inset` es el error que
+   acaba de costar el contraste de todo el bloque. */
+:root {
+  --scrim-inset-y: 3.5rem;
+  --scrim-inset-x: 5rem;
+  --scrim-desvanece-y: 3rem;
+  --scrim-desvanece-x: 4.5rem;
+}
+
 .section-head::before,
 .perfil__bio::before,
 .stack__nota::before,
@@ -213,16 +255,46 @@
 .hero__contenido::before {
   content: '';
   position: absolute;
-  inset: -1.75rem -2.75rem;
+  inset: calc(var(--scrim-inset-y) * -1) calc(var(--scrim-inset-x) * -1);
   z-index: -1;
   pointer-events: none;
-  background: radial-gradient(
-    116% 108% at 50% 50%,
-    color-mix(in srgb, var(--space-900) 88%, transparent) 0%,
-    color-mix(in srgb, var(--space-900) 80%, transparent) 58%,
-    color-mix(in srgb, var(--space-900) 42%, transparent) 82%,
-    transparent 100%
-  );
+  background: color-mix(in srgb, var(--space-900) 88%, transparent);
+  /* Los dos degradados se CRUZAN: el horizontal quita los lados y el vertical
+     quita arriba y abajo. Con `intersect` el scrim resultante es opaco donde
+     los dos lo son, y transparente en cuanto uno deja de serlo, así que los
+     cuatro bordes quedan a 0 sin tocar los números de dentro. */
+  -webkit-mask-image:
+    linear-gradient(
+      to right,
+      transparent 0,
+      #000 var(--scrim-desvanece-x),
+      #000 calc(100% - var(--scrim-desvanece-x)),
+      transparent 100%
+    ),
+    linear-gradient(
+      to bottom,
+      transparent 0,
+      #000 var(--scrim-desvanece-y),
+      #000 calc(100% - var(--scrim-desvanece-y)),
+      transparent 100%
+    );
+  mask-image:
+    linear-gradient(
+      to right,
+      transparent 0,
+      #000 var(--scrim-desvanece-x),
+      #000 calc(100% - var(--scrim-desvanece-x)),
+      transparent 100%
+    ),
+    linear-gradient(
+      to bottom,
+      transparent 0,
+      #000 var(--scrim-desvanece-y),
+      #000 calc(100% - var(--scrim-desvanece-y)),
+      transparent 100%
+    );
+  -webkit-mask-composite: source-in;
+  mask-composite: intersect;
 }
 
 /* El resumen de la portada va en un bloque estrecho y el sol está justo
@@ -240,12 +312,43 @@
   inset: -1.1rem -2.2rem;
   z-index: -1;
   pointer-events: none;
-  background: radial-gradient(
-    110% 120% at 50% 50%,
-    color-mix(in srgb, var(--space-900) 84%, transparent) 0%,
-    color-mix(in srgb, var(--space-900) 70%, transparent) 60%,
-    transparent 100%
-  );
+  background: color-mix(in srgb, var(--space-900) 84%, transparent);
+  /* El mismo cruce, con su propio margen y su propia difuminación, y con la
+     misma desigualdad entre las dos: la difuminación cabe en el margen y no
+     se mete en el párrafo. El párrafo es una caja baja —una o dos líneas— así
+     que su margen vertical es pequeño y la difuminación también. */
+  -webkit-mask-image:
+    linear-gradient(
+      to right,
+      transparent 0,
+      #000 2.25rem,
+      #000 calc(100% - 2.25rem),
+      transparent 100%
+    ),
+    linear-gradient(
+      to bottom,
+      transparent 0,
+      #000 1.1rem,
+      #000 calc(100% - 1.1rem),
+      transparent 100%
+    );
+  mask-image:
+    linear-gradient(
+      to right,
+      transparent 0,
+      #000 2.25rem,
+      #000 calc(100% - 2.25rem),
+      transparent 100%
+    ),
+    linear-gradient(
+      to bottom,
+      transparent 0,
+      #000 1.1rem,
+      #000 calc(100% - 1.1rem),
+      transparent 100%
+    );
+  -webkit-mask-composite: source-in;
+  mask-composite: intersect;
 }
 
 /* ── EL VELO DE SECCIÓN, QUE AHORA SÍ ES SUAVE ─────────────────────────
@@ -260,13 +363,23 @@
   inset: 0;
   z-index: -1;
   pointer-events: none;
-  background: radial-gradient(
-    124% 66% at 50% 34%,
-    color-mix(in srgb, var(--space-900) 40%, transparent) 0%,
-    color-mix(in srgb, var(--space-900) 34%, transparent) 42%,
-    color-mix(in srgb, var(--space-900) 16%, transparent) 76%,
+  background: color-mix(in srgb, var(--space-900) 40%, transparent);
+  /* Una sola máscara, vertical: la sección es de sangre completa, así que
+     arriba y abajo son los dos bordes que se ven. Arriba entra en 6rem, que es
+     dentro del `padding-block` de la sección y por tanto invisible; abajo se
+     abre del todo, que es de lo que se trata.
+
+     Con el radial de antes el borde superior cortaba al 29 % de alfa en mitad
+     de la pantalla al pasar cada sección: la "escalera de bandas" que el
+     comentario de abajo describe. */
+  -webkit-mask-image: linear-gradient(
+    to bottom,
+    transparent 0,
+    #000 6rem,
+    #000 68%,
     transparent 100%
   );
+  mask-image: linear-gradient(to bottom, transparent 0, #000 6rem, #000 68%, transparent 100%);
 }
 
 /* La portada ya tiene su propio aura y su propio velo, con un degradado
@@ -289,17 +402,18 @@
   .seccion:not(.hero):not(.contacto):not(.proyectos)::before,
 :root[data-calidad='bajo'][data-universo='activo'] .pie::before {
   /* Misma forma que el velo normal —oscuro arriba, abierto abajo— solo que
-     más denso. Si esta variante empezara en transparente volvería a aparecer
-     la escalera de bandas, pero solo en gama baja, que es justo donde nadie
-     la miraría hasta que ya es unforme. */
-  background: linear-gradient(
+     más denso. Y con la MISMA entrada de 6rem: la variante anterior empezaba
+     al 94 % justo en el borde superior de la sección, que es una línea recta a
+     media pantalla. Que en gama baja nadie la mirase no la volvía correcta. */
+  background: color-mix(in srgb, var(--space-900) 94%, transparent);
+  -webkit-mask-image: linear-gradient(
     to bottom,
-    color-mix(in srgb, var(--space-900) 94%, transparent) 0%,
-    color-mix(in srgb, var(--space-900) 94%, transparent) 30%,
-    color-mix(in srgb, var(--space-900) 94%, transparent) 68%,
-    color-mix(in srgb, var(--space-900) 66%, transparent) 90%,
+    transparent 0,
+    #000 6rem,
+    #000 68%,
     transparent 100%
   );
+  mask-image: linear-gradient(to bottom, transparent 0, #000 6rem, #000 68%, transparent 100%);
 }
 
 /* ------------------------------------------------------------------
@@ -367,6 +481,43 @@
   text-shadow: 0 1px 3px color-mix(in srgb, var(--space-950) 90%, transparent);
   pointer-events: none;
   transition: color var(--t-slow) var(--ease-out);
+}
+
+/* ── EL VELO DEL HUD ───────────────────────────────────────────────────
+
+   El `text-shadow` de arriba está pensado para el fondo que el HUD
+   **creía** que tenía: la escena. Pero el HUD es `position: fixed` y el
+   contenido de las secciones también pasa por debajo: en Habilidades el
+   contador caía justo sobre "Diseño responsive", y en Proceso sobre
+   "Descubrimiento". Los dos textos se imprimían uno sobre otro y no se
+   leía ninguno. Una sombra no arregla eso: el problema no es un fondo
+   claro, es que hay OTRO TEXTO debajo.
+
+   Es el mismo problema que la costura del sol, y la misma solución: la
+   forma, no el número. Dos degradados lineales cruzados, uno por eje, con
+   `mask-composite: intersect`. Da un rectángulo opaco en el centro que se
+   apaga en los cuatro bordes **por construcción**, así que no hay ningún
+   número escrito que pueda volver a cortar una línea.
+
+   Y como todo velo de este sitio, `tools/verificar-velos.mjs` lo comprueba. */
+.hud-sistema::before {
+  content: '';
+  position: absolute;
+  z-index: -1;
+  inset: -1.5rem -3rem -1.25rem -2.5rem;
+  pointer-events: none;
+  background-color: var(--space-950);
+  background-image:
+    linear-gradient(to right, transparent, rgb(5 7 15 / var(--velo-hud, 0.93)) 22%, rgb(5 7 15 / var(--velo-hud, 0.93)) 78%, transparent),
+    linear-gradient(to bottom, transparent, rgb(5 7 15 / var(--velo-hud, 0.93)) 26%, rgb(5 7 15 / var(--velo-hud, 0.93)) 74%, transparent);
+  mask-image:
+    linear-gradient(to right, transparent, #000 24%, #000 76%, transparent),
+    linear-gradient(to bottom, transparent, #000 30%, #000 70%, transparent);
+  mask-composite: intersect;
+  -webkit-mask-image:
+    linear-gradient(to right, transparent, #000 24%, #000 76%, transparent),
+    linear-gradient(to bottom, transparent, #000 30%, #000 70%, transparent);
+  -webkit-mask-composite: source-in;
 }
 
 .hud-sistema__clave,
@@ -582,6 +733,28 @@
 
   .hud-sistema__nombre {
     display: none;
+  }
+
+  /* En móvil el velo necesita stretch. La caja del HUD aquí es mucho más
+     estrecha —solo el contador, 8rem— pero el contenido de detrás es el
+     mismo: el nombre de una habilidad y su medidor, que ocupan media
+     pantalla. Con el `inset` de escritorio el velo se acababa antes de
+     donde empieza ese texto y seguían leyéndose los dos.
+
+     Se estira a la derecha y se baja un poco la opacidad en el centro: una
+     banda más larga tiene que pasar más desapercibida, y aquí el borde
+     difuminado es lo que la hace aceptable. */
+  .hud-sistema::before {
+    inset: -1.5rem -9rem -1.25rem -2.5rem;
+    background-image:
+      linear-gradient(to right, transparent, rgb(5 7 15 / var(--velo-hud-movil, 0.86)) 18%, rgb(5 7 15 / var(--velo-hud-movil, 0.86)) 62%, transparent),
+      linear-gradient(to bottom, transparent, rgb(5 7 15 / var(--velo-hud-movil, 0.86)) 26%, rgb(5 7 15 / var(--velo-hud-movil, 0.86)) 74%, transparent);
+    mask-image:
+      linear-gradient(to right, transparent, #000 20%, #000 64%, transparent),
+      linear-gradient(to bottom, transparent, #000 30%, #000 70%, transparent);
+    -webkit-mask-image:
+      linear-gradient(to right, transparent, #000 20%, #000 64%, transparent),
+      linear-gradient(to bottom, transparent, #000 30%, #000 70%, transparent);
   }
 
   .hud-puntos {

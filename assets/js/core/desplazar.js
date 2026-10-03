@@ -38,7 +38,7 @@
  */
 
 import { alFotograma } from './loop.js';
-import { clamp } from './util.js';
+import { clamp, milisegundosASegundos } from './util.js';
 
 let lenis = null;
 let alturaCabeceraRespaldo = 74;
@@ -283,10 +283,33 @@ export function desplazarA(destino, opciones = {}) {
  */
 export function desplazarAposicion(posicion, { inmediato = false, duracion } = {}) {
   const objetivo = Math.max(0, posicion);
+
+  /* ── MILISEGUNDOS DENTRO, SEGUNDOS HACIA LENIS ───────────────────────
+
+     `duracion` se publica en milisegundos porque es lo que espera quien
+     llama —el recorrido ya tenía sus constantes en ms—. Pero Lenis anima en
+     SEGUNDOS: su `Animate.advance()` recibe el tiempo en segundos y calcula
+     `currentTime / duration`. El valor por defecto del sitio, `DURACION_SCROLL
+     = 1.05`, es correcto precisamente porque ya está en segundos.
+
+     La conversión va AQUÍ y no en quien llama, por la misma razón que
+     existe este módulo: una sola autoridad sobre el scroll, y una sola
+     traducción de sus unidades.
+
+     Sin esto el recorrido guiado no estaba lento: estaba roto. `duracionPara`
+     devuelve entre 1 500 y 3 600, y eso se le pasaba a Lenis como si fueran
+     segundos, así que cada parada se animaba en 25 o 60 minutos. La página se
+     movía unos píxeles por segundo y el contador del panel no cambiaba nunca
+     de sistema. No lo delataba ninguna comprobación: en un DOM de prueba no
+     hay Lenis ni interpolación, así que `scrollTo` se ejecutaba y la prueba
+     pasaba. Salió al abrirlo en un navegador de verdad y mirar si la página
+     se movía. */
+  const segundos = milisegundosASegundos(duracion) ?? DURACION_SCROLL;
+
   if (lenis) {
     lenis.scrollTo(objetivo, {
       immediate: inmediato,
-      duration: inmediato ? 0 : duracion ?? DURACION_SCROLL,
+      duration: inmediato ? 0 : segundos,
     });
     return;
   }

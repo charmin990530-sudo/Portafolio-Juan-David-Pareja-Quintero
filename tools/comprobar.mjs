@@ -11,10 +11,10 @@
  * sustituye a abrir el sitio: el framerate real, el aspecto sobre el
  * planeta y el orden de tabulación hay que mirarlos en un navegador.
  *
- * La octava (`probar-dom.mjs`) se salta sola si no está `jsdom` instalado.
- * Es la única que necesita algo, y es a propósito: el sitio que se publica
- * no tiene `package.json`. Que se salte no es un fallo; es la diferencia
- * entre "el sitio está mal" y "aquí no se había podido mirar".
+ * La undécima (`probar-dom.mjs`) se salta sola si no está `jsdom`
+ * instalado. Es la única que necesita algo, y es a propósito: el sitio que
+ * se publica no tiene `package.json`. Que se salte no es un fallo; es la
+ * diferencia entre "el sitio está mal" y "aquí no se había podido mirar".
  */
 
 import { spawnSync } from 'node:child_process';
@@ -27,8 +27,10 @@ const COMPROBACIONES = [
   ['Texto, rutas y sintaxis', 'verificar-texto.mjs'],
   ['Grafo de imports', 'verificar-grafo.mjs'],
   ['Shaders GLSL', 'verificar-shaders.mjs'],
+  ['Velos sin costura', 'verificar-velos.mjs'],
   ['Contenido conservado', 'verificar-contenido.mjs'],
   ['Accesibilidad y SEO', 'verificar-a11y.mjs'],
+  ['Limpiezas y escuchadores', 'verificar-limpiezas.mjs'],
   ['Exports sin uso', 'verificar-exports.mjs'],
   ['Sistema de calidad', 'probar-calidad.mjs'],
   ['Ruta y cámara', 'probar-ruta.mjs'],

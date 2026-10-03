@@ -55,6 +55,26 @@ export function separacionParaEncuadre(aspect) {
 
 export const movimientoReducido = () => consultaMovimiento.matches;
 
+/* ── UNIDADES DE LA DURACIÓN DEL SCROLL ────────────────────────────────
+
+   El sitio habla de duraciones en MILISEGUNDOS, que es lo natural para
+   quien programa con `setTimeout`. Lenis anima en SEGUNDOS: su
+   `Animate.advance()` dice "the time in seconds" y divide
+   `currentTime / duration`.
+
+   La conversión vive aquí, y no en el módulo que llama, por la misma razón
+   que la regla de encuadre en vertical está aquí y no en `camara.js`: es una
+   regla, y las reglas se prueban. En `desplazar.js` dentro de una función
+   que necesita el DOM no se puede comprobar en node; aquí sí.
+
+   El defecto que motiva esto: `desplazarAposicion()` documentaba
+   milisegundos y los pasaba tal cual a Lenis. El recorrido guiado pedía
+   entre 1 500 y 3 600, así que cada parada se animaba en 25 o 60 minutos. La
+   página se movía unos píxeles por segundo y el contador del panel no
+   cambiaba de sistema. Ninguna comprobación lo veía: en un DOM de prueba no
+   hay Lenis, así que `scrollTo` se ejecutaba y la prueba pasaba. */
+export const milisegundosASegundos = (ms) => (ms === undefined ? undefined : Math.max(0, ms / 1000));
+
 export function alCambiarMovimiento(callback) {
   const evento = () => callback(consultaMovimiento.matches);
   consultaMovimiento.addEventListener('change', evento);
