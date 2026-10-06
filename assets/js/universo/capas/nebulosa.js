@@ -43,7 +43,7 @@ function texturaNube(semilla) {
   lienzo.height = LADO;
   const ctx = lienzo.getContext('2d');
 
-  // Halo principal.
+  // Halo principal radial.
   const degradado = ctx.createRadialGradient(LADO / 2, LADO / 2, 0, LADO / 2, LADO / 2, LADO / 2);
   degradado.addColorStop(0, 'rgba(255,255,255,0.9)');
   degradado.addColorStop(0.35, 'rgba(255,255,255,0.42)');
@@ -52,9 +52,23 @@ function texturaNube(semilla) {
   ctx.fillStyle = degradado;
   ctx.fillRect(0, 0, LADO, LADO);
 
+  // Segunda capa de estructura: un halo desplazado que sugiere remolinos
+  // tridimensionales del gas. Usando un ángulo diferente al del halo principal
+  // se evita la simetría perfecta y se obtiene una apariencia más natural.
+  const centro2x = LADO / 2 + Math.sin(semilla * 0.3) * 16;
+  const centro2y = LADO / 2 + Math.cos(semilla * 0.41) * 16;
+  const degradado2 = ctx.createRadialGradient(centro2x, centro2y, 0, centro2x, centro2y, LADO * 0.6);
+  degradado2.addColorStop(0, 'rgba(255,255,255,0.15)');
+  degradado2.addColorStop(0.5, 'rgba(255,255,255,0.04)');
+  degradado2.addColorStop(1, 'rgba(255,255,255,0)');
+  ctx.fillStyle = degradado2;
+  ctx.globalCompositeOperation = 'lighter';
+  ctx.fillRect(0, 0, LADO, LADO);
+
   // Grano: manchas de ruido de baja frecuencia que rompen la simetría radial.
   // Más manchas = mayor estructura visual de "gas", dentro del presupuesto
   // aceptable porque es solo canvas precalculado, no shader por píxel.
+  // Incrementado a 30 manchas por defecto en esta sesión.
   const random = (() => {
     let a = semilla >>> 0;
     return () => {
