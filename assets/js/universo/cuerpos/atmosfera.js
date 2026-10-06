@@ -69,13 +69,22 @@ const FRAGMENT = /* glsl */ `
     // medio planeta iluminado, y por eso no hace falta bajarla mas.
     float margen = smoothstep(0.06, 0.42, luz);
 
-    float alfa = (borde + alto * 0.34) * (uFuerza * 0.85) * margen * uEntrada;
+float alfa = (borde + alto * 0.34) * (uFuerza * 0.85) * margen * uEntrada;
 
-    if (alfa < 0.004) discard;
+// Efecto glow suave alrededor del terminador: cuando el sol está en el horizonte
+// (luz ~0.3-0.5), la luz atraviesa más atmosfera y se crea un halo suave.
+float glow = 0.0;
+float l = smoothstep(0.3, 0.5, luz);
+glow = l * (1.0 - smoothstep(0.0, 0.3, luz)) * 0.15;
 
-    // Hacia el terminador la luz atraviesa más atmósfera y se vuelve cálida:
-    // es el mismo efecto del atardecer en la Tierra.
-    vec3 color = mix(uColor, uColor * vec3(1.25, 0.86, 0.72), smoothstep(0.62, 0.2, luz));
+if (alfa < 0.004) discard;
+
+// Hacia el terminador la luz atraviesa más atmosfera y se vuelve cálida:
+// es el mismo efecto del atardecer en la Tierra.
+vec3 color = mix(uColor, uColor * vec3(1.25, 0.86, 0.72), smoothstep(0.62, 0.2, luz));
+// Añadir el glow: las longitudes de onda rojas se dispersan más, añadiendo un
+// halo cálido alrededor del terminador (efecto "sunset ring").
+color = color + uColor * vec3(1.0, 0.65, 0.3) * glow;
 
     gl_FragColor = vec4(color, clamp(alfa, 0.0, 1.0));
 
