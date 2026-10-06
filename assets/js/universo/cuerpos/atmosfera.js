@@ -69,7 +69,7 @@ const FRAGMENT = /* glsl */ `
     // medio planeta iluminado, y por eso no hace falta bajarla mas.
     float margen = smoothstep(0.06, 0.42, luz);
 
-    float alfa = (borde + alto * 0.34) * uFuerza * margen * uEntrada;
+    float alfa = (borde + alto * 0.34) * (uFuerza * 0.85) * margen * uEntrada;
 
     if (alfa < 0.004) discard;
 
