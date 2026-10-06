@@ -751,7 +751,7 @@ ESTUDIO.md                        Referencias, matriz y decisiones técnicas.
 
 assets/
   css/
-    00-fonts.css                  Las tres familias
+    00-fonts.css                  Las tres familias, un peso real cada una
     01-tokens.css            ★    LA PALETA. Se cambia aquí.
     02-base.css                   Reset, tipografía raíz, utilidades
     03-components.css             Botones, campos, chips, avisos, barra de lectura
@@ -808,6 +808,7 @@ tools/
   verificar-grafo.mjs              Grafo de imports desde main.js
   verificar-contenido.mjs          Nada perdido respecto a la versión anterior
   verificar-a11y.mjs               Encabezados, nombres, contraste, SEO
+  verificar-fuentes.mjs             Cada @font-face pide el peso que su archivo tiene
   verificar-exports.mjs            Exports que nadie llama
   verificar-shaders.mjs            Los shaders compilan y declaran lo que usan
   verificar-velos.mjs              Ningún velo deja una línea al acabar su caja
@@ -826,7 +827,7 @@ tools/
 ## 14. Antes de publicar
 
 ```bash
-node tools/comprobar.mjs            # pasa las once comprobaciones
+node tools/comprobar.mjs            # pasa las doce comprobaciones
 python3 tools/generar-og.py         # solo si cambiaste la imagen social
 ```
 
@@ -838,6 +839,7 @@ node tools/verificar-texto.mjs      # caracteres ajenos, rutas, sintaxis, consol
 node tools/verificar-grafo.mjs      # el grafo de imports entero desde main.js
 node tools/verificar-contenido.mjs  # nada perdido respecto a la versión anterior
 node tools/verificar-a11y.mjs       # encabezados, nombres, contraste, SEO
+node tools/verificar-fuentes.mjs    # el peso del CSS es el peso del archivo de verdad
 node tools/verificar-exports.mjs    # exports que nadie llama
 node tools/verificar-shaders.mjs    # los shaders compilan y declaran lo que usan
 node tools/verificar-velos.mjs      # ningún velo deja costura al terminar su caja
@@ -883,10 +885,10 @@ sonda estática no puede ver nada que solo exista mientras hay una animación.
 
 Los once puntos de abajo se cubrieron todos con Chromium + Playwright, con
 cero errores de consola. Y aparecieron dos bugs que ninguna de las once
-comprobaciones veía: el recorrido guiado no se movía —`duracion` en
-milisegundos donde Lenis anima en segundos, así que cada parada duraba de 25 a
-60 minutos— y el selector de calidad degradaba el nivel que el visitante había
-elegido a mano.
+comprobaciones de entonces veía: el recorrido guiado no se movía —`duracion`
+en milisegundos donde Lenis anima en segundos, así que cada parada duraba de
+25 a 60 minutos— y el selector de calidad degradaba el nivel que el visitante
+había elegido a mano.
 
 El detalle está en `PENDIENTES.md`. Lo que hay que saber para repetirlo:
 

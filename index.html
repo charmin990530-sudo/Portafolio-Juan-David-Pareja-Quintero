@@ -126,7 +126,7 @@
     </script>
 
 
-    <link rel="preload" href="assets/fonts/space-grotesk-700-latin.woff2" as="font" type="font/woff2" crossorigin />
+    <link rel="preload" href="assets/fonts/space-grotesk-300-latin.woff2" as="font" type="font/woff2" crossorigin />
     <link rel="preload" href="assets/fonts/inter-400-latin.woff2" as="font" type="font/woff2" crossorigin />
     <link rel="preload" href="assets/img/perfil.jpg" as="image" />
 
@@ -135,12 +135,25 @@
       href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect x='6' y='6' width='20' height='20' rx='5' fill='none' stroke='%234fe3ff' stroke-width='2'/%3E%3Cpath d='M12 12l8 8M20 12l-8 8' stroke='%23a06bff' stroke-width='2' stroke-linecap='round'/%3E%3C/svg%3E"
     />
 
-    <!-- Hojas de estilo: una responsabilidad por archivo -->
+    <!--
+      Hojas de estilo: una responsabilidad por archivo, en orden.
+
+      El número del principio es el orden de carga, y el orden importa: en CSS
+      gana la última regla que declara la misma propiedad. Manteniéndolo así,
+      el orden del número es también el orden en que una regla puede pisar a
+      otra, y para leer el CSS basta con mirar los números de arriba abajo.
+
+      `04-animations.css` iba aquí antes de `03-components.css`, invertido. No
+      cambiaba nada —esa hoja solo declara `animation` en `.preloader`, y
+      ninguna otra la pisa— pero un orden que no coincide con su numeración es
+      una trampa: el siguiente que añada una regla de componente al principio
+      de `03` no tiene forma de saber que `04` ya pasó por encima.
+    -->
     <link rel="stylesheet" href="assets/css/00-fonts.css" />
     <link rel="stylesheet" href="assets/css/01-tokens.css" />
     <link rel="stylesheet" href="assets/css/02-base.css" />
-    <link rel="stylesheet" href="assets/css/04-animations.css" />
     <link rel="stylesheet" href="assets/css/03-components.css" />
+    <link rel="stylesheet" href="assets/css/04-animations.css" />
     <link rel="stylesheet" href="assets/css/05-sections.css" />
     <link rel="stylesheet" href="assets/css/06-universo.css" />
     <link rel="stylesheet" href="assets/css/07-interfaz.css" />
@@ -315,12 +328,17 @@
     <!-- Menú de pantalla completa -->
     <div class="menu" id="menu" data-abierto="0" aria-label="Menú de navegación">
       <nav>
+        <!--
+          El escalonado de la entrada de cada enlace lo pone
+          `05-sections.css` con `:nth-child`, no un `--i` por `<a>`. Aquí solo
+          van el destino y el número de sección, que son contenido.
+        -->
         <ul class="menu__lista">
-          <li><a class="menu__enlace" href="#inicio" style="--i: 0"><span class="menu__indice">01</span>Inicio</a></li>
-          <li><a class="menu__enlace" href="#perfil" style="--i: 1"><span class="menu__indice">02</span>Perfil</a></li>
-          <li><a class="menu__enlace" href="#proceso" style="--i: 2"><span class="menu__indice">03</span>Proceso</a></li>
-          <li><a class="menu__enlace" href="#stack" style="--i: 3"><span class="menu__indice">04</span>Habilidades</a></li>
-          <li><a class="menu__enlace" href="#contacto" style="--i: 4"><span class="menu__indice">05</span>Contacto</a></li>
+          <li><a class="menu__enlace" href="#inicio"><span class="menu__indice">01</span>Inicio</a></li>
+          <li><a class="menu__enlace" href="#perfil"><span class="menu__indice">02</span>Perfil</a></li>
+          <li><a class="menu__enlace" href="#proceso"><span class="menu__indice">03</span>Proceso</a></li>
+          <li><a class="menu__enlace" href="#stack"><span class="menu__indice">04</span>Habilidades</a></li>
+          <li><a class="menu__enlace" href="#contacto"><span class="menu__indice">05</span>Contacto</a></li>
         </ul>
       </nav>
       <div class="menu__pie">
@@ -613,7 +631,7 @@
           <div class="stack__grupos" id="stack-grupos"></div>
 
           <p class="stack__nota" data-revelar>
-            <span class="marca__glifo" aria-hidden="true" style="width: 34px; height: 34px">
+            <span class="marca__glifo marca__glifo--sm" aria-hidden="true">
               <span class="marca__anillo-a"></span>
               <span class="marca__nucleo"></span>
             </span>
@@ -641,8 +659,14 @@
           </header>
 
           <div class="contacto__rejilla">
+            <!--
+              Cada canal lleva una clase que le da el color, y el color está
+              declarado en `05-sections.css`. Antes venía en un
+              `style="--canal-color: ..."` de cada `<a>`, con lo que la paleta
+              de los canales estaba partida entre el CSS y el HTML.
+            -->
             <div class="contacto__canales" data-revelar>
-              <a class="canal" href="mailto:charmin990530@gmail.com" style="--canal-color: var(--accent)">
+              <a class="canal canal--correo" href="mailto:charmin990530@gmail.com">
                 <span class="canal__icono" aria-hidden="true">
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7">
                     <rect x="3" y="5" width="18" height="14" rx="2.5" />
@@ -655,7 +679,7 @@
                 </span>
               </a>
 
-              <a class="canal" href="https://wa.me/57311433561" target="_blank" rel="noopener noreferrer" style="--canal-color: var(--lime)">
+              <a class="canal canal--whatsapp" href="https://wa.me/57311433561" target="_blank" rel="noopener noreferrer">
                 <span class="canal__icono" aria-hidden="true">
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7">
                     <path d="M4 20l1.2-4.2A8 8 0 1 1 8 18.8L4 20Z" stroke-linejoin="round" />
@@ -668,7 +692,7 @@
                 </span>
               </a>
 
-              <a class="canal" href="mailto:charmin990530@gmail.com?subject=Hola%20Juan%20David" style="--canal-color: var(--accent-2)">
+              <a class="canal canal--presupuesto" href="mailto:charmin990530@gmail.com?subject=Hola%20Juan%20David">
                 <span class="canal__icono" aria-hidden="true">
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7">
                     <path d="M12 3v18M3 12h18" stroke-linecap="round" />
@@ -681,7 +705,7 @@
                 </span>
               </a>
 
-              <a class="canal" href="mailto:charmin990530@gmail.com?subject=Hola%20Juan%20David" style="--canal-color: var(--accent-3)">
+              <a class="canal canal--disponibilidad" href="mailto:charmin990530@gmail.com?subject=Hola%20Juan%20David">
                 <span class="canal__icono" aria-hidden="true">
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7">
                     <circle cx="12" cy="12" r="8.5" />

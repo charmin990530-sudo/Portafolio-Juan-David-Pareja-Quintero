@@ -100,8 +100,10 @@ VELO_CURVA = 1.6         # > 1 = la caída se alarga y el borde no se nota
 # Ojo al ancho: con la fuente de la marca "Pareja Quintero" mide 468 px, y con
 # DejaVu 568. El velo está medido contra esta tipografía, no contra la otra.
 DISPLAY = [
-    RAIZ / "assets" / "fonts" / "space-grotesk-700-latin.woff2",
-    RAIZ / "assets" / "fonts" / "space-grotesk-500-latin.woff2",
+    # Un solo archivo del display, y es el Light. Antes eran dos entradas
+    # apuntando a `space-grotesk-500` y `space-grotesk-700`, que eran EL MISMO
+    # binario repetido; los dos se fueron al unificar los pesos que existen.
+    RAIZ / "assets" / "fonts" / "space-grotesk-300-latin.woff2",
     "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf",
     "/usr/share/fonts/truetype/liberation/LiberationSans-Bold.ttf",
     "/System/Library/Fonts/Helvetica.ttc",

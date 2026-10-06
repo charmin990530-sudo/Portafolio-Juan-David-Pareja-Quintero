@@ -336,6 +336,25 @@ try {
   /* si falla, la línea base simplemente valdrá cero */
 }
 
+/* Lo mismo, y por la misma razón, con los dos escuchadores que registra
+   `nwsapi`, que es el motor de selectores de jsdom. Para resolver `:hover` y
+   `:focus` los pone en `document` la PRIMERA vez que alguien pide un estilo
+   computado. Los pone jsdom, no el sitio, y no hay manera de retirarlos.
+
+   Se provocan aquí, antes de la línea base, con un `getComputedStyle` sobre
+   el documento. Sin esto, al apagar el sitio salía el aviso
+   `mouseover ×1, mouseout ×1`: dos escuchadores internos de jsdom contados
+   como una fuga del sitio, que no es lo mismo que una fuga.
+
+   Y el arreglo no perdona de más: si el sitio se colgara un `mouseover`
+   propio, seguiría contando por encima de la línea base. Lo que se descarta
+   es el par interno, no el tipo de evento. */
+try {
+  window.getComputedStyle(document.documentElement);
+} catch {
+  /* si esto falla, la línea base se queda corta y el aviso reaparece */
+}
+
 const lineaBase = new Map(vivos);
 
 try {

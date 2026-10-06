@@ -8,20 +8,36 @@
 Hace falta un servidor porque los módulos ES no cargan desde `file://`.
 
 **Comprobaciones:** `ln -sfn /tmp/opencode/node_modules node_modules`,
-`node tools/comprobar.mjs`, `rm -f node_modules`. Salen las once en verde, con
+`node tools/comprobar.mjs`, `rm -f node_modules`. Salen las doce en verde, con
 un aviso de exports sin uso que es lo esperado.
 
 **Publicación:** `vercel --prod`. Todo está pusheado en `main`; el árbol de
-trabajo está limpio salvo `promt`, que es un archivo de trabajo sin seguimiento
-y no debe subirse.
+trabajo tiene lo de esta sesión sin confirmar, y `promt`, que es un archivo de
+trabajo sin seguimiento y no debe subirse.
 
-### Lo primero que hay que decidir: las dos fuentes de Space Grotesk
+### Lo que se resolvió en esta tanda
 
-`space-grotesk-500-latin.woff2` y `space-grotesk-700-latin.woff2` son **el
-mismo archivo**, con **Light** dentro, mientras el CSS declara 500 y 700. Está
-en git y no es de esta sesión. El titular de todo el sitio se ve en Light.
-Detalle y las tres opciones en la **sección 8**; la que no cambia el aspecto y
-ahorra 22 KB es bajar el `@font-face` a 300 y borrar el duplicado.
+**Las fuentes.** Los seis `@font-face` apuntaban a **tres archivos**: los dos de
+Space Grotesk eran el mismo binario con **Light** dentro, y los tres de Inter
+eran el mismo con **Regular** dentro, mientras el CSS pedía 500/700 y 400/500/600.
+**Ninguno de los cinco pesos que pedía el sitio existía.** Los titulares de
+todo el sitio se veían en Light y ningún `<strong>` en negrita, sin un solo
+error en consola.
+
+Decidido: **bajar los `@font-face` a lo que hay**. El sitio no ha cambiado ni un
+trazo —`og.png` sale byte a byte idéntico, mismo md5— y han desaparecido cuatro
+archivos: **−63 KB**. El display además se renombra a
+`space-grotesk-300-latin.woff2`, que es lo que lleva dentro.
+
+Lo cazó una comprobación nueva, la duodécima: `verificar-fuentes.mjs` lee el
+`usWeightClass` **de dentro** de cada `.woff2` y lo compara con el CSS, sin
+necesitar nada instalado. Detalle en la **sección 8**.
+
+**El `index.html` sin CSS dentro.** No llevaba ni un `style=""`: el escalonado
+del menú, los colores de los canales y una medida del glifo. Ahora los tres
+están en `05-sections.css`, con nombres que dicen lo que son. También se
+invirtió el orden de carga de `03` y `04`, que no cambiaba nada pero
+contradecía su numeración. Detalle en la **sección 8-bis**.
 
 ### Después
 
@@ -30,8 +46,9 @@ ahorra 22 KB es bajar el `@font-face` a 300 y borrar el duplicado.
 | Endpoint de Formspree | `CONTACTO.endpoint` en `assets/js/data/universo.js`, hoy vacío a propósito |
 | Dominio propio | `canonical` y `og:url` en `index.html`, descritas en `UNIVERSO.md` §12. Ahora son relativas y funcionan en cualquier dominio |
 | Repetir la tabla 6.2 en otra GPU | Ya verificada en hardware real: 37 draw calls, 17/17/16 programas |
+| Bajar los pesos de verdad de las fuentes | `00-fonts.css`. +~90 KB y cambia el titular de todo el sitio. Opcional |
 
-**Nada del sitio está roto.** No hay ningún defecto abierto.
+**Ningún defecto abierto.**
 
 ---
 
@@ -302,45 +319,198 @@ escena con menos tinta encima.
 
 ---
 
-## 8. ABIERTO · LAS DOS FUENTES DE SPACE GROTESK SON LA MISMA
+## 8. RESUELTO · EL CSS PEDÍA CINCO PESOS Y HABÍA TRES ARCHIVOS
 
-**No lo he tocado. Es una decisión de diseño y la dejo a tu criterio.**
+**Decidido: bajar los `@font-face` a lo que hay. El sitio no ha cambiado ni un
+trazo y han desaparecido cuatro archivos.**
 
-`assets/fonts/space-grotesk-700-latin.woff2` y `space-grotesk-500-latin.woff2`
-son **el mismo archivo**, byte a byte:
+Lo que había documentado aquí antes era solo Space Grotesk. Al medirlo con una
+comprobación nueva salió que **Inter tenía el mismo defecto y peor**, así que
+la sección se reescribió entera.
+
+### Lo que había
+
+Seis `@font-face` sobre **tres archivos distintos**, porque cinco de los seis
+eran el mismo binario repetido con otro nombre:
 
 ```
-87c506d88b9f587f0e2292bc271f5083  space-grotesk-500-latin.woff2
-87c506d88b9f587f0e2292bc271f5083  space-grotesk-700-latin.woff2
+md5                          archivo                       usWeightClass
+260c81a4759baf163c025001c4f27872   inter-400-latin.woff2           400
+260c81a4759baf163c025001c4f27872   inter-500-latin.woff2           400
+260c81a4759baf163c025001c4f27872   inter-600-latin.woff2           400
+a21e038a03f709cf60aa1e2944048aef   jetbrains-mono-500-latin.woff2   500
+87c506d88b9f587f0e2292bc271f5083   space-grotesk-500-latin.woff2   300
+87c506d88b9f587f0e2292bc271f5083   space-grotesk-700-latin.woff2   300
 ```
 
-Y las dos contienen **Space Grotesk Light**: `usWeightClass = 300`, nombre
-interno `Space Grotesk Light`.
+Y el CSS declaraba, en `00-fonts.css`:
 
-El CSS, en cambio, declara:
+| Familia | Pesos que pedía el CSS | Pesos que existían |
+|---|---|---|
+| Space Grotesk | 500, 700 | **300** |
+| Inter | 400, 500, 600 | **400** |
+| JetBrains Mono | 500 | 500 ✓ |
+
+**Ni uno de los cinco pesos pedidos existía.** El único `@font-face` que no
+mentía era el de JetBrains Mono.
+
+### Lo que se veía
+
+- Los **titulares de todo el sitio** en Space Grotesk **Light**, no en 500 ni 700.
+- Los **`<strong>` del cuerpo**, que piden 600, en Inter **Regular**: no había
+  ninguna negrita en el texto del sitio.
+- El rótulo del botón "Iniciar viaje", que también pide 600, igual.
+
+**No salía ningún error.** Los archivos existen, se descargan y se dibujan: el
+navegador usa el peso que encuentra y no avisa. Un sitio que se ve bien y
+miente sobre su propia tipografía, que es lo más difícil de cazar mirando.
+
+Estaba en git, no es de esta sesión: los archivos con esos md5 están en HEAD.
+
+### Lo que se hizo
+
+**Se declara el peso que hay.** Tres `@font-face`, tres archivos:
 
 ```css
-@font-face { font-weight: 500; src: url('space-grotesk-500-latin.woff2'); }
-@font-face { font-weight: 700; src: url('space-grotesk-700-latin.woff2'); }
+@font-face { font-family: 'Space Grotesk'; font-weight: 300; src: url('…/space-grotesk-300-latin.woff2'); }
+@font-face { font-family: 'Inter';         font-weight: 400; src: url('…/inter-400-latin.woff2'); }
+@font-face { font-family: 'JetBrains Mono';font-weight: 500; src: url('…/jetbrains-mono-500-latin.woff2'); }
 ```
 
-**Lo que se ve.** El titular de la portada y los de sección **no son bold**:
-son Light. La jerarquía del display es más débil de lo que el CSS dice, y es
-el mismo motivo por el que la tarjeta social vieja salía con más carácter que la
-nueva: la vieja usaba una bold de verdad, la nueva usa la que el sitio tiene.
+Y se borran cuatro archivos: los dos de Space Grotesk y los de Inter que no
+existían. **−63 KB.**
 
-**Está en git**, no es de esta sesión: los dos archivos tienen ese md5 en HEAD.
+El archivo del display además se **renombra** a `space-grotesk-300-latin.woff2`,
+que es lo que lleva dentro. Se llama así desde que se vio que el nombre decía
+500 sobre un binario de 300: un archivo que se llama `700` y lleva Light es la
+misma clase de mentira que el CSS, solo que en el disco.
 
-**Qué se puede hacer, de menos a másجية:**
+**Las doce reglas que piden 700 y 600 se dejan como están, a propósito.** Son
+la intención de diseño —"aquí el texto tiene que pesar más"— y el navegador usa
+el peso más cercano, que es el único que hay, así que el resultado es idéntico
+antes y después. Bajarlas a 300 y 400 también se vería igual, pero se perdería
+dónde hace falta un peso de verdad: para el día que bajen las fuentes buenas
+habría que adivinar qué reglas quieres en negrita.
 
-| Opción | Qué hace | Coste |
+### Verificado
+
+- **`verificar-fuentes.mjs` en verde**, que compara el `usWeightClass` de
+  dentro de cada archivo con el `font-weight` del CSS.
+- **Las doce comprobaciones en verde.**
+- **`og.png` regenerado y byte a byte idéntico**: mismo md5, `f39bf687…`. La
+  tarjeta social no cambia ni un píxel, que era lo que había que asegurar.
+
+### Lo que queda, si algún día quieres el carácter de verdad
+
+Bajar las Medium y Bold de Space Grotesk y la Medium de Inter, y volver a
+declarar 500 y 700 en `00-fonts.css`. **+~90 KB**, y cambian el titular de todo
+el sitio y todos los `<strong>` del texto. Con eso la comprobación pasa sola,
+porque los archivos dirían lo que declaran.
+
+### La comprobación que lo cazó
+
+`tools/verificar-fuentes.mjs`, nueva, y es la duodécima. Lee el `usWeightClass`
+**de dentro de cada `.woff2`** y lo compara con el `font-weight` que declara el
+CSS, más una segunda regla: dos archivos distintos no pueden ser el mismo
+binario.
+
+No necesita nada instalado. Un `.woff2` es un contenedor con un directorio de
+tablas y un único flujo brotli, y `node:zlib` trae `brotliDecompressSync` de
+serie, así que se lee entero sin dependencias. El sitio sigue sin
+`package.json`.
+
+El detalle que costó más: dentro del flujo brotli las tablas van
+**transformadas**, así que el desplazamiento de `OS/2` se calcula sumando
+longitudes transformadas donde las hay y originales donde no. Sumar solo las
+originales —que es lo obvio— da un desplazamiento que no apunta a nada y el
+error sale como `Decompression failed`, que no dice nada del peso.
+
+Está probada rompiéndola: cambiar el `@font-face` de JetBrains Mono a 700 la
+hace fallar con el peso exacto, y volver a ponerlo la deja en verde.
+
+---
+
+## 8-bis. MODULARIZADO · EL `index.html` NO TIENE NADA DE CSS DENTRO
+
+Estaba en la tarea de "dejarlo todo con HTML, CSS y JavaScript básicos", y
+era verdad en todo menos en una cosa: había **`style=""` en el marcado**.
+
+| Dónde | Qué era | Ahora |
 |---|---|---|
-| Solo documentarlo | Nada cambia. Deja de ser un misterio. | 0 |
-| Bajar el `@font-face` a 300 y borrar el duplicado | El sitio se ve **igual**, y ahorra 22 KB. El CSS deja de mentir. | −22 KB |
-| Bajarse los pesos 500 y 700 de verdad | El sitio recupera el carácter del display que el CSS pide. | +~45 KB, cambia el aspecto |
+| Los 5 enlaces del menú | `style="--i: 0..4"`, el retardo de entrada | `:nth-child` en `05-sections.css` |
+| Los 4 canales de contacto | `style="--canal-color: var(--accent-…)"` | `.canal--correo`, `--whatsapp`, `--presupuesto`, `--disponibilidad` |
+| El glifo de la nota de Habilidades | `style="width: 34px; height: 34px"` | `.marca__glifo--sm` |
 
-La segunda es gratis y honesta; la tercera es la que probablemente querías y
-no la hago sin que la digas, porque cambia el titular de todo el sitio.
+`index.html` ya no lleva ni un `style=""`. El resto del marcado —lo que es
+contenido— se queda.
+
+**El glifo merecía más.** El `style` solo cambiaba la caja: el anillo interior
+seguía a `inset: 7px` y el núcleo a `8px`, medidos a mano para 38 px. Al
+usarlo a 34 px las tres piezas no guardaban proporción. Ahora la medida es una
+variable y las tres se derivan con `calc()`, así que cualquier tamaño sale bien
+y no hay números medidos a mano sueltos en una regla.
+
+### Y todo eso, visto en un navegador de verdad
+
+Una corrección de CSS no está verificada hasta que se mira. Con Chromium y
+`python3 -m http.server 8099`:
+
+| Qué | Medido |
+|---|---|
+| Fuentes que se piden | 3, las tres que existen. **Ninguna petición a un archivo borrado** |
+| Glifo de la cabecera | 38 px |
+| Glifo de la nota | 34 px, y sin `style` en línea |
+| Anillo interior | 18,4 % de la caja |
+| Núcleo | 21 % en **los dos** tamaños — es lo que arregla el `inset: 7px` fijo |
+| Los 4 canales | 4 colores distintos, ninguno en línea |
+| Retardos del menú | 100 · 160 · 220 · 280 · 340 ms, que es lo que daba el `--i` inline |
+| Consola | Cero errores |
+| Anchos 360 · 768 · 1024 · 1440 · 1920 | Sin desbordamiento horizontal en ninguno |
+
+Los 340 ms del último enlace son la prueba de que el `:nth-child` sustituye al
+`--i` **exactamente**, no "más o menos": el retardo final depende del índice del
+último hijo, así que si el escalonado no coincidiera con el que estaba escrito
+en el HTML, saldría otro número.
+
+Una nota sobre `document.fonts.check()`: devuelve `true` en cuanto la familia
+puede dibujar **algún** peso, no el que se le pide. La primera versión de la
+medición pedía `check('700 32px "Space Grotesk"')` esperando `false`, y sale
+`true` aunque no exista ninguna bold —porque hay una Light. Casi se concluyó
+que la comprobación de fuentes mintía, cuando lo que mentía era la medición.
+
+**Los colores de los canales se nombran por lo que el canal ES**, no por el
+color que le toca. Antes la paleta estaba partida entre el CSS y el HTML.
+
+### Y el orden de carga de las hojas de estilo estaba invertido
+
+`04-animations.css` se cargaba **antes** de `03-components.css`, contra su
+numeración y contra el comentario que dice "una responsabilidad por archivo".
+
+No cambiaba nada: `04-animations.css` solo declara `animation` en `.preloader`,
+y ninguna otra hoja pisa esa propiedad. Pero es una trampa para el siguiente:
+el que añada una regla de componente al principio de `03` no tiene forma de
+saber que `04` ya pasó por encima, porque el número dice lo contrario.
+
+Ahora el orden es 00, 01, 02, 03, 04, 05, 06, 07 y el comentario explica por
+qué ese orden importa.
+
+---
+
+## 8-ter. ARREGLADO · LA UNDÉCIMA COMPROBACIÓN CONTABA ESCUCHADORES DE JSDOM
+
+`probar-dom.mjs` fallaba al apagar el sitio con `mouseover ×1, mouseout ×1`.
+**No era una fuga del sitio.** Los dos los pone `nwsapi`, el motor de
+selectores de jsdom, en `document`, la primera vez que alguien pide un estilo
+computado. No hay manera de retirarlos.
+
+La prueba no los contaba porque su línea base se toma antes de que nadie haya
+pedido un estilo, y el sitio sí lo pide durante el arranque.
+
+El arreglo es provocar los dos ANTES de la línea base, con un
+`getComputedStyle` sobre el documento. Y **no perdona de más**: probado
+rompiéndolo, si el sitio se cuelga un `mouseover` propio la prueba sigue
+fallando con `mouseover ×1`. Lo que se descarta es el par interno de jsdom, no
+el tipo de evento.
 
 ---
 
@@ -644,5 +814,264 @@ tools/generar-og.py               el velo, con meseta, y el aviso de fuentes
 assets/img/og.png                 regenerada
 ```
 
+### Y de ESTA tanda
+
+```
+tools/verificar-fuentes.mjs   NUEVO: lee el usWeightClass de dentro de cada
+                              .woff2 y lo compara con el CSS; sin dependencias
+tools/comprobar.mjs           la comprobación de fuentes, en la lista
+tools/probar-dom.mjs          los dos escuchadores de nwsapi salen de la línea base
+index.html                    sin un solo style=""; el orden de las hojas, ya en orden
+assets/css/05-sections.css    el escalonado del menú, los colores de los canales
+                              y las dos medidas del glifo, en el CSS
+```
+
+**El rojo de `verificar-fuentes.mjs` es lo único que queda, y es una decisión
+de diseño tuya:** la **sección 8**. Con la opción de acierto no cambia el
+aspecto, y con la de bajar los pesos reales el sitio recupera la jerarquía que
+el CSS siempre pidió.
+
 Documentación: `UNIVERSO.md` es el manual del universo, `ESTUDIO.md` explica
 **por qué** está hecho así, con los defectos medidos y por qué se corrigieron.
+
+---
+
+# 9. CONTINUAR · EL UNIVERSO Y EL MODO DÍA
+
+**Empieza por aquí si vienes de la otra tanda y solo te sirve esto.**
+
+Todo lo de arriba está hecho, verificado en navegador y sin confirmar en git.
+Lo de abajo es lo que se pidió después y está **a medias**.
+
+## 9.1 Lo primero, antes de nada: el modo día NO EXISTE
+
+Se retiró entero a propósito, en el commit `4257e99`, con su botón, su módulo
+`modules/tema.js`, los 56 tokens de `:root[data-tema='claro']` y el
+`MutationObserver` que recoloreaba la nebulosa. El motivo está escrito en ese
+commit: *"un universo nocturno no tiene versión de día"*.
+
+**No hay un modo día que arreglar: hay que construirlo.** Y hay una advertencia
+en `UNIVERSO.md` §6 que va de caja:
+
+> El tema claro obliga a cambiar la paleta de la nebulosa y del resplandor o el
+> texto se vuelve ilegible sobre el planeta. Es un trabajo de medio día, no un
+> cambio de veinte minutos.
+
+La razón es concreta y está en el código: `universo/colores.js` **deriva la
+paleta de la escena de los tokens del tema**. Al poner la página en claro, el
+planeta se volvía blanco y el texto encima se volvía ilegible. Por eso el
+modo día **hereda** del trabajo del universo: hay que hacerlo después, no a la
+vez.
+
+### Cómo volver a activarlo
+
+Los cuatro pasos están en `UNIVERSO.md` §6. En resumen: recuperar el bloque de
+tokens del historial (`git show main:assets/css/01-tokens.css`), volver a
+importar `montarTema` en `main.js`, reponer `alCambiarTema()` en `colores.js` y
+las cuatro `aplicarPaleta()` de las capas, y añadir las variantes claras de
+`.malla` y `.fondo`.
+
+## 9.2 ABIERTO · EL DISCO GRIS QUE CRUZA EL PLANETA
+
+**Este es el defecto que motivations "el Big Bang no se ve bien". Y todavía no
+sé qué es.** Es lo primero que hay que resolver, porque es el que se ve.
+
+### Qué es
+
+En la portada, con el 3D encendido, hay una **banda gris plana con el borde
+recto** cruzando el planeta en diagonal. Se ve al desplazar el 12 % y el 25 % de
+la portada:
+
+- `bb2/01-00214px.png` y `bb2/02-00428px.png` — la banda cruzando el planeta
+- El pixel del centro mide **`rgb(34, 36, 41)`**: un gris neutro, sin el tinte
+  naranja del planeta ni el azul de la nebulosa
+
+Que sea gris neutro y no un tono de la paleta es la pista más útil: su color no
+viene de la paleta del sitio.
+
+### Hipótesis YA DESCARTADAS, con el sitio sin tocar
+
+Esto es lo importante de esta sección. **Cuatro suposiciones razonables
+resultaron falsas**, y cada una se comprobó de verdad:
+
+| Hipótesis | Cómo se comprobó | Resultado |
+|---|---|---|
+| El lado noche del planeta | Se arregló la difusión | **Sigue ahí** |
+| `.hero__velo` | `display: none` | **Sigue ahí** |
+| El halo del planeta | No se crea el sprite | **Sigue ahí** |
+| El `text-shadow` del bloque | `text-shadow: none` | **Sigue ahí** |
+
+Y sí es de la escena 3D, medido: con el 3D apagado el mismo pixel da
+`rgb(6, 8, 15)`, y con el 3D puesto `rgb(34, 36, 41)`.
+
+**Lo que NO es:** nada del CSS de la portada. Lo que sí es: algo de la escena.
+
+### Cómo seguir con esto
+
+El método que queda, y que es el que funciona: **no suponer, apagar y medir**.
+
+1. Recorrer la escena de Three.js y apagar un objeto cada vez, mirando el pixel
+   en cada paso. En cuanto el `rgb(34,36,41)` desaparezca, ese es el culpable.
+2. El problema de la vía anterior es que **la escena no está expuesta**: desde
+   la página solo se ve `window.__THREE__`, y no hay `window.escena`. Lo más
+   limpio es añadir una línea en `universo/index.js`, `if (location.search)`
+   o similar, para exponer la escena solo en local. **No se ha hecho.**
+3. Sospechosos razonables por dónde seguir, sin haberlos comprobado:
+   `materia` (los puntos del estallido, `depthWrite: false` como el resto),
+   `onda`, y los `renderOrder` de `bigbang.js` (6, 7, 8) frente al 5 del halo.
+
+Las capturas están en `/tmp/opencode/bb2/` y los recortes en
+`/tmp/opencode/prueba/`.
+
+## 9.3 HECHO · EL LADO NOCHE DEL PLANETA
+
+Cambio real y terminado, pero **no es lo que causaba el disco gris**. Se hizo
+creyéndolo y había que decirlo, así que está anotado en el propio
+`shaders/comunes.js`.
+
+En `difusion()`, `shaders/comunes.js`:
+
+```glsl
+// ANTES:  dot * 0.5 + 0.5
+float cosAngulo = dot(normal, normalize(luz));
+float envoltura = smoothstep(-0.18, 1.0, cosAngulo);
+return pow(envoltura, 1.6);
+```
+
+`dot * 0.5 + 0.5` **no da un lado oscuro**: da 0.5 de luz en el terminador y
+nunca baja de ahí, así que media esfera queda igual de iluminada. La vuelta
+—la luz que dispersa la atmósfera más allá del terminador— es real, pero a 0.5
+se come media planeta. Ahora es 0.18, y el exponente `1.6` concentra la luz
+donde tiene que estar, en el centro del disco iluminado.
+
+Consecuencias del cambio, y adjustados:
+
+| Archivo | Cambio | Por qué |
+|---|---|---|
+| `cuerpos/planeta.js` | Ambiente `0.055` → `0.035` | El lado noche conservaba el color de la textura y se leía como gris plano |
+| `cuerpos/planeta.js` | Umbral de luces de ciudad `d < 0.52` → `d < 0.30` | Antes encendía las ciudades en pleno lado de día. El umbral va justo por delante del terminador, para que la primera ciudad enciendida sea la del crepúsculo |
+| `cuerpos/atmosfera.js` | Margen `smoothstep(0.18, 0.56)` → `(0.06, 0.42)` | La ventanaOld estaba calibrada para la difusión vieja |
+| `cuerpos/lunas.js`, `cuerpos/campo.js` | **Sin tocar**, usan `difusion` y heredan el cambio | Comprobado que no salen raras |
+
+Las doce comprobaciones siguen en verde. **Pero no se ha vuelto a mirar en un
+navegador después del cambio**, que es la regla del proyecto: una corrección de
+shader no está hecha hasta que se ve.
+
+## 9.4 LO QUE PIDIÓ Y ESTÁ ENTERO POR HACE
+
+Cuatro cosas del encargo, y este es su estado real:
+
+| Qué | Estado | Nota |
+|---|---|---|
+| Arreglar los bugs del universo | **Empezado** | El lado noche sí. El disco gris sigue abierto: **9.2** |
+| Que se vea "real", no dibujo | **Sin empezar** | Ver **9.5** |
+| Texturas generadas por código | **Sin empezar** | Ver **9.6** |
+| Modo día | **Sin empezar** | Ver **9.1** |
+
+Y dos cosas más que se pidieron y no están ni empezado:
+
+| Qué | Estado |
+|---|---|
+| Revisar bugs y ortografía en el sitio | Sin empezar |
+| Que el modo día interactúe bien | Sin empezar, y depende del modo día |
+
+## 9.5 PENDIENTE · QUE SE VEA REAL
+
+Sin archivos de texto, solo shaders. Lo que se ve ahora, de la captura
+`bb2/03-00641px.png`:
+
+- Las estrellas son **cuadraditos**. Los puntos de `capas/estrellas.js` se
+  dibujan sin degradado y a 1 px se ven como píxeles cuadrados.
+- La nebulosa es un **tinte plano**, y la del Big Bang es un disco liso.
+- El planeta tiene la textura de fbm, que a esta escala se ve como manchas de
+  pintura.
+
+Orden sugerido, de menos a másoui: puntos de estrella con caída suave →
+nebulosa con más capas → detalle de la superficie del planeta.
+
+## 9.6 PENDIENTE · TEXTURAS GENERADAS
+
+Aquí hay una decisión de fondo, y es tuya.
+
+La regla del proyecto, escrita en el pie del propio sitio, es:
+
+> Texturas e imágenes generadas por código: en el proyecto no hay ni un
+> archivo de imagen 3D.
+
+Generar texturas por código **respeta** esa regla. Subir archivos de textura
+al repositorio **la rompe**, y además suma peso y peticiones.
+
+Lo que ya hay es el precedente: `planeta.js` tiene una función que hace
+exactamente eso, `texturaBrillo()`, un degradado radial en canvas para los
+sprites. Las texturas de superficie se pueden hacer igual, en un canvas, sin
+salir del proyecto.
+
+| Opción | Qué hace | Coste |
+|---|---|---|
+| Texturas en canvas, por código | Se ve más real y **respeta** la regla del proyecto | CPU al arrancar, unos ms |
+| Archivos de textura en el repo | Se ve más real, más rápido | Rompe la regla, +peso, +peticiones |
+| Mejorar solo los shaders | Cambio pequeño, cero coste | Gain limitado |
+
+## 9.7 CÓMO SE MIDE CADA COSA
+
+La regla del proyecto, y la que hay que respetar aquí: **una corrección de
+capa decorativa es un cambio de contraste hasta que se mide**, y una corrección
+de shader no está hecha hasta que se mira.
+
+Herramientas que hay y sirven para esto:
+
+- **Playwright con Chromium** está instalado, y es lo que sirve para casi todo:
+  `NODE_PATH=/tmp/opencode/node_modules node <guion>.mjs`. Los guiones que se
+  escribieron están en `/tmp/opencode/`: `bb2.mjs` recorre la portada en pasos
+  y captura, `cazar.mjs` mide el pixel de un punto, `objeto.mjs` mide el pixel
+  en varios puntos del viaje.
+- **`localStorage.setItem('odisea:calidad', JSON.stringify('alto'))`** antes de
+  cargar, o la sonda marca `bajo` y lo que sale no es lo que se verá nunca.
+- **El Big Bang va con el SCROLL, no con un reloj.** Quieto en la portada no hay
+  explosión: hay un planeta ya formado. Explota al desplazar. Capturar sin
+  desplazarse no lo pilla.
+- **El lienzo WebGL no se puede leer con `drawImage`** —el búfer se vacía al
+  componer y sale negro—, así que hay que capturar y leer el píxel de la
+  captura.
+
+## 9.8 LO QUE NO HAY QUE REPETIR
+
+Tres cosas que costaron tiempo en esta tanda:
+
+1. **Suponer en vez de medir.** Cuatro hipótesis falsas seguidas sobre el mismo
+   defecto. La cuarta —el `text-shadow` de 30 px— era la más plausible de todas
+   y era falsa. Lo que funcionó fue apagar capas y medir el píxel.
+2. **Dejar una afirmación falsa en el código.** El comentario de `difusion()`
+   decía que arreglaba el disco gris, y no lo arregla. Está anotado en el
+   propio archivo y en esta sección. Un comentario que miente es peor que
+   ningún comentario, porque el siguiente lo lee y cree.
+3. **Capturar a los 6 segundos.** El Big Bang ya había pasado. Los fotogramas
+  interesting están en el primer segundo de scroll.
+
+## 9.9 ESTADO DEL REPO
+
+```
+Sin confirmar. Nada de esta tanda está pusheado.
+
+M  PENDIENTES.md                    esta sección
+M  UNIVERSO.md                      la duodécima comprobación, y "00-fonts"
+M  assets/css/00-fonts.css          los tres pesos que existen de verdad
+M  assets/css/05-sections.css       menú, canales y glifo en el CSS
+D  assets/fonts/inter-500-latin.woff2      no existía
+D  assets/fonts/inter-600-latin.woff2      no existía
+R  assets/fonts/space-grotesk-500 → -300   renombrado: era Light
+D  assets/fonts/space-grotesk-700-latin.woff2   no existía
+M  index.html                       sin style=""; orden de las hojas
+M  assets/js/universo/shaders/comunes.js    la difusión
+M  assets/js/universo/cuerpos/planeta.js    ambiente y luces de ciudad
+M  assets/js/universo/cuerpos/atmosfera.js  el margen del crepúsculo
+M  tools/comprobar.mjs              la comprobación de fuentes
+M  tools/generar-og.py              el nombre de la fuente
+M  tools/probar-dom.mjs             los escuchadores de nwsapi
+M  tools/verificar-contenido.mjs    el renombrado de la fuente
+?? tools/verificar-fuentes.mjs      NUEVO, sin confirmar
+?? promt                            archivo de trabajo, NO subir
+```
+
+**Las doce comprobaciones en verde**, con el aviso de exports sin uso que es lo
+esperado.

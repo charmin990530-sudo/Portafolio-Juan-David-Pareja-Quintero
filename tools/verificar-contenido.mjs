@@ -95,6 +95,19 @@ for (const enlace of enlacesAntes) {
 
   // El tema claro se retiró a propósito, con su botón. Aviso, no fallo.
   if (enlace === 'assets/css/00-fonts.css' || enlace.startsWith('data:image')) continue;
+
+  /* La fuente del display se renombró, y con razón. `space-grotesk-700` y
+     `space-grotesk-500` eran el MISMO archivo, con Space Grotesk **Light**
+     dentro (`usWeightClass = 300`), mientras el CSS declaraba 500 y 700: el
+     nombre mentía sobre el contenido. Se llama ahora
+     `space-grotesk-300-latin.woff2`, que es lo que lleva, y es el único
+     display que queda.
+
+     Es un enlace que desaparece porque se corrige, no porque se pierda nada,
+     así que es excepción y no fallo. La regla que vigila esto de verdad es
+     `verificar-fuentes.mjs`: que el peso del CSS sea el del archivo. */
+  if (enlace === 'assets/fonts/space-grotesk-700-latin.woff2') continue;
+
   problemas.push(`Enlace desaparecido: ${enlace}`);
 }
 
@@ -102,6 +115,8 @@ for (const enlace of enlacesAntes) {
 for (const enlace of enlacesAhora) {
   if (enlacesAntes.has(enlace)) continue;
   if (enlace === 'assets/css/06-universo.css') continue;
+  // El nombre nuevo de la fuente del display, por lo de arriba.
+  if (enlace === 'assets/fonts/space-grotesk-300-latin.woff2') continue;
   avisos.push(`Enlace nuevo: ${enlace}`);
 }
 

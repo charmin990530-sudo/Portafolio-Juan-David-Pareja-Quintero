@@ -74,16 +74,34 @@ export const RUIDO = /* glsl */ `
  * ahí borraría el compilador pero no el código fuente enviado.
  */
 export const LUZ = /* glsl */ `
-  // Fresnel clásico: 1 en el borde del cuerpo, 0 de frente. Es lo que dibuja
-  // el limbo brillante de la atmósfera sin necesidad de una segunda pasada.
+  // Fresnel clasico: 1 en el borde del cuerpo, 0 de frente. Es lo que dibuja
+  // el limbo brillante de la atmosfera sin necesidad de una segunda pasada.
   float fresnel(vec3 normal, vec3 vision, float potencia) {
     return pow(1.0 - clamp(dot(normal, vision), 0.0, 1.0), potencia);
   }
 
-  // Difusión simple en un hemisferio. No es un modelo físico de Rayleigh:
-  // es el coste justo para que el lado iluminado y el oscuro se separen
-  // con un color distinto sin necesidad de un mapa de environment.
+  // Difusion en un hemisferio, con un poco de vuelta.
+  //
+  // ANTES era \`dot * 0.5 + 0.5\`. Eso no da un lado oscuro: da 0.5 de luz en
+  // el terminador y NUNCA baja de ahi, asi que media esfera queda igual de
+  // iluminada y el lado noche conserva todo el color de la textura.
+  //
+  // El termino de vuelta es real y sirve: una atmosfera dispersa la luz algo
+  // mas alla del terminador. Pero a 0.5 es tanta envoltura que el efecto se
+  // come la mitad del planeta. Aqui es 0.18: sigue habiendo un borde
+  // suavemente iluminado, que es lo que se ve de verdad.
+  //
+  // El exponente es lo que da la forma. Sin el, el gradiente es lineal y el
+  // planeta se ve como una bola pintada; con el, la luz se concentra en el
+  // centro del disco iluminado, que es donde la tiene un sol lejano.
+  //
+  // NOTA: este cambio se hizo creyendo que arreglaba un disco gris que
+  // cruzaba el planeta en la portada, y NO lo arregla: ese disco resulto ser
+  // otra cosa, que sigue sin identificar. Ver PENDIENTES.md seccion 9. Lo que
+  // si arregla es que el lado noche de verdad este en sombra.
   float difusion(vec3 normal, vec3 luz) {
-    return clamp(dot(normal, normalize(luz)) * 0.5 + 0.5, 0.0, 1.0);
+    float cosAngulo = dot(normal, normalize(luz));
+    float envoltura = smoothstep(-0.18, 1.0, cosAngulo);
+    return pow(envoltura, 1.6);
   }
 `;
