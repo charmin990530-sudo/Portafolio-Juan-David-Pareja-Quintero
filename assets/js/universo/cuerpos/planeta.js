@@ -143,18 +143,24 @@ const FRAGMENT = /* glsl */ `
     vec3 derivaRelieve = vec3(uTiempo * 0.014, 0.0, uDeriva * 0.02);
     vec3 derivaNubes = vec3(uTiempo * 0.028 + 11.0, 0.0, 0.0);
 
-    int octavas = uBandas > 0.5 ? 5 : 4;
+int octavas = uBandas > 0.5 ? 5 : 4;
 
-    /* Bandas de gas: el gigante no tiene continentes, tiene franjas
-       horizontales. Se deforma el dominio con ruido para que las franjas
-       ondulen en lugar de ser anillos rectos. */
-    if (uBandas > 0.5) {
-      q += vec3(0.0, p.y * 3.4 + fbm(p * 2.4 + uSemilla, 4) * 1.3, 0.0);
-    }
+/* Bandas de gas: el gigante no tiene continentes, tiene franjas
+   horizontales. Se deforma el dominio con ruido para que las franjas
+   ondulen en lugar de ser anillos rectos. */
+if (uBandas > 0.5) {
+  q += vec3(0.0, p.y * 3.4 + fbm(p * 2.4 + uSemilla, 4) * 1.3, 0.0);
+}
 
-    float altura = fbm(q + derivaRelieve, octavas);
-    altura = altura * 0.5 + 0.5;
-    altura = pow(altura, 1.0 + uRugosidad * 0.7);
+/* Detalle fino de las bandas: ruido de alta frecuencia que rompe la
+   uniformidad de las franjas, dándoles textura "granulada" vista desde
+   lejos. Una octava extra por encima de las principales. */
+float detalleBandas = uBandas > 0.5 ? fbm(p * 8.0 + uSemilla * 0.7, 2) * 0.2 : 0.0;
+
+/* altura base con el detalle de bandas incorporado */
+float altura = fbm(q + derivaRelieve, octavas) + detalleBandas;
+altura = altura * 0.5 + 0.5;
+altura = pow(altura, 1.0 + uRugosidad * 0.7);
 
     /* Mientras se forma, el relieve esta revuelto: la superficie es un
        rescoldo sin continentes que definir. El ruido se aplana hacia el punto
@@ -178,17 +184,20 @@ const FRAGMENT = /* glsl */ `
       base = mix(base, uHielo * 1.12, smoothstep(0.52, 0.86, nube) * 0.72);
     }
 
-    /* Iluminacion.
-       difusion va de 0 a 1 y ahora tiene un terminador de verdad: cae a 0
-       un poco despues de que la normal se pone perpendicular a la luz. Por
-       eso el umbral de las luces de ciudad esta en 0.30 y no en 0.52: antes
-       media a la mitad del planeta, asi que las ciudades se encendian en
-       pleno lado de dia y se veian brillando a traves del planeta.
+/* Iluminacion.
+   difusion va de 0 a 1 y ahora tiene un terminador de verdad: cae a 0
+   un poco despues de que la normal se pone perpendicular a la luz. Por
+   eso el umbral de las luces de ciudad esta en 0.30 y no en 0.52: antes
+   media a la mitad del planeta, asi que las ciudades se encendian en
+   pleno lado de dia y se veian brillando a traves del planeta.
 
-       El umbral va justo por delante del terminador: la primera ciudad que
-       se enciende es la del crepusculo, no la de la noche cerrada. */
+   El umbral va justo por delante del terminador: la primera ciudad que
+   se enciende es la del crepusculo, no la de la noche cerrada. */
     float d = difusion(normal, luz);
-    float curva = pow(d, 0.72);
+    // Borde Fresnel suave: el luz se concentra un poco en el borde del
+    // disco iluminado, como efecto de atenuacion atmosferica real.
+    float fresnel = pow(1.0 - clamp(dot(normal, luz), 0.0, 1.0), 1.2);
+    float curva = pow(d, 0.72) * (0.9 + fresnel * 0.2);
 
     /* La ambiente es lo unico que se ve del lado noche. Baja de 0.055 a
        0.035: con 0.055 el lado oscuro conservaba casi todo el color de la
