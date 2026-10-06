@@ -63,7 +63,11 @@ const FRAGMENT = /* glsl */ `
     // sobre el terminador. Sin esto, el lado nocturno del planeta tendría
     // un aro de luz y rompería la ilusión por completo.
     float luz = difusion(normal, uLuz);
-    float margen = smoothstep(0.18, 0.56, luz);
+    // El margen va algo antes de donde empieza la noche, con la nueva
+    // difusion: el terminador real esta cerca de 0 y 0.18 ya es de noche.
+    // La ventana es estrecha a proposito: es una franja de crepusculo, no
+    // medio planeta iluminado, y por eso no hace falta bajarla mas.
+    float margen = smoothstep(0.06, 0.42, luz);
 
     float alfa = (borde + alto * 0.34) * uFuerza * margen * uEntrada;
 

@@ -178,24 +178,35 @@ const FRAGMENT = /* glsl */ `
       base = mix(base, uHielo * 1.12, smoothstep(0.52, 0.86, nube) * 0.72);
     }
 
-    /* Iluminación.
-       difusion va de 0 a 1, así que el terminador cae en 0.5. Ese
-       umbral es el que decide cuándo encender las luces de ciudad: cuando
-       la mitad del planeta ya está en sombra. */
+    /* Iluminacion.
+       difusion va de 0 a 1 y ahora tiene un terminador de verdad: cae a 0
+       un poco despues de que la normal se pone perpendicular a la luz. Por
+       eso el umbral de las luces de ciudad esta en 0.30 y no en 0.52: antes
+       media a la mitad del planeta, asi que las ciudades se encendian en
+       pleno lado de dia y se veian brillando a traves del planeta.
+
+       El umbral va justo por delante del terminador: la primera ciudad que
+       se enciende es la del crepusculo, no la de la noche cerrada. */
     float d = difusion(normal, luz);
     float curva = pow(d, 0.72);
 
-    vec3 ambiente = uColorLuz * 0.055;
+    /* La ambiente es lo unico que se ve del lado noche. Baja de 0.055 a
+       0.035: con 0.055 el lado oscuro conservaba casi todo el color de la
+       textura y se leia como una superficie gris plana en vez de noche. */
+    vec3 ambiente = uColorLuz * 0.035;
     vec3 color = base * uColorLuz * curva * 1.15 + ambiente * base;
 
-    /* Luces de ciudad: solo en la cara nocturna y solo sobre tierra firme.
-       Un umbral alto sobre ruido de alta frecuencia las reparte en manchas,
-       que es como se ven de verdad, y no como un resplandor uniforme. */
-    if (uLucesCiudad > 0.5 && d < 0.52) {
+    /* Luces de ciudad: en la cara nocturna, sobre tierra firme, y con el
+       resplandor repartido en manchas por un umbral alto sobre ruido de alta
+       frecuencia. El smoothstep va al reves para que brillen MAS cuanto mas
+       oscuro esta el punto, y no solo "cuando hay sombra". */
+    if (uLucesCiudad > 0.5 && d < 0.30) {
       float tierra = step(uNivelMar + 0.04, altura);
       float manchas = fbm(p * 22.0 + uSemilla * 3.0, 3) * 0.5 + 0.5;
       float ciudad = smoothstep(0.63, 0.79, manchas) * tierra;
-      color += uAcento * ciudad * smoothstep(0.5, 0.16, d) * 1.5;
+      /* Se apagan del todo en el crepúsculo para que no haya un corte
+         visible en la frontera: de 0.30 (encendidas) a 0.05 (apagadas). */
+      color += uAcento * ciudad * smoothstep(0.30, 0.05, d) * 1.5;
     }
 
     /* Brillo del agua: solo bajo el nivel del mar y solo con la luz de

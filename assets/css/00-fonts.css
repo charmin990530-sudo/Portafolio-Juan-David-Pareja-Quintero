@@ -2,22 +2,75 @@
    00 · TIPOGRAFÍAS
    Fuentes autoalojadas — Google Fonts · SIL Open Font License 1.1
    Space Grotesk (display) · Inter (texto) · JetBrains Mono (datos)
+   =============================================================
+
+   ── POR QUÉ HAY UNA DECLARACIÓN POR PESO Y NO UNA POR FAMILIA ────────────
+
+   Cada `@font-face` declara un peso, y el peso que declara es el que el
+   archivo lleva DENTRO: `tools/verificar-fuentes.mjs` lee el `usWeightClass`
+   de cada `.woff2` y falla si no coinciden. Aquí no se puede escribir «la
+   familia se llama Space Grotesk» y dejar que el navegador elija, porque
+   entonces el archivo puede ser de un peso y el CSS prometer otro sin que
+   nada se entere.
+
+   ── LO QUE HAY, Y POR QUÉ ES MENOS DE LO QUE PARECE ─────────────────────
+
+   Este archivo declaraba seis pesos sobre seis archivos, y solo hay TRES
+   binarios distintos:
+
+   · los dos de Space Grotesk eran el mismo archivo, con Space Grotesk
+     **Light** dentro (`usWeightClass = 300`), mientras el CSS pedía 500 y 700;
+   · los tres de Inter eran el mismo archivo, con Inter **Regular** dentro
+     (`usWeightClass = 400`), mientras el CSS pedía 400, 500 y 600.
+
+   O sea: el sitio pedía cinco pesos que no existían y dibujaba con dos. Los
+   titulares de todo el sitio salían en Light y ningún `<strong>` del texto
+   salía en negrita, con el CSS diciendo lo contrario. Sin un solo error: el
+   navegador usa el peso que encuentra y no avisa de nada.
+
+   Ahora se declara el peso que hay. **El sitio se ve exactamente igual** —no
+   se pierde ni un trazo— y a cambio el CSS dice la verdad y quedan cuatro
+   archivos menos, 63 KB menos.
+
+   ── SI ALGÚN DÍA SE QUIEREN LOS PESOS DE VERDAD ──────────────────────────
+
+   Bajar de aquí las Medium y Bold de Space Grotesk y la Medium de Inter, y
+   volver a declarar 500 y 700 arriba. Es lo que el CSS pedía antes y lo que
+   el sitio no tenía: +~90 KB, y cambian el titular de todo el sitio y todos
+   los `<strong>` del texto. Con eso, la comprobación de fuentes pasa sola,
+   porque los archivos dirían lo que declaran.
+
+   ── POR QUÉ LAS REGLAS SIGUEN PIDIENDO 700 Y 600 ─────────────────────────
+
+   Doce reglas del CSS piden `font-weight: 700` o `600` sobre Space Grotesk e
+   Inter: los titulares, los botones, el `<strong>` del texto. **Se dejan como
+   están, a propósito.**
+
+   Son la INTENCIÓN de diseño: "aquí quiero que el texto pese más". El
+   navegador, al no encontrar ese peso, usa el más cercano que tenga, que es
+   el único que hay. Por eso el sitio no cambia ni un trazo: el resultado es
+   el mismo antes y después de este arreglo.
+
+   Y bajarlas a 300 y 400 sería peor. Se vería igual, sí, pero se perdería
+   dónde hace falta un peso de verdad: para cuando bajen las fuentes buenas,
+   habría que adivinar qué reglas RisingSoon quero en negrita. Con el 700 escrito, la decisión ya está tomada en el sitio y solo falta
+   llevarla a `00-fonts.css`.
+
+   Un peso que no existe no rompe nada: el navegador no avisa y elige el más
+   cercano. Es exactamente lo que pasaba antes, y por eso el defecto era
+   invisible.
+
+   Se conserva `font-display: swap` en las tres: sin él, el texto no se
+   pinta hasta que llega la fuente, y con `swap` se pinta en la de reserva y
+   cambia al descargarse.
    ============================================================= */
 
 @font-face {
   font-family: 'Space Grotesk';
   font-style: normal;
-  font-weight: 500;
+  font-weight: 300;
   font-display: swap;
-  src: url('../fonts/space-grotesk-500-latin.woff2') format('woff2');
-}
-
-@font-face {
-  font-family: 'Space Grotesk';
-  font-style: normal;
-  font-weight: 700;
-  font-display: swap;
-  src: url('../fonts/space-grotesk-700-latin.woff2') format('woff2');
+  src: url('../fonts/space-grotesk-300-latin.woff2') format('woff2');
 }
 
 @font-face {
@@ -26,22 +79,6 @@
   font-weight: 400;
   font-display: swap;
   src: url('../fonts/inter-400-latin.woff2') format('woff2');
-}
-
-@font-face {
-  font-family: 'Inter';
-  font-style: normal;
-  font-weight: 500;
-  font-display: swap;
-  src: url('../fonts/inter-500-latin.woff2') format('woff2');
-}
-
-@font-face {
-  font-family: 'Inter';
-  font-style: normal;
-  font-weight: 600;
-  font-display: swap;
-  src: url('../fonts/inter-600-latin.woff2') format('woff2');
 }
 
 @font-face {

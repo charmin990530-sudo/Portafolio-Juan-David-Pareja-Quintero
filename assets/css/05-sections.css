@@ -207,14 +207,37 @@ main {
   flex: none;
 }
 
+/* El glifo de la marca: dos anillos y un núcleo, todo en CSS.
+   Se usa en la cabecera y también como ornamento dentro de la nota de
+   Habilidades, y ahí va más pequeño. Antes el tamaño pequeño venía de un
+   `style="width: 34px; height: 34px"` en el HTML, con lo que solo se
+   cambiaba la caja y los anillos y el núcleo se quedaban con la medida de la
+   cabecera. Aquí la medida es UNA variable y las tres piezas se derivan de
+   ella, así que un tamaño nuevo es una regla, y el glifo sale bien en los
+   dos sitios.
+
+   `--glifo-medida` es la caja. El inset del anillo interior y el diámetro
+   del núcleo salen de ahí con `calc()`, de modo que mantienen la proporción
+   en cualquier tamaño en lugar de estar medidos a mano. */
 .marca__glifo {
+  --glifo-medida: 38px;
+  --glifo-inset: calc(var(--glifo-medida) * 0.184);
+  --glifo-nucleo: calc(var(--glifo-medida) * 0.21);
+
   position: relative;
   display: grid;
   place-items: center;
-  width: 38px;
-  height: 38px;
+  width: var(--glifo-medida);
+  height: var(--glifo-medida);
   /* Ornamento puro: nunca debe robarle un clic al contenido de al lado. */
   pointer-events: none;
+}
+
+/* La variante pequeña de la nota de Habilidades. Se nombra por el tamaño, no
+   por el sitio que la usa: así el ornamento se puede reutilizar en cualquier
+   tamaño intermedio sin que el nombre mintiera. */
+.marca__glifo--sm {
+  --glifo-medida: 34px;
 }
 
 .marca__anillo-a,
@@ -232,14 +255,14 @@ main {
 }
 
 .marca__anillo-b {
-  inset: 7px;
+  inset: var(--glifo-inset);
   border-bottom-color: transparent;
   animation: girar-contrario 3.6s linear infinite;
 }
 
 .marca__nucleo {
-  width: 8px;
-  height: 8px;
+  width: var(--glifo-nucleo);
+  height: var(--glifo-nucleo);
   border-radius: 50%;
   background: linear-gradient(135deg, var(--accent), var(--accent-2));
   box-shadow: 0 0 12px var(--accent);
@@ -452,6 +475,41 @@ main {
 .menu[data-abierto='1'] .menu__enlace {
   animation: entrar 0.5s var(--ease-out) forwards;
   animation-delay: calc(var(--i) * 60ms + 100ms);
+}
+
+/* El escalonado del menú: cada entrada entra 60 ms después de la anterior.
+
+   Antes el índice iba en el HTML, con un `style="--i: N"` en cada enlace. Eso
+   deja el ritmo de la animación en el marcado, donde no aparece al buscar la
+   regla que lo usa, y obliga a mantenerlo a mano: añadir una entrada al menú
+   era acordarse de subir el número.
+
+   Aquí sale de `:nth-child`, que es lo que ya define el orden de la lista.
+   Son cinco reglas y una por entrada, y al añadir la sexta hay que añadir la
+   sexta regla: no es que CSS no sepa contarlas, es que un contador de CSS no
+   se puede sumar dentro de `calc()`.
+
+   El patrón para las nuevas es copiar la anterior y subir el número en uno.
+   Si algún día llegaran a ser muchas más entradas, la alternativa honesta
+   es un retardo fijo para el bloque entero, que `data-abierto` ya permite. */
+.menu__enlace {
+  --i: 0;
+}
+
+.menu__lista > li:nth-child(2) .menu__enlace {
+  --i: 1;
+}
+
+.menu__lista > li:nth-child(3) .menu__enlace {
+  --i: 2;
+}
+
+.menu__lista > li:nth-child(4) .menu__enlace {
+  --i: 3;
+}
+
+.menu__lista > li:nth-child(5) .menu__enlace {
+  --i: 4;
 }
 
 .menu__indice {
@@ -1446,6 +1504,31 @@ main {
 .canal:hover {
   border-color: color-mix(in srgb, var(--canal-color, var(--accent)) 60%, transparent);
   background: color-mix(in srgb, var(--canal-color, var(--accent)) 8%, var(--glass-bg));
+}
+
+/* Un color por canal, nombrado por lo que el canal ES y no por el color que
+   le toca. Antes cada `<a>` traía su `style="--canal-color: var(--accent-2)"`
+   en el HTML: cuatro colores escritos en el marcado, donde no se ven al
+   buscar la regla que los usa y donde un cambio de paleta obligaba a editar
+   el HTML.
+
+   El nombre dice qué canal es, así que reordenar la lista o cambiar el color
+   no obliga a tocar nada más. Para un canal nuevo: una regla más aquí con
+   el color que corresponda, y una clase más en el `<a>`. */
+.canal--correo {
+  --canal-color: var(--accent);
+}
+
+.canal--whatsapp {
+  --canal-color: var(--lime);
+}
+
+.canal--presupuesto {
+  --canal-color: var(--accent-2);
+}
+
+.canal--disponibilidad {
+  --canal-color: var(--accent-3);
 }
 
 .canal__icono {

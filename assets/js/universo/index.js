@@ -251,6 +251,17 @@ export async function montarUniverso({ lienzo, forzar = false } = {}) {
     document.documentElement.dataset.universo = 'activo';
     document.documentElement.dataset.calidad = nivel;
 
+    /* Ganchos de depuración, solo con `?debug` en la URL. Sin él, el
+       sitio no expone nada: el universo es una caja cerrada y quien
+       inspecciona la consola no ve el montaje por dentro. Con él,
+       `window.__escena` da el ensamblaje entero (cuerpos, capas,
+       cámara, ruta) para apagar objetos y medir píxeles desde la
+       consola, que es cómo se cazan los defectos que solo existen
+       mientras hay una animación. */
+    if (location.search.includes('debug')) {
+      window.__escena = escena;
+    }
+
     const desmontar = async () => {
       document.removeEventListener(EVENTO_APAGAR, alApagar);
       document.removeEventListener('visibilitychange', alCambiarVisibilidad);
