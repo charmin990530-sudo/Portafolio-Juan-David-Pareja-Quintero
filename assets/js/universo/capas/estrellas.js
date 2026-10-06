@@ -84,9 +84,16 @@ const VERTEX = /* glsl */ `
        diferencia entre un cielo y un vacío. */
     float distancia = -vista.z;
     float atenuacion = 1.0 / (1.0 + distancia * 0.0011);
-    float tam = aTamano * (0.5 + atenuacion * 1.3);
+    float tamBase = aTamano * (0.5 + atenuacion * 1.3);
 
-    gl_PointSize = clamp(tam * uPixelRatio * titileo, 2.0, 12.0);
+    // Variación de tamaño: algunas estrellas son naturalmente más grandes
+    float tamanoAleatorio = 0.7 + rand() * 0.3; // 0.7 - 1.0
+    float tam = tamBase * tamanoAleatorio;
+
+    // Agrupamiento sutil: estrellas cercanas tienden a agruparse
+    float densidad = 1.0 + smoothstep(0.0, 2.0, -vista.z) * 0.1;
+
+    gl_PointSize = clamp(tam * uPixelRatio * titileo * densidad, 2.0, 15.0);
 
     // Longitud de la estela segun la velocidad, en unidades de sprite.
     vEstela = uEstelas;
@@ -127,6 +134,24 @@ varying float vTinte;
        explosion la que va abriendo el espacio. */
     if (vEnciende < 0.02) discard;
 
+    // Variación de color por estrella: algunas son azules, otras blancas,
+    // otras amarillas pálidas, simulando tipos estelares diferentes.
+    float aleaColor = rand(vSemilla * 0.7);
+    vec3 colorEstrella;
+    if (aleaColor < 0.55) {
+      // Blancas mayoritarias
+      colorEstrella = uColorBase * (0.8 + aleaColor * 0.4);
+    } else if (aleaColor < 0.75) {
+      // Azules (estrellas calientes)
+      colorEstrella = uColorBase * vec3(0.6, 0.8, 1.0) * (0.9 + aleaColor * 0.2);
+    } else if (aleaColor < 0.9) {
+      // Amarillentas
+      colorEstrella = uColorBase * vec3(1.0, 0.95, 0.8) * (0.85 + aleaColor * 0.2);
+    } else {
+      // Rojizas (enfermas/enanas)
+      colorEstrella = uColorBase * vec3(1.0, 0.7, 0.5) * (0.7 + aleaColor * 0.3);
+    }
+
     // Nucleo brillante mas halo suave: dos terminos, sin ninguna textura.
     float nucleo = smoothstep(0.55, 0.0, d);
     float halo = smoothstep(1.0, 0.0, d) * 0.32;
@@ -136,7 +161,7 @@ varying float vTinte;
 
     // La mayoria de estrellas son blancas-frias; unas pocas heredan el
     // acento de la marca. vTinte reparte esa mezcla de forma estable.
-    vec3 color = mix(uColorBase, uColorAcento, smoothstep(0.72, 1.0, vTinte));
+    vec3 color = mix(colorEstrella, uColorAcento, smoothstep(0.72, 1.0, vTinte));
 
     /* Las que acaban de encender estan al rojo: una estrella recien formada
        esta caliente. Sin esto, encenderlas todas con el mismo blanco de las
