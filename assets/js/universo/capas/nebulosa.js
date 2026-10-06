@@ -53,6 +53,8 @@ function texturaNube(semilla) {
   ctx.fillRect(0, 0, LADO, LADO);
 
   // Grano: manchas de ruido de baja frecuencia que rompen la simetría radial.
+  // Más manchas = mayor estructura visual de "gas", dentro del presupuesto
+  // aceptable porque es solo canvas precalculado, no shader por píxel.
   const random = (() => {
     let a = semilla >>> 0;
     return () => {
@@ -64,7 +66,7 @@ function texturaNube(semilla) {
   })();
 
   ctx.globalCompositeOperation = 'lighter';
-  for (let i = 0; i < 22; i += 1) {
+  for (let i = 0; i < 30; i += 1) {
     const cx = LADO * (0.18 + random() * 0.64);
     const cy = LADO * (0.18 + random() * 0.64);
     const r = LADO * (0.06 + random() * 0.22);
@@ -109,9 +111,9 @@ export function crearNebulosa({ nivel, radio, paleta }) {
   // menos de un 12 % de luz, que es lo que se ve como gas sin estropear el
   // negro del espacio ni el contraste del texto.
   const capas = [
-    { clave: 'cian', escala: 1.0, opacidad: 0.19 },
-    { clave: 'violeta', escala: 0.78, opacidad: 0.14 },
-    { clave: 'solar', escala: 0.5, opacidad: 0.075 },
+    { clave: 'cian', escala: 1.0, opacidad: 0.28 },
+    { clave: 'violeta', escala: 0.78, opacidad: 0.22 },
+    { clave: 'solar', escala: 0.5, opacidad: 0.12 },
   ];
 
   const grupo = [];
