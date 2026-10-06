@@ -86,7 +86,7 @@ const VERTEX = /* glsl */ `
     float atenuacion = 1.0 / (1.0 + distancia * 0.0011);
     float tam = aTamano * (0.5 + atenuacion * 1.3);
 
-    gl_PointSize = clamp(tam * uPixelRatio * titileo, 1.0, 12.0);
+    gl_PointSize = clamp(tam * uPixelRatio * titileo, 2.0, 12.0);
 
     // Longitud de la estela segun la velocidad, en unidades de sprite.
     vEstela = uEstelas;
