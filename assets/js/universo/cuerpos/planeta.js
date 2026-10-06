@@ -311,7 +311,7 @@ export function crearPlaneta({ nivel, def, semillaBase = 0 }) {
       uTierra: { value: new Color(def.colorTierra) },
       uHielo: { value: new Color(def.colorHielo) },
       uAcento: { value: colorAcento.clone() },
-      uColorLuz: { value: new Color(def.colorLuz ?? '#ffffff') },
+      uColorLuz: { value: new Color(def.colorLuz ?? '#fffdf0') },
       uLuz: { value: direccionLuz.clone() },
       uTiempo: { value: 0 },
       uRugosidad: { value: def.rugosidad ?? 0.5 },
