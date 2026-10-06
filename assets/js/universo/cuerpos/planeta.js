@@ -149,7 +149,7 @@ const FRAGMENT = /* glsl */ `
        horizontales. Se deforma el dominio con ruido para que las franjas
        ondulen en lugar de ser anillos rectos. */
     if (uBandas > 0.5) {
-      q += vec3(0.0, p.y * 3.4 + fbm(p * 2.2 + uSemilla, 3) * 1.4, 0.0);
+      q += vec3(0.0, p.y * 3.4 + fbm(p * 2.4 + uSemilla, 4) * 1.3, 0.0);
     }
 
     float altura = fbm(q + derivaRelieve, octavas);
