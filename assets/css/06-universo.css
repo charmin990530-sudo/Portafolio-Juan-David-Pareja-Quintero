@@ -995,3 +995,33 @@
     padding: var(--sp-4);
   }
 }
+
+/* ───────────────────────────────────────────────────────────────────
+   TRAMOS DE CÁMARA · .travesia
+
+   Secciones SIN contenido cuyo único trabajo es dar sitio a la cámara:
+   la altura de la sección es literalmente el tiempo que la cámara pasa
+   viajando por ella. Es la regla del proyecto —más texto, más scroll,
+   más tiempo de cámara— aplicada al caso inverso: sin texto, la escena
+   manda.
+
+   180svh y no 180vh a propósito. En móvil, `vh` no cambia al mover la
+   barra de direcciones del navegador, así que la altura "se encoge" al
+   hacer scroll y la cámara da un tirón al final del tramo. `svh` es la
+   altura con la barra oculta, que es la que se ve al principio del
+   recorrido, que es cuando la cámara entra.
+
+   Los 180svh los puso `probar-ruta.mjs`, no el gusto: con 140svh el guion
+   no cabía en el documento. Y subirlo más tampoco vale, porque más caja no
+   arregla el presupuesto: lo que sale caro es el SALTO entre tramos, y ese
+   lo arregla que la cámara no retroceda, no que la caja crezca. */
+.travesia {
+  height: 180svh;
+}
+
+/* Sin 3D no hay nada que mirar en el tramo, y una caja vacía de 180svh
+   se lee como un hueco muerto en mitad de la página. Se quita entera:
+   el sitio se vuelve una columna de contenido sin un solo hueco. */
+:root:not([data-universo='activo']) .travesia {
+  display: none;
+}

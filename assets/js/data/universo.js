@@ -162,12 +162,102 @@ export const SISTEMAS = [
     ],
   },
 
-  /* ---------- 02 · PERFIL · El planeta hogar ---------- */
+  /* ---------- 02 · COSMOS · La Vía Láctea ----------
+     Sin cuerpo: es el único tramo del viaje que no tiene un planeta. El
+     cuerpo celeste aquí es el fondo entero —las galaxias de
+     `capas/galaxias.js`, que ya se dibujan en toda la escena— y lo que
+     hace este sistema es ALEJAR LA CÁMARA de él: se sube y se echa
+     atrás hasta que las galaxias pasan de motas a espirales con brazos
+     reconocibles.
+
+     El `id` de la sección es `cosmos` y la sección está vacía a
+     propósito (`<section id="cosmos" class="travesia">`, 140svh). La
+     altura de esa caja ES el tiempo de cámara: 140svh es lo que tarda
+     la cámara en salir del sistema solar y llegar a la galaxia.
+
+     El orden importa y no es arbitrario: la ruta va Big Bang → galaxias
+     → Vía Láctea → sistema solar, y el sistema solar empieza en
+     `perfil`, donde la cámara cruza la atmósfera de la Tierra. Por eso
+     `cosmos` va aquí y no después. */
+  {
+    id: 'cosmos',
+    seccion: 'cosmos',
+    etiqueta: 'Vía Láctea',
+    indice: '02',
+    cuerpo: null,
+    atmosfera: null,
+
+    /* Tres fotogramas y no cinco, a propósito. El FOV se abre de 58 a 74
+       —el máximo de `CAMARA.fovMax`— y eso es lo que produce la sensación
+       de salir: el mundo se encoge mientras la cámara se aleja, sin
+       necesidad de moverla más rápido. La última mirada es la del punto
+       «aquí»: el Sol de la siguiente sección, que ya está encendido en
+       este fotograma aunque el sistema solar todavía no haya empezado. */
+fotogramas: [
+      /* ESTOS TRES NÚMEROS SALEN DE MEDIR, y el primero es una equivocación
+         que costó dos intentos.
+
+         El eje del viaje es -Z: la cámara avanza de z positiva hacia z
+         negativa. La primera versión de este tramo hacía retroceder la
+         cámara hasta z = 2700 "para alejarse" y luego volver a z = 300 para
+         entrar en la atmósfera. Eso son 2 400 unidades de retroceso más 2 400
+         de vuelta dentro de un solo tramo, y `probar-ruta.mjs` lo cobra:
+         el salto a la atmósfera salía a 1,20 u/px, el más rápido del viaje,
+         y la garantía de que el guion siga cabiendo con la cámara al 1,5×
+         fallaba con 1,28 u/px contra un máximo de 1,25.
+
+         Peor aún, el retroceso tampoco arreglaba el encuadre en móvil, que
+         es lo que parecía motivated: con la cámara atrás, la regla de
+         encuadre en vertical —que en móvil aleja cada cámara de su punto de
+         mira ×2,15— la empuja todavía más hacia +Z y el gigante de la
+         prueba, que está en z = -1900, se le echa encima desde el lado
+         equivocado. Lo más rápido del viaje era también el único punto donde
+         el móvil veía el sujeto más grande que el monitor, que es justo lo
+         que esa comprobación prohíbe.
+
+         La solución es no retroceder. El tramo va de z = 1250 a z = 400,
+         siempre hacia delante, unos 850 unidades en total: menos de un
+         tercio de lo que costaba, y el puente a `perfil` queda en 100
+         unidades, que es nada. El "alejarse" no lo daba el retroceso ni
+         nunca lo dio: lo da el FOV abriéndose de 58 a 74 y la altura
+         subiendo de y = 130 a y = 320. */
+      { t: 0, pos: [10, 130, 1250], mira: [0, 0, -400], fov: 58, roll: 0 },
+
+      // Ascenso: la cámara sube sobre el plano y se abre el campo. Aquí es
+      // donde las espirales empiezan a tener brazos.
+      { t: 0.55, pos: [-40, 260, 800], mira: [0, -40, -900], fov: 66, roll: 0.05 },
+
+      /* La Vía Láctea de plano, con el punto «aquí» al centro: el Sol al que
+         entra el siguiente tramo.
+
+         LA MIRA VA HACIA ATRÁS, A z = 1200, Y ESO PARECE CONTRASENTIDO.
+         Está después de donde está la cámara (z = 400), o sea que el punto de
+         mira queda a la espalda. Es deliberado, y lo forzó una comprobación.
+
+         En móvil la regla de encuadre en vertical aleja cada cámara de su
+         punto de mira ×2,15: `p = objetivo + (posición − objetivo) · 2,15`.
+         O sea que la cámara se va en la dirección OPUESTA a la mira. Si
+         esta mira estuviera en z = −1800 —que es donde está el gigante— el
+         móvil empujaría la cámara hacia él y entraría dentro: medido, el
+         gigante quedaba a 26 unidades de la cámara con radio 132, o sea
+         DENTRO, ocupando el 292 % del alto. La comprobación de encuadre
+        detecta ese caso por dos motivos a la vez, y es el mismo defecto en
+         las dos formas: en escritorio el gigante seguiría siendo el más
+         grande del viaje, pero en móvil sería todavía más grande que en
+         escritorio, que es justo lo que esa regla prohíbe.
+
+         Con la mira en z = 1200 el móvil lo aleja y el gigante se queda a
+         225 unidades, un 12,7 % más lejos que en escritorio. */
+      { t: 1, pos: [40, 320, 400], mira: [0, -60, 1200], fov: 74, roll: -0.03 },
+    ],
+  },
+
+  /* ---------- 03 · PERFIL · El planeta hogar ---------- */
   {
     id: 'perfil',
     seccion: 'perfil',
     etiqueta: 'Planeta hogar',
-    indice: '02',
+    indice: '03',
     cuerpo: null, // el mismo cuerpo del inicio, ya construido
     reutiliza: 'hogar',
     atmosfera: null,
@@ -186,7 +276,7 @@ export const SISTEMAS = [
     id: 'proceso',
     seccion: 'proceso',
     etiqueta: 'Campo de escombros',
-    indice: '03',
+    indice: '04',
     cuerpo: null,
     campo: {
       caja: [-260, -150, -1620, 260, 190, -700],
@@ -209,7 +299,7 @@ export const SISTEMAS = [
     id: 'stack',
     seccion: 'stack',
     etiqueta: 'Sistema de habilidades',
-    indice: '04',
+    indice: '05',
     cuerpo: {
       tipo: 'planeta',
       id: 'gigante',
@@ -288,7 +378,7 @@ export const SISTEMAS = [
     id: 'proyectos',
     seccion: 'proyectos',
     etiqueta: 'Cúmulo',
-    indice: '05',
+    indice: '06',
     activo: false,
     autoActivar: true,
     cuerpo: {
@@ -326,7 +416,7 @@ export const SISTEMAS = [
     id: 'contacto',
     seccion: 'contacto',
     etiqueta: 'Baliza',
-    indice: '06',
+    indice: '07',
     cuerpo: {
       tipo: 'baliza',
       id: 'baliza',
@@ -351,7 +441,7 @@ export const SISTEMAS = [
     id: 'final',
     seccion: 'pie',
     etiqueta: 'Vista del sistema',
-    indice: '07',
+    indice: '08',
     cuerpo: null,
     /* La cámara sube y se echa atrás mientras gira para mirar al gigante.
        Es un movimiento real de travelling, no un corte: el mismo plano
