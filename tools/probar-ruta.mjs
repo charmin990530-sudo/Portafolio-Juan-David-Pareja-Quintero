@@ -47,8 +47,20 @@ const { separacionParaEncuadre } = await import('../assets/js/core/util.js');
    ------------------------------------------------------------------ */
 
 /* Alturas realistas. El pie mide 150svh = 1 350 px, que es lo que le da
-   recorrido al retroceso final; ver el comentario en `.pie` de 05-sections. */
-const ALTOS = { inicio: 900, perfil: 1400, proceso: 2600, stack: 1500, contacto: 1200, pie: 1800 };
+   recorrido al retroceso final; ver el comentario en `.pie` de 05-sections.
+   `cosmos` mide 260svh, o sea 1 458 px en una ventana de 810. ESTOS VALORES
+   TIENEN QUE SEGUIR AL CSS: son los que deciden si el guion cabe, así que un
+   tramo más alto en la hoja de estilo y no aquí hace que esta comprobación
+   mida un sitio que no existe. */
+const ALTOS = {
+  inicio: 900,
+  cosmos: 1458,
+  perfil: 1400,
+  proceso: 2600,
+  stack: 1500,
+  contacto: 1200,
+  pie: 1800,
+};
 let acumulado = 0;
 const secciones = [];
 for (const sistema of SISTEMAS) {
