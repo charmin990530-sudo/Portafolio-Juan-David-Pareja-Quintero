@@ -272,7 +272,7 @@ export function crearEscena({ lienzo, nivelInicial, nivelElegido = false, alInfo
 
       if (sistema.atmosfera && conf.atmosfera > 0) {
         entrada.atmosfera = crearAtmosfera({
-          detalle: conf.detallePlaneta,
+          detalle: conf.resolucionPlaneta ?? conf.detallePlaneta,
           color: estiloDeTono(`tono:${sistema.atmosfera.tono}`, paleta),
           radio: def.radio,
           escala: sistema.atmosfera.escala ?? 1.055,

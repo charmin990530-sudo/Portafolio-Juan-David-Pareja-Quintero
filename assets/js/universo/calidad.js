@@ -22,6 +22,7 @@ export const NIVELES = { ALTO: 'alto', MEDIO: 'medio', BAJO: 'bajo' };
 /** Perfiles. Estos números son el presupuesto; ver ESTUDIO.md §6.2. */
 const PERFILES = {
   [NIVELES.ALTO]: {
+    resolucionPlaneta: 32, // SOLO planeta y su atmósfera: silueta lisa (~22 000 triángulos)
     detallePlaneta: 4, // icosaedro: 500 triángulos (20 × (d+1)²)
     puntosEstrella: 4200,
     puntosPolvo: 900,
@@ -37,6 +38,7 @@ const PERFILES = {
     objetivoFps: 55,
   },
   [NIVELES.MEDIO]: {
+    resolucionPlaneta: 20, // SOLO planeta y su atmósfera: silueta lisa (~8 800 triángulos)
     detallePlaneta: 3, // icosaedro: 320 triángulos (20 × (d+1)²)
     puntosEstrella: 2800,
     puntosPolvo: 500,
@@ -52,6 +54,7 @@ const PERFILES = {
     objetivoFps: 50,
   },
   [NIVELES.BAJO]: {
+    resolucionPlaneta: 10, // SOLO planeta y su atmósfera: silueta lisa (~2 400 triángulos)
     detallePlaneta: 2, // icosaedro: 180 triángulos (20 × (d+1)²)
     puntosEstrella: 1800,
     puntosPolvo: 240,
