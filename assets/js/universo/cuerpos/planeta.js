@@ -337,7 +337,7 @@ export function crearPlaneta({ nivel, def, semillaBase = 0 }) {
     fragmentShader: FRAGMENT,
   });
 
-  const malla = new Mesh(geometriaPlaneta(conf.detallePlaneta), material);
+  const malla = new Mesh(geometriaPlaneta(conf.resolucionPlaneta ?? conf.detallePlaneta), material);
   malla.scale.setScalar(def.radio);
   grupo.add(malla);
 
