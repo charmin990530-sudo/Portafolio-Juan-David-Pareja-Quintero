@@ -117,10 +117,13 @@ export const SISTEMAS = [
       tono: 'cian',
       // Mundo oceánico: agua en el nivel 0.52, rugosidad media, con nubes
       // y luces de ciudad en la cara nocturna.
-      colorOceano: 'tono:cian',
-      colorTierra: 'tono:violeta',
-      colorHielo: 'tono:tinta',
-      colorAcento: 'tono:cian',
+      // Colores de superficie FÍSICOS (océano, selva, hielo polar), no de marca:
+      // un planeta con la paleta de la web no se lee como un mundo. El acento de
+      // interfaz sigue saliendo de `tono` y de los tokens.
+      colorOceano: '#1d5b9e',
+      colorTierra: '#4d7c3a',
+      colorHielo: '#f2f6ff',
+      colorAcento: '#6fb7ff',
       colorLuz: '#ffffff',
       rugosidad: 0.45,
       nivelMar: 0.52,
@@ -214,10 +217,10 @@ export const SISTEMAS = [
       radio: 132,
       tono: 'violeta',
       // Gigante gaseoso: bandas activas, sin nivel de mar, rugosidad alta.
-      colorOceano: 'tono:violeta',
-      colorTierra: 'tono:cian',
-      colorHielo: 'tono:tinta',
-      colorAcento: 'tono:violeta',
+      colorOceano: '#c9a36a', // ocre: bandas de amoníaco, no de marca
+      colorTierra: '#8a6a43',
+      colorHielo: '#efe2c4',
+      colorAcento: '#e0b878',
       colorLuz: '#ffffff',
       rugosidad: 0.82,
       nivelMar: 0.0,
