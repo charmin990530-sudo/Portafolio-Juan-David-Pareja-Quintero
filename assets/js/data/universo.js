@@ -126,9 +126,11 @@ export const SISTEMAS = [
       colorAcento: '#6fb7ff',
       colorLuz: '#ffffff',
       rugosidad: 0.45,
+      // Rugosidad media, continentes verdes/pardos
       nivelMar: 0.52,
       bandas: false,
       nubes: true,
+      // Nubes blancas, cara nocturna con luces de ciudad
       lucesCiudad: true,
       semilla: 3.7,
       rotacion: 0.014,
@@ -236,8 +238,8 @@ export const SISTEMAS = [
     anillos: {
       radioInterno: 190,
       radioExterno: 330,
-      tonoA: 'tono:lima',
-      tonoB: 'tono:cian',
+      tonoA: '#c9a36a',
+      tonoB: '#efe2c4',
       semilla: 5.1,
     },
     // Las 21 habilidades se injectan desde `data/stack.js` al montar.
@@ -306,6 +308,7 @@ export const SISTEMAS = [
       nivelMar: 0.0,
       bandas: false,
       nubes: true,
+      // Nubes blancas, cara nocturna con luces de ciudad
       lucesCiudad: true,
       semilla: 19.7,
       rotacion: 0.03,
