@@ -297,6 +297,59 @@
   mask-composite: intersect;
 }
 
+/* PORTADA: el scrim de aquí es ligero a propósito. Con el 88 % de los demás
+   bloques el Big Bang quedaba enterrado bajo una caja casi negra y el visitante
+   nunca veía el origen del viaje. Ahora la estrella nace como un punto (ver
+   NACE_EN en cuerpos/bigbang.js), así que el titular no compite con un disco
+   brillante, y la legibilidad la sostienen las sombras de texto del hero. */
+.hero__contenido::before {
+  background: color-mix(in srgb, var(--space-900) 34%, transparent);
+}
+
+/* El titular se aparta mientras la estrella estalla. Es lo que permite que el
+   Big Bang se vea limpio: ni cortina oscura ni texto encima de la detonación.
+   Solo con animaciones guiadas por scroll; donde no existen, el respaldo de
+   abajo devuelve la cortina de siempre para no perder el contraste. */
+@supports (animation-timeline: scroll()) {
+  /* El velo del hero también se va: su borde inferior, al subir, cruzaba la
+     detonación como una banda gris. Sin texto debajo ya no tiene trabajo. */
+  :root[data-universo='activo'] .hero__contenido,
+  :root[data-universo='activo'] .hero__velo {
+    animation: hero-se-aparta linear both;
+    animation-timeline: scroll(root block);
+    animation-range: 150px 470px;
+  }
+}
+
+/* Las pastillas de tecnología son texto pequeño que cruza el núcleo de luz al
+   bajar. En vez de otra cortina grande, cada una lleva su propio fondo sólido. */
+:root[data-universo='activo'] .hero__chips .chip {
+  background: color-mix(in srgb, var(--space-900) 82%, transparent);
+}
+
+/* "Desplázate" ya cumplió en cuanto el visitante empieza a bajar; y a partir de
+   ahí quedaría justo encima del núcleo de luz. */
+@supports (animation-timeline: scroll()) {
+  :root[data-universo='activo'] .scroll-cue {
+    animation: hero-se-aparta linear both;
+    animation-timeline: scroll(root block);
+    animation-range: 0 90px;
+  }
+}
+
+@keyframes hero-se-aparta {
+  to {
+    opacity: 0;
+    pointer-events: none;
+  }
+}
+
+@supports not (animation-timeline: scroll()) {
+  .hero__contenido::before {
+    background: color-mix(in srgb, var(--space-900) 88%, transparent);
+  }
+}
+
 /* El resumen de la portada va en un bloque estrecho y el sol está justo
    detrás, así que necesita un poco más de fondo y menos margen: un scrim
    proporcional al párrafo, no a toda la caja de contenido. */
@@ -312,7 +365,7 @@
   inset: -1.1rem -2.2rem;
   z-index: -1;
   pointer-events: none;
-  background: color-mix(in srgb, var(--space-900) 84%, transparent);
+  background: color-mix(in srgb, var(--space-900) 52%, transparent);
   /* El mismo cruce, con su propio margen y su propia difuminación, y con la
      misma desigualdad entre las dos: la difuminación cabe en el margen y no
      se mete en el párrafo. El párrafo es una caja baja —una o dos líneas— así

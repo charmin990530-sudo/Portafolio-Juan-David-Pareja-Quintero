@@ -581,7 +581,12 @@ export function crearEscena({ lienzo, nivelInicial, nivelElegido = false, alInfo
        completa. La estrella sigue siendo lo primero que se ve y el último
        fotograma sigue siendo un mundo recién formado. */
     const avanceOrigen = sistemaOrigen ? ruta.localDe(sistemas.indexOf(sistemaOrigen), progreso) : 1;
-    const explosion = clamp(avanceOrigen / 0.82, 0, 1);
+    /* La primera quinta parte del tramo es la singularidad: un punto de luz que
+       late mientras se lee el titular. La explosión arranca DESPUÉS y termina
+       donde siempre (82 %), así que el resto del viaje no se mueve. Antes
+       empezaba en el píxel 0 y toda ella ocurría debajo del texto. */
+    const INICIO_EXPLOSION = 0.2;
+    const explosion = clamp((avanceOrigen - INICIO_EXPLOSION) / (0.82 - INICIO_EXPLOSION), 0, 1);
     /* El gas y el polvo son lo que la onda deja al pasar, así que aparecen
        DESPUÉS de que ella se haya apartado. Con el gas entrando a la vez, la
        segunda mitad de la apertura era un velo azul uniforme que tapaba la

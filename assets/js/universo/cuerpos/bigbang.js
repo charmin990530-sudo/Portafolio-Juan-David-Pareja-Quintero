@@ -66,6 +66,14 @@ import { RUIDO } from '../shaders/comunes.js';
    ------------------------------------------------------------------ */
 
 const ARDE_HASTA = 0.16;
+/* La singularidad. A scroll 0 la estrella no ocupa media pantalla: es un punto
+   de luz con halo, y se hincha hasta su tamaño de estrella en este primer
+   tramo de la apertura. Es lo que hace que la portada empiece como un Big Bang
+   (un punto) y no como un sol ya hecho, y además deja ver la escena detrás del
+   titular sin necesitar una cortina oscura encima. */
+const NACE_EN = 0.25;
+const RADIO_SINGULARIDAD = 3;
+const CORONA_MINIMA = 11;
 const DETONA_EN = 0.24;
 const SOL_SE_APAGA = 0.46;
 
@@ -547,7 +555,8 @@ export function crearBigBang({ nivel, origen, radioMax, paleta }) {
          ocupa MÁS que la pantalla y se lee como una roca-brown, no como una
          estrella. A 40-66 unidades mide 21-34°: un disco grande, con el
          espacio alrededor, que es como se lee un sol. */
-      const radioBase = 34 + crece * 24;
+      const nace = 1 - Math.pow(1 - clamp01(e / NACE_EN), 3); // ease-out cúbico
+      const radioBase = RADIO_SINGULARIDAD + nace * (34 - RADIO_SINGULARIDAD) + crece * 24;
       /* La hinchazón de la detonación: +58 % de radio en el centro del
          fogonazo, y de ahí se hunde hasta cero. */
       const detona =
@@ -580,7 +589,9 @@ export function crearBigBang({ nivel, origen, radioMax, paleta }) {
            A 1,4 la corona ocupaba casi toda la pantalla al abrir: el halo se
            comía el titular de la portada y el conjunto se leía como una
            mancha luminosa en vez de como una estrella. */
-        corona.scale.setScalar(Math.max(0.01, radioSol * (1.25 + detona * 0.4)));
+        // Mientras es singularidad (nace ~ 0) la corona late despacio; al crecer la estrella, el latido se apaga.
+        const latido = CORONA_MINIMA * (1 + 0.12 * Math.sin(segundos * 2.4) * (1 - nace));
+        corona.scale.setScalar(Math.max(latido, radioSol * (1.25 + detona * 0.4)));
         matCorona.uniforms.uBrillo.value = brilloCorona * entrada;
       }
 
