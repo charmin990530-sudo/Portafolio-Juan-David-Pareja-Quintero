@@ -36,6 +36,7 @@ const COMPROBACIONES = [
   ['Sistema de calidad', 'probar-calidad.mjs'],
   ['Ruta y cámara', 'probar-ruta.mjs'],
   ['Arranque en un DOM', 'probar-dom.mjs'],
+  ['WebGL en navegador real', 'verificar-webgl.mjs'],
 ];
 
 console.log('\n════════════════════════════════════════════════════════════');

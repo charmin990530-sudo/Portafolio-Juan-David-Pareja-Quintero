@@ -1,5 +1,23 @@
 # PENDIENTES
 
+> ## ⚠ LEE PRIMERO: `OPENCODE_RUTA.md`
+>
+> Este archivo dio por bueno un estado que **estaba roto**. Los dos últimos
+> bloques de commits de «realismo» (6 de oct, 13:16-13:19) dejaron dos shaders
+> que no compilan: el de las estrellas (`rand()` inexistente y `vSemilla` sin
+> declarar) y el de **todos los planetas** (una variable local `fresnel` tapaba
+> la función `fresnel()`). El universo se veía sin estrellas ni planetas y las
+> comprobaciones seguían en verde, porque eran estáticas y no compilan GLSL.
+>
+> Por eso las frases de abajo que dicen «ningún defecto abierto», «cero errores
+> de consola» o «las doce comprobaciones en verde» **no eran ciertas** cuando se
+> escribieron. Ahora hay una comprobación en navegador real
+> (`tools/verificar-webgl.mjs`) y una herramienta de capturas
+> (`tools/capturar.mjs`). **Ningún cambio visual cuenta como hecho hasta que se
+> haya abierto la captura y se haya mirado.**
+>
+> El plan a seguir, paso a paso, está en `OPENCODE_RUTA.md`.
+
 ## PARA EMPEZAR MAÑANA
 
 **En vivo:** https://portafolio-juan-david-pareja-quinte.vercel.app
@@ -8,8 +26,9 @@
 Hace falta un servidor porque los módulos ES no cargan desde `file://`.
 
 **Comprobaciones:** `ln -sfn /tmp/opencode/node_modules node_modules`,
-`node tools/comprobar.mjs`, `rm -f node_modules`. Salen las doce en verde, con
-un aviso de exports sin uso que es lo esperado.
+`node tools/comprobar.mjs`, `rm -f node_modules`. Salen en verde las trece
+(la de «Arranque en un DOM» se omite si no hay `jsdom`; la de WebGL se omite si
+no hay `playwright`), con un aviso de exports sin uso que es lo esperado.
 
 **Publicación:** `vercel --prod`. Todo está pusheado en `main`; el árbol de
 trabajo tiene lo de esta sesión sin confirmar, y `promt`, que es un archivo de
@@ -48,7 +67,8 @@ contradecía su numeración. Detalle en la **sección 8-bis**.
 | Repetir la tabla 6.2 en otra GPU | Ya verificada en hardware real: 37 draw calls, 17/17/16 programas |
 | Bajar los pesos de verdad de las fuentes | `00-fonts.css`. +~90 KB y cambia el titular de todo el sitio. Opcional |
 
-**Ningún defecto abierto.**
+**Defectos abiertos: ver `OPENCODE_RUTA.md`** (la frase que había aquí, «ningún defecto
+abierto», era falsa).
 
 ---
 
