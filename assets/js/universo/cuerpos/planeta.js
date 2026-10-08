@@ -196,8 +196,8 @@ altura = pow(altura, 1.0 + uRugosidad * 0.7);
     float d = difusion(normal, luz);
     // Borde Fresnel suave: el luz se concentra un poco en el borde del
     // disco iluminado, como efecto de atenuacion atmosferica real.
-    float fresnel = pow(1.0 - clamp(dot(normal, luz), 0.0, 1.0), 1.2);
-    float curva = pow(d, 0.72) * (0.9 + fresnel * 0.2);
+    float bordeLuz = pow(1.0 - clamp(dot(normal, luz), 0.0, 1.0), 1.2);
+    float curva = pow(d, 0.72) * (0.9 + bordeLuz * 0.2);
 
     /* La ambiente es lo unico que se ve del lado noche. Baja de 0.055 a
        0.035: con 0.055 el lado oscuro conservaba casi todo el color de la

@@ -48,9 +48,19 @@ const VERTEX = /* glsl */ `
   varying float vTinte;
   varying float vEstela;
   varying float vEnciende;
+  varying float vTipo;
+
+  /* Hash determinista a partir de un numero estable por estrella. GLSL ES no
+     trae rand(): se hace con fract(sin()), que basta para repartir tipos. */
+  float azarEstrella(float semilla) {
+    return fract(sin(semilla * 127.1 + 311.7) * 43758.5453);
+  }
 
   void main() {
     vTinte = aTinte;
+    // Tipo estelar estable (0..1), independiente de vTinte para que el color
+    // y la mezcla con el acento de marca no queden correlacionados.
+    vTipo = azarEstrella(aTinte * 91.3 + aNacimiento * 17.9);
 
     /* CADA ESTRELLA SE ENCIENDE CUANDO LA ONDA LLEGA A SU ALTURA.
        El atributo dice a que fraccion del radio de la esfera esta, y la onda
@@ -86,14 +96,11 @@ const VERTEX = /* glsl */ `
     float atenuacion = 1.0 / (1.0 + distancia * 0.0011);
     float tamBase = aTamano * (0.5 + atenuacion * 1.3);
 
-    // Variación de tamaño: algunas estrellas son naturalmente más grandes
-    float tamanoAleatorio = 0.7 + rand() * 0.3; // 0.7 - 1.0
+    // Variación de tamaño: algunas estrellas son naturalmente más grandes.
+    float tamanoAleatorio = 0.7 + azarEstrella(aTinte * 53.7 + aNacimiento * 29.1) * 0.3;
     float tam = tamBase * tamanoAleatorio;
 
-    // Agrupamiento sutil: estrellas cercanas tienden a agruparse
-    float densidad = 1.0 + smoothstep(0.0, 2.0, -vista.z) * 0.1;
-
-    gl_PointSize = clamp(tam * uPixelRatio * titileo * densidad, 2.0, 15.0);
+    gl_PointSize = clamp(tam * uPixelRatio * titileo, 2.0, 15.0);
 
     // Longitud de la estela segun la velocidad, en unidades de sprite.
     vEstela = uEstelas;
@@ -107,9 +114,10 @@ const FRAGMENT = /* glsl */ `
   uniform vec3 uColorAcento;
   uniform float uOpacidad;
 
-varying float vTinte;
+  varying float vTinte;
   varying float vEstela;
   varying float vEnciende;
+  varying float vTipo;
 
   void main() {
     // Coordenadas del sprite: el punto se dibuja como un cuadrado de
@@ -136,7 +144,7 @@ varying float vTinte;
 
     // Variación de color por estrella: algunas son azules, otras blancas,
     // otras amarillas pálidas, simulando tipos estelares diferentes.
-    float aleaColor = rand(vSemilla * 0.7);
+    float aleaColor = vTipo;
     vec3 colorEstrella;
     if (aleaColor < 0.55) {
       // Blancas mayoritarias
