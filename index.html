@@ -252,11 +252,11 @@
         <ul class="nav__lista">
           <!--
             El índice `01`, `02`… no es adorno de maquetación: es el mismo
-            número que imprime el HUD del universo ("SISTEMA 03 / 07") y el
-            que cuenta el recorrido guiado. Los tres leen el guion de
+            número que imprime el HUD del universo ("SISTEMA 03 / 07").
+            Los dos leen el guion de
             `data/universo.js`, así que el orden de la lista y el orden del
             viaje no pueden desincronizarse: si mañana se inserta una
-            sección, los tres cambian a la vez.
+            sección, los dos cambian a la vez.
           -->
           <li><a class="nav__enlace" href="#inicio"><span class="nav__indice" aria-hidden="true">01</span>Inicio</a></li>
           <li><a class="nav__enlace" href="#perfil"><span class="nav__indice" aria-hidden="true">02</span>Perfil</a></li>
@@ -379,41 +379,12 @@
           </p>
 
           <div class="hero__acciones">
-            <!--
-              El botón del recorrido guiado. Va primero y es el más grande
-              a propósito: es la acción que cuenta el sitio entero, y las
-              otras dos —ver habilidades, contactar— son atajos a una parte.
-
-              Es un `<button>` y no un `<a>` porque no cambia de página ni de
-              ancla: mueve el scroll que ya está ahí. Y lleva su nombre
-              accesible en el propio texto, de modo que sin CSS sigue
-              leyéndose "Iniciar viaje" y no un círculo sin etiqueta.
-
-              Con `prefers-reduced-motion` lo retira `modules/viaje.js`: un
-              avance automático de la página es exactamente lo que esa
-              preferencia pide que no ocurra.
-            -->
-            <button class="viaje-boton" id="viaje-iniciar" type="button">
-              <span class="viaje-boton__orbita" aria-hidden="true"></span>
-              <span class="viaje-boton__lanzador" aria-hidden="true">
-                <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor">
-                  <path d="M8 5.5v13a1 1 0 0 0 1.5.86l10.4-6.5a1 1 0 0 0 0-1.72L9.5 4.64A1 1 0 0 0 8 5.5Z" />
-                </svg>
-              </span>
-              <span class="viaje-boton__texto">
-                <span class="viaje-boton__rotulo">Iniciar viaje</span>
-                <span class="viaje-boton__pista">Recorrido guiado · 1 min</span>
-              </span>
-            </button>
-
-            <div class="hero__enlaces">
-              <a class="btn btn--ghost" href="#stack">
-                <span class="btn__label">Ver habilidades</span>
-              </a>
-              <a class="btn btn--ghost" href="#contacto">
-                <span class="btn__label">Hablemos</span>
-              </a>
-            </div>
+            <a class="btn btn--ghost" href="#stack">
+              <span class="btn__label">Ver habilidades</span>
+            </a>
+            <a class="btn btn--ghost" href="#contacto">
+              <span class="btn__label">Hablemos</span>
+            </a>
           </div>
 
           <ul class="hero__chips">
@@ -470,17 +441,40 @@
       </div>
 
       <!-- =======================================================
-           COSMOS · tramo de cámara, sin contenido
+           COSMOS · tramo de viaje hacia la Vía Láctea
            =======================================================
-           Un tramo vacío a propósito: no tiene texto, ni título, ni nada que
-           leer. Es donde la cámara sale de la explosión y cruza el vacío hasta
-           la Vía Láctea, y la altura de esta sección ES el tiempo que pasa
-           ahí. Si tuviera contenido, el texto competing con la escena, que es
-           justo lo que el tramo viene a evitar.
+           La altura de la sección sigue siendo el tiempo de cámara, pero el
+           tramo ya no es mudo: lleva las tres cifras que le dan sentido a lo
+           que se está viendo —la edad del universo, el diámetro de la galaxia
+           que se cruza y la edad del sistema solar— en un panel fijo que
+           acompaña el scroll. Sin 3D o con la sección oculta, nada de esto
+           aparece y el sitio queda como una columna de contenido.
 
-           `aria-hidden` porque no aporta nada al lector de pantalla: es
-           decoración que ya se anuncia con el nombre del sistema en el HUD. -->
-      <section id="cosmos" class="travesia" aria-hidden="true"></section>
+           `sticky` y no `absolute`: el panel se queda centrado durante todo el
+           tramo, que son 1,8 pantallas, y no se pierde el texto al principio. -->
+      <section id="cosmos" class="travesia travesia--lectura" aria-labelledby="cosmos-titulo">
+        <div class="cosmos__lectura">
+          <div class="cosmos__panel" data-revelar>
+            <p class="cosmos__kicker mono">02 · Vía Láctea</p>
+            <h2 class="cosmos__titulo" id="cosmos-titulo">De la explosión a aquí hay 13 800 millones de años</h2>
+            <ul class="cosmos__cifras">
+              <li>
+                <span class="cosmos__dato">13 800<span class="cosmos__unidad">M años</span></span>
+                <span class="cosmos__etiqueta">de universo desde el Big Bang</span>
+              </li>
+              <li>
+                <span class="cosmos__dato">100 000<span class="cosmos__unidad">años luz</span></span>
+                <span class="cosmos__etiqueta">de diámetro tiene la galaxia que estás cruzando</span>
+              </li>
+              <li>
+                <span class="cosmos__dato">4 600<span class="cosmos__unidad">M años</span></span>
+                <span class="cosmos__etiqueta">tiene el Sol; nació de la misma nebulosa que los planetas</span>
+              </li>
+            </ul>
+            <p class="cosmos__pie">Desplázate: cada sección de este portafolio es una parada de ese viaje.</p>
+          </div>
+        </div>
+      </section>
 
       <!-- =======================================================
            PERFIL
@@ -864,8 +858,7 @@
             Sitio construido a mano: HTML, CSS y JavaScript sin frameworks, sin empaquetador y sin
             proceso de compilación. Three.js solo para el universo WebGL y Lenis solo para el scroll;
             el resto está escrito aquí. Tipografías Space Grotesk, Inter y JetBrains Mono bajo SIL
-            Open Font License 1.1. Texturas e imágenes generadas por código: en el proyecto no hay ni
-            un archivo de imagen 3D.
+            Open Font License 1.1. Texturas de <a href="https://www.solarsystemscope.com/textures/" target="_blank" rel="noopener noreferrer">Solar System Scope</a>, basadas en imágenes de NASA; adaptadas a distintas resoluciones bajo <a href="https://creativecommons.org/licenses/by/4.0/" target="_blank" rel="noopener noreferrer">CC BY 4.0</a>.
           </p>
           <p class="mono">© 2026 Juan David Pareja Quintero</p>
         </div>

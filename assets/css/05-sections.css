@@ -1581,12 +1581,6 @@ main {
   box-shadow: var(--shadow-lg);
 }
 
-.formulario__fila {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: var(--sp-4);
-}
-
 .formulario__pie {
   display: flex;
   align-items: center;
@@ -1838,10 +1832,6 @@ main {
 
   .perfil__datos {
     grid-template-columns: repeat(2, 1fr);
-  }
-
-  .formulario__fila {
-    grid-template-columns: 1fr;
   }
 
   .stack__grupos {

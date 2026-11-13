@@ -131,6 +131,25 @@ function texturaGalaxia(semilla, barra) {
   ctx.fillStyle = halo;
   ctx.fillRect(0, 0, LADO, LADO);
 
+  // Polvo que recorta la luz: evita que cada galaxia sea una mancha blanca.
+  ctx.globalCompositeOperation = 'destination-out';
+  ctx.strokeStyle = 'rgba(0,0,0,0.22)';
+  ctx.lineWidth = LADO * 0.014;
+  for (let brazo = 0; brazo < brazos; brazo += 1) {
+    ctx.beginPath();
+    let primero = true;
+    for (let i = 0; i < 160; i += 1) {
+      const theta = i / 160 * vueltas * Math.PI * 2;
+      const r = desde * Math.exp(b * theta);
+      if (r > hasta) break;
+      const a = theta + brazo / brazos * Math.PI * 2 + 0.15;
+      const x = cx + Math.cos(a) * r;
+      const y = cy + Math.sin(a) * r * achatado;
+      if (primero) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+      primero = false;
+    }
+    ctx.stroke();
+  }
   ctx.globalCompositeOperation = 'source-over';
 
   const textura = new CanvasTexture(lienzo);
@@ -221,13 +240,13 @@ export function crearGalaxias({ radio, paleta }) {
      * @param {number} nacimiento 0..1. Se encienden con la onda, igual que
      *   las estrellas: son materia, y la materia llega con la explosión.
      */
-    actualizar(velocidad, nacimiento = 1) {
+    actualizar(velocidad, nacimiento = 1, delta = 16.67) {
       const n = nacimiento < 0 ? 0 : nacimiento > 1 ? 1 : nacimiento;
       for (const [i, sprite] of grupo.entries()) {
-        sprite.material.rotation += 0.000055 * (1 + (i % 3)) * (1 + velocidad * 2.5);
+        sprite.material.rotation += 0.000055 * (Math.min(delta, 64) / 16.67) * (1 + (i % 3)) * (1 + velocidad * 2.5);
         // Las lejanas tardan más en encender: la onda tarda más en llegar.
-        const retraso = i / grupo.length;
-        const enciende = n < 0.12 ? 0 : (n - retraso) / 0.55;
+        const retraso = 0.08 + (i / grupo.length) * 0.4;
+        const enciende = Math.max(0, Math.min(1, (n - retraso) / (1 - retraso)));
         sprite.material.opacity = 0.44 * (enciende < 0 ? 0 : enciende > 1 ? 1 : enciende);
         sprite.visible = sprite.material.opacity > 0.004;
       }

@@ -999,11 +999,12 @@
 /* ───────────────────────────────────────────────────────────────────
    TRAMOS DE CÁMARA · .travesia
 
-   Secciones SIN contenido cuyo único trabajo es dar sitio a la cámara:
-   la altura de la sección es literalmente el tiempo que la cámara pasa
-   viajando por ella. Es la regla del proyecto —más texto, más scroll,
-   más tiempo de cámara— aplicada al caso inverso: sin texto, la escena
-   manda.
+   Secciones cuyo único trabajo estructural es dar sitio a la cámara: la
+   altura de la sección es literalmente el tiempo que la cámara pasa
+   viajando por ella. El tramo del cosmos lleva, además, un panel de lectura
+   con las cifras que le dan sentido al salto (edad del universo, diámetro
+   de la galaxia, edad del Sol): información constante durante todo el
+   recorrido, no un desierto de 1,8 pantallas.
 
    180svh y no 180vh a propósito. En móvil, `vh` no cambia al mover la
    barra de direcciones del navegador, así que la altura "se encoge" al
@@ -1019,9 +1020,118 @@
   height: 180svh;
 }
 
+/* El panel se queda centrado durante todo el tramo (1,8 pantallas): sin
+   `sticky`, el texto se lee una sola vez y el resto del tramo vuelve a ser
+   un desierto. Con el 3D apagado la sección no existe, y con ella el panel. */
+.travesia--lectura {
+  display: block;
+}
+
+.cosmos__lectura {
+  position: sticky;
+  top: 0;
+  height: 100svh;
+  display: grid;
+  place-content: center;
+  justify-items: center;
+  padding-inline: var(--gutter);
+}
+
+.cosmos__panel {
+  max-width: 46rem;
+  padding: clamp(1.4rem, 3vw, 2.2rem) clamp(1.5rem, 3.5vw, 2.6rem);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--r-lg);
+  background: color-mix(in srgb, var(--space-900) 62%, transparent);
+  backdrop-filter: blur(12px) saturate(1.1);
+  -webkit-backdrop-filter: blur(12px) saturate(1.1);
+  box-shadow: var(--shadow-md);
+  text-align: left;
+}
+
+.cosmos__kicker {
+  margin: 0 0 var(--sp-2);
+  font-size: var(--step--2);
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: color-mix(in srgb, var(--accent-2) 80%, var(--text-soft));
+}
+
+.cosmos__titulo {
+  margin: 0 0 var(--sp-4);
+  font-family: var(--font-display);
+  font-size: var(--step-3);
+  font-weight: 600;
+  line-height: 1.15;
+  letter-spacing: -0.01em;
+  color: var(--text);
+  text-wrap: balance;
+}
+
+.cosmos__cifras {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--sp-4);
+  margin: 0 0 var(--sp-4);
+  padding: var(--sp-3) 0;
+  border-top: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
+  list-style: none;
+}
+
+.cosmos__dato {
+  display: block;
+  font-family: var(--font-display);
+  font-size: var(--step-2);
+  font-weight: 600;
+  line-height: 1.05;
+  letter-spacing: -0.01em;
+  color: var(--text);
+  font-variant-numeric: tabular-nums;
+}
+
+.cosmos__unidad {
+  display: block;
+  font-family: var(--font-mono);
+  font-size: var(--step--2);
+  font-weight: 400;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--accent);
+  margin-top: 0.15rem;
+}
+
+.cosmos__etiqueta {
+  display: block;
+  margin-top: var(--sp-1);
+  font-size: var(--step--1);
+  line-height: 1.4;
+  color: var(--text-soft);
+}
+
+.cosmos__pie {
+  margin: 0;
+  font-size: var(--step--1);
+  color: var(--text-mute);
+}
+
+@media (max-width: 760px) {
+  .cosmos__cifras {
+    grid-template-columns: 1fr;
+    gap: var(--sp-2);
+  }
+}
+
 /* Sin 3D no hay nada que mirar en el tramo, y una caja vacía de 180svh
    se lee como un hueco muerto en mitad de la página. Se quita entera:
    el sitio se vuelve una columna de contenido sin un solo hueco. */
 :root:not([data-universo='activo']) .travesia {
   display: none;
+}
+
+/* Direccion fotografica: conservar el cielo entre los paneles de lectura. */
+:root[data-universo='activo'] .section-head::before,
+:root[data-universo='activo'] .perfil__bio::before,
+:root[data-universo='activo'] .stack__nota::before {
+  background: color-mix(in srgb, var(--space-900) 72%, transparent);
 }

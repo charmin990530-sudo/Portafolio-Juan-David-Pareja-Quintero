@@ -21,7 +21,6 @@ const FALLOS_PARA_RENUNCIAR = 60;
 
 let id = 0;
 let anterior = 0;
-let activo = true;
 let pausado = document.hidden;
 
 function paso(ahora) {
@@ -71,16 +70,10 @@ function arrancar() {
   id = requestAnimationFrame(paso);
 }
 
-function pausar() {
-  if (!id) return;
-  cancelAnimationFrame(id);
-  id = 0;
-}
-
 /** Registra una función por cuadro. Devuelve la función para darla de baja. */
 export function alFotograma(fn) {
   suscriptores.add(fn);
-  if (activo) arrancar();
+  arrancar();
   return () => {
     suscriptores.delete(fn);
     fallos.delete(fn);
@@ -91,15 +84,7 @@ document.addEventListener('visibilitychange', () => {
   pausado = document.hidden;
   if (pausado) {
     anterior = 0;
-  } else if (activo) {
+  } else {
     arrancar();
   }
 });
-
-/** Detiene por completo el bucle (no se usa de forma normal). */
-export function detenerLoop() {
-  activo = false;
-  suscriptores.clear();
-  fallos.clear();
-  pausar();
-}

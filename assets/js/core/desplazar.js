@@ -107,18 +107,6 @@ function alturaDeCabecera() {
 }
 
 /**
- * Alto de la cabecera en píxeles, sin una relectura del estilo.
- *
- * Lo exporta para que quien vaya a parar el scroll en una posición
- * concreta —el recorrido guiado, que coloca cada parada por debajo del
- * título de su sección— mida lo mismo que mide el resto del sitio y las
- * paradas no acaben debajo de la barra.
- */
-export function alturaCabecera() {
-  return alturaDeCabecera();
-}
-
-/**
  * Monta el suavizado de scroll.
  *
  * Solo se activa en escritorio. En táctil se usa el scroll nativo, con la
@@ -276,9 +264,8 @@ export function desplazarA(destino, opciones = {}) {
  * @param {object} [opciones]
  * @param {boolean} [opciones.inmediato] Sin animación.
  * @param {number} [opciones.duracion]  Milisegundos, en vez del valor por
- *   defecto del sitio. Lo necesita el recorrido guiado, que encadena
- *   movimientos de duraciones distintas según lo lejos que esté cada
- *   parada: con una duración única, un salto corto se queda tirante
+ *   defecto del sitio. Permite duraciones distintas según lo lejos que esté
+ *   el destino: con una duración única, un salto corto se queda tirante
  *   esperando y uno largo se lee como un teletransporte.
  */
 export function desplazarAposicion(posicion, { inmediato = false, duracion } = {}) {
@@ -287,7 +274,7 @@ export function desplazarAposicion(posicion, { inmediato = false, duracion } = {
   /* ── MILISEGUNDOS DENTRO, SEGUNDOS HACIA LENIS ───────────────────────
 
      `duracion` se publica en milisegundos porque es lo que espera quien
-     llama —el recorrido ya tenía sus constantes en ms—. Pero Lenis anima en
+     llama. Pero Lenis anima en
      SEGUNDOS: su `Animate.advance()` recibe el tiempo en segundos y calcula
      `currentTime / duration`. El valor por defecto del sitio, `DURACION_SCROLL
      = 1.05`, es correcto precisamente porque ya está en segundos.
@@ -296,8 +283,8 @@ export function desplazarAposicion(posicion, { inmediato = false, duracion } = {
      existe este módulo: una sola autoridad sobre el scroll, y una sola
      traducción de sus unidades.
 
-     Sin esto el recorrido guiado no estaba lento: estaba roto. `duracionPara`
-     devuelve entre 1 500 y 3 600, y eso se le pasaba a Lenis como si fueran
+     Sin esto no estaba lento: estaba roto. Una duración en milisegundos se
+     le pasaba a Lenis como si fueran
      segundos, así que cada parada se animaba en 25 o 60 minutos. La página se
      movía unos píxeles por segundo y el contador del panel no cambiaba nunca
      de sistema. No lo delataba ninguna comprobación: en un DOM de prueba no
@@ -316,7 +303,7 @@ export function desplazarAposicion(posicion, { inmediato = false, duracion } = {
 
   /* Sin Lenis no hay forma de decir "tarda 2,4 segundos": el scroll nativo
      solo sabe ir a una velocidad o a otra. Se degrada a `smooth`, que es lo
-     más cerca que se puede estar, y el recorrido sigue siendo legible. */
+     más cerca que se puede estar. */
   window.scrollTo({ top: objetivo, behavior: inmediato ? 'auto' : 'smooth' });
 }
 

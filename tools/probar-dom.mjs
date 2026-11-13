@@ -6,9 +6,8 @@
  * Las otras siete comprobaciones son estáticas: leen archivos. Esta ejecuta
  * el sitio. Monta el `index.html` real en un DOM, carga el grafo completo
  * de módulos a través de `main.js` y luego hace lo que haría una persona:
- * pulsar el botón del recorrido, pararlo con `Escape`, con la rueda y con el
- * botón, cambiar la calidad a "Sin 3D" y a un nivel real, y comprobar que
- * el sitio queda entero.
+ * cambiar la calidad a "Sin 3D" y a un nivel real, y comprobar que el
+ * sitio queda entero.
  *
  * Cubre la familia de fallos que lo estático no ve, y que en un sitio de
  * este tamaño son los que más se repiten:
@@ -20,8 +19,7 @@
  *   · un manejador registrado sobre un nodo que no existe;
  *   · y dos que no son de cableado sino de lógica: un nombre tapado por otro
  *     dentro de la misma función, y una firma de función que no es la que
- *     creek el llamante. Los dos encontrados aquí aparecían solo al DETENER
- *     el recorrido y al cambiar la calidad, y ninguno en el arranque.
+ *     creek el llamante. Ninguno de los dos aparecía en el arranque.
  *
  * ── LO QUE NO PUEDE COMPROBAR ────────────────────────────────────────
  *
@@ -186,9 +184,15 @@ window.scrollTo = (arg) => {
 window.HTMLCanvasElement.prototype.getContext = () => null;
 
 /* Alturas de sección distintas y realistas: es lo que hace que `medir()`
-   reparta el recorrido de verdad, y no con todos los sistemas en cero. */
+   reparta el viaje de la cámara de verdad, y no con todos los sistemas en
+   cero.
+
+   `cosmos` a 180svh en una ventana de 810 (ver `.travesia` de
+   06-universo.css y probar-ruta.mjs). Si no está aquí, cae en el alto por
+   defecto y su huella sobre el documento se mide mal. */
 const ALTOS = [
   ['inicio', 1100],
+  ['cosmos', 1458],
   ['perfil', 1600],
   ['proceso', 2800],
   ['stack', 1700],
@@ -408,82 +412,6 @@ comprobar_(
 const progreso = doc.querySelector('#progreso-barra');
 comprobar_('la barra de lectura vive en la cabecera', !!progreso?.closest('.cabecera'));
 
-/* --- El recorrido guiado --- */
-const viaje = doc.querySelector('#viaje-iniciar');
-comprobar_('el botón del recorrido existe', !!viaje);
-comprobar_('el botón del recorrido es un <button>, no un enlace', viaje?.tagName === 'BUTTON');
-comprobar_('el botón del recorrido tiene nombre accesible', !!(viaje?.textContent ?? '').replace(/\s+/g, ' ').trim().length);
-
-if (viaje) {
-  viaje.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
-  await new Promise((r) => setTimeout(r, 500));
-
-  comprobar_('el recorrido se marca activo en el <html>', doc.documentElement.dataset.viaje === 'activo');
-  comprobar_('el panel del recorrido se monta', !!doc.querySelector('.viaje-panel'));
-  comprobar_('la cortina de cine se monta', !!doc.querySelector('.viaje-marco'));
-  comprobar_('la cortina tiene barra de arriba y de abajo', doc.querySelectorAll('.viaje-marco__barra').length === 2);
-  comprobar_('el botón de parar está siempre visible', !!doc.querySelector('.viaje-panel__parar'));
-  comprobar_(
-    'al arrancar, el foco pasa al botón de parar',
-    doc.activeElement === doc.querySelector('.viaje-panel__parar'),
-    doc.activeElement?.className,
-  );
-comprobar_(
-  'el contador nombra el sistema en el que se está',
-  /Planeta hogar|El origen|Campo de escombros/.test(doc.querySelector('.viaje-panel__nombre')?.textContent ?? ''),
-  doc.querySelector('.viaje-panel__nombre')?.textContent,
-);
-
-/* El número de paradas tiene que coincidir con las secciones que HAY.
-
-   Es la comprobación que faltaba para un defecto real: `#proyectos` no está
-   en el HTML, lo inserta `modules/proyectos.js`, y ese módulo se monta
-   DESPUÉS que `viaje` en `main.js`. `viaje.js` decidía su lista de paradas al
-   montarse, filtrando por `getElementById`, así que el sistema de proyectos
-   quedaba fuera aunque la sección existiera.
-
-   No se notaba con `data/proyectos.js` vacío, porque la sección no se crea y
-   los dos números salían a 6 por casualidad. En cuanto se añade el primer
-   proyecto, el contador se quedaba en `06` mientras existían siete secciones
-   con sistema: el "cúmulo de planetas" desaparecía del recorrido sin un solo
-   error en consola.
-
-   La comparación es contra el DOM, no contra una constante: así vale igual con
-   seis secciones que con siete. */
-const { SISTEMAS } = await import(pathToFileURL(resolve(RAIZ, 'assets/js/data/universo.js')).href);
-const seccionesConSistema = SISTEMAS.filter((s) => doc.getElementById(s.seccion) !== null).length;
-const totalEnElContador = Number(/(\d+)\s*\/\s*(\d+)/.exec(doc.querySelector('.viaje-panel__lectura')?.textContent ?? '')?.[2]);
-
-comprobar_(
-  'el recorrido cuenta tantas paradas como secciones con sistema hay',
-  totalEnElContador === seccionesConSistema,
-  `el contador dice ${totalEnElContador} y hay ${seccionesConSistema} secciones con sistema`,
-);
-comprobar_(
-  'el recorrido incluye la sección de proyectos si existe',
-  !doc.getElementById('proyectos') || totalEnElContador === seccionesConSistema,
-  'la sección existe y el recorrido no la incluye',
-);
-
-  doc.dispatchEvent(new window.KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true }));
-  await new Promise((r) => setTimeout(r, 250));
-  comprobar_('Escape detiene el recorrido', doc.documentElement.dataset.viaje === undefined);
-  comprobar_('al parar, el foco vuelve al botón del recorrido', doc.activeElement === viaje, doc.activeElement?.id);
-
-  viaje.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
-  await new Promise((r) => setTimeout(r, 350));
-  window.dispatchEvent(new window.Event('wheel'));
-  await new Promise((r) => setTimeout(r, 250));
-  comprobar_('la rueda del visitante detiene el recorrido', doc.documentElement.dataset.viaje === undefined);
-
-  // El botón de parar, no solo el teclado.
-  viaje.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
-  await new Promise((r) => setTimeout(r, 350));
-  doc.querySelector('.viaje-panel__parar')?.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
-  await new Promise((r) => setTimeout(r, 250));
-  comprobar_('el botón de parar detiene el recorrido', doc.documentElement.dataset.viaje === undefined);
-}
-
 /* --- La calidad --- */
 if (sel) {
   sel.value = 'off';
@@ -572,7 +500,6 @@ comprobar_(
 const shouldHaveRemoved = [
   ['.proceso__nucleo', 'la limpieza de proceso.js se ejecutó'],
   ['.cursor', 'la limpieza de cursor.js se ejecutó'],
-  ['.viaje-panel', 'la limpieza de viaje.js se ejecutó'],
   ['.marquee__pista [data-clonado]', 'la limpieza de la marquesina se ejecutó'],
   ['#stack-grupos .grupo', 'la limpieza de contenido.js se ejecutó'],
 ];

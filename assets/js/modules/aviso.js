@@ -3,8 +3,8 @@
  *
  * Una línea de texto que aparece, dice algo que el visitante acaba de hacer
  * y se retira. No es un modal ni una alerta: es el confirmarse de que una
- * acción que no produce un resultado visible —cambiar la calidad, parar el
- * viaje guiado— se aplicó de verdad.
+ * acción que no produce un resultado visible —cambiar la calidad, cambiar
+ * el tema— se aplicó de verdad.
  *
  * ── POR QUÉ UN NODO EN EL DOM Y NO UN `alert` ─────────────────────────
  *

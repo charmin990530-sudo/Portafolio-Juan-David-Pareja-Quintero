@@ -258,6 +258,11 @@ for (const frase of frasesAntes) {
   if (/tema claro|tema oscuro/i.test(frase)) continue;
   // El texto del pie se reescribió a propósito y se documentó.
   if (frase.includes('librerías externas')) continue;
+  // El párrafo de atribución de texturas se reescribió a propósito: el
+  // proyecto dejó de generar imágenes por código y pasó a usar las de Solar
+  // System Scope (CC BY 4.0, basadas en imágenes de NASA). Son dos frases
+  // que salían separadas por el dos puntos y el punto de la oración original.
+  if (/generadas por código|no hay ni un archivo/i.test(frase)) continue;
   perdidas += 1;
   problemas.push(`Texto desaparecido: «${frase.slice(0, 78)}…»`);
 }

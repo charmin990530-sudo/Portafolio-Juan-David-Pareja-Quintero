@@ -110,6 +110,10 @@ export const SISTEMAS = [
     cuerpo: {
       tipo: 'planeta',
       id: 'hogar',
+      mapaDia: 'earth_daymap',
+      mapaNoche: 'earth_nightmap',
+      mapaNubes: 'earth_clouds',
+      halo: false,
       x: 0,
       y: 0,
       z: 0,
@@ -137,7 +141,7 @@ export const SISTEMAS = [
       inclinacion: 0.16,
       escalaHalo: 4.2,
     },
-    atmosfera: { tono: 'cian', escala: 1.06, fuerza: 1 },
+    atmosfera: { tono: '#74a8df', escala: 1.018, fuerza: 0.42 },
     fotogramas: [
       // El "antes": dentro de la burbuja, mirando al núcleo. El FOV estrecho
       // comprime la perspectiva y hace que el punto parezca diminuto.
@@ -303,6 +307,8 @@ fotogramas: [
     cuerpo: {
       tipo: 'planeta',
       id: 'gigante',
+      mapaDia: 'saturn',
+      halo: false,
       x: 0,
       y: 0,
       z: -1900,
@@ -324,7 +330,7 @@ fotogramas: [
       inclinacion: 0.05,
       escalaHalo: 3.2,
     },
-    atmosfera: { tono: 'violeta', escala: 1.04, fuerza: 0.7 },
+    atmosfera: { tono: '#e0b878', escala: 1.035, fuerza: 0.55 },
     anillos: {
       radioInterno: 190,
       radioExterno: 330,

@@ -36,7 +36,6 @@ import { montarContacto } from './modules/contacto.js';
 import { montarProyectos } from './modules/proyectos.js';
 import { montarAviso } from './modules/aviso.js';
 import { montarCalidadVisual } from './modules/calidadVisual.js';
-import { montarViaje } from './modules/viaje.js';
 import { $, $$ } from './core/dom.js';
 import {
   montarScrollSuave,
@@ -60,9 +59,9 @@ async function iniciar() {
   await seguro('preloader', montarPreloader);
 
   /* Los avisos van los primeros de los montajes porque el selector de
-     calidad y el recorrido guiado los necesitan para poder hablar: los dos
-     montan controles que confirman lo que han hecho, y sin la pila de
-     avisos sus confirmaciones se irían a ningún sitio.
+     calidad los necesita para poder hablar: monta controles que confirman
+     lo que han hecho, y sin la pila de avisos sus confirmaciones se irían
+     a ningún sitio.
 
      No entra en la lista de `montajes` porque su limpieza tiene otra
      forma —devuelve un objeto con `destroy()`, no una función— y mezclar las
@@ -82,7 +81,6 @@ async function iniciar() {
     ['calidad', () => montarCalidadVisual({ avisar })],
     ['cursor', montarCursor],
     ['hero', montarHero],
-    ['viaje', () => montarViaje({ avisar })],
     ['marquesina', montarMarquesina],
     ['contadores', montarContadores],
     ['stack', montarStack],

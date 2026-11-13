@@ -12,24 +12,17 @@
   --space-850: #070a14;
   --space-800: #070a15;
   --space-750: #0a0e1c;
-  --space-700: #0e1424;
-  --space-600: #141c30;
-  --space-500: #1c2740;
 
   /* ---------- Texto ---------- */
   --ink-100: #f2f6ff;
   --ink-200: #d7e0f5;
   --ink-300: #a9b6d4;
   --ink-400: #7c8ab0;
-  --ink-500: #5b688a;
 
   /* ---------- Acentos ---------- */
   --cyan: #4fe3ff;
-  --cyan-deep: #0ea5c4;
   --violet: #a06bff;
-  --violet-deep: #6d33d6;
   --solar: #ffb454;
-  --solar-deep: #e07a1f;
   --lime: #7ef2a8;
   --rose: #ff6ba8;
 
@@ -72,7 +65,6 @@
 
   /* Acento por etapa del proceso; el módulo va cambiando cuál está activo. */
   --proceso-color: var(--cyan);
-  --radio-nodo: 40%;
 
   /* ---------- Tipografía ---------- */
   --font-display: 'Space Grotesk', 'Segoe UI', system-ui, -apple-system, sans-serif;
@@ -87,7 +79,6 @@
   --step-3: clamp(1.65rem, 1.4rem + 1.1vw, 2.3rem);
   --step-4: clamp(1.98rem, 1.55rem + 2vw, 3.2rem);
   --step-5: clamp(2.37rem, 1.6rem + 3.4vw, 4.6rem);
-  --step-6: clamp(2.4rem, 1.5rem + 3.6vw, 4.8rem);
   --step-hero: clamp(1.95rem, 0.9rem + 3.9vw, 4.9rem);
 
   /* ---------- Ritmo espacial ---------- */
@@ -99,8 +90,6 @@
   --sp-6: 2rem;
   --sp-7: 3rem;
   --sp-8: 4rem;
-  --sp-9: 6rem;
-  --sp-10: 8rem;
 
   --shell: 1240px;
   --gutter: clamp(1.15rem, 4vw, 3.5rem);
@@ -111,15 +100,11 @@
   --r-sm: 10px;
   --r-md: 16px;
   --r-lg: 24px;
-  --r-xl: 34px;
   --r-pill: 999px;
 
   /* ---------- Sombras ---------- */
-  --shadow-sm: 0 2px 8px rgb(0 0 0 / 30%);
   --shadow-md: 0 14px 40px -12px rgb(0 0 0 / 65%);
   --shadow-lg: 0 34px 90px -24px rgb(0 0 0 / 80%);
-  --glow-cyan: 0 0 0 1px rgb(79 227 255 / 28%), 0 0 34px -6px rgb(79 227 255 / 42%);
-  --glow-violet: 0 0 0 1px rgb(160 107 255 / 28%), 0 0 34px -6px rgb(160 107 255 / 42%);
 
   /* ---------- Movimiento ---------- */
   --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
@@ -136,10 +121,8 @@
      POR DEBAJO de la cabecera, porque si no taparía el propio botón que lo
      cierra.
 
-     `--z-viaje` va por encima de la cabecera y del menú, y no por encima
-     del preloader: el recorrido no se puede empezar con la cortina de carga
-     puesta, y si se pulsara el botón con el preloader delante, el preloader
-     gana.
+     `--z-preloader` manda sobre todo lo demás: nada de lo que el visitante
+     haga mientras la cortina de carga está puesta se puede ver por debajo.
 
      `--z-aviso` va por encima del HUD y por debajo del menú. Encima del
      HUD, porque un aviso tiene que poder hablar aunque haya puntos de
@@ -152,7 +135,6 @@
   --z-aviso: 65;
   --z-menu: 70;
   --z-header: 80;
-  --z-viaje: 88;
   --z-cursor: 95;
   --z-preloader: 100;
 }

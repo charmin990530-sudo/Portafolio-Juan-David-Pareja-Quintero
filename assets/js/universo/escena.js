@@ -34,6 +34,7 @@ import { crearEstrellas } from './capas/estrellas.js';
 import { crearNebulosa } from './capas/nebulosa.js';
 import { crearPolvo } from './capas/polvo.js';
 import { crearGalaxias } from './capas/galaxias.js';
+import { crearCielo } from './capas/cielo.js';
 import { crearPlaneta, liberarGeometrias, liberarTexturas } from './cuerpos/planeta.js';
 import { crearBigBang, RADIO_INICIAL } from './cuerpos/bigbang.js';
 import { crearAtmosfera } from './cuerpos/atmosfera.js';
@@ -192,6 +193,8 @@ export function crearEscena({ lienzo, nivelInicial, nivelElegido = false, alInfo
      resultado; se listan al final para que el archivo se lea de cerca a
      lejos. */
   const galaxias = crearGalaxias({ radio: PRESENTACION.radioEstrellas, paleta });
+  const cielo = crearCielo({ nivel, radio: camara.camara.far * 0.8 });
+  escena.add(cielo.malla);
   for (const sprite of galaxias.objetos) escena.add(sprite);
 
   const polvo = crearPolvo({ nivel, caja: PRESENTACION.cajaPolvo, paleta });
@@ -207,7 +210,6 @@ export function crearEscena({ lienzo, nivelInicial, nivelElegido = false, alInfo
         nivel,
         origen: new Vector3(0, 0, 0),
         radioMax: PRESENTACION.radioEstrellas,
-        paleta,
       })
     : null;
 
@@ -273,7 +275,7 @@ export function crearEscena({ lienzo, nivelInicial, nivelElegido = false, alInfo
       if (sistema.atmosfera && conf.atmosfera > 0) {
         entrada.atmosfera = crearAtmosfera({
           detalle: conf.resolucionPlaneta ?? conf.detallePlaneta,
-          color: estiloDeTono(`tono:${sistema.atmosfera.tono}`, paleta),
+          color: estiloDeTono(sistema.atmosfera.tono.startsWith('#') ? sistema.atmosfera.tono : `tono:${sistema.atmosfera.tono}`, paleta),
           radio: def.radio,
           escala: sistema.atmosfera.escala ?? 1.055,
           fuerza: sistema.atmosfera.fuerza ?? 1,
@@ -597,7 +599,8 @@ export function crearEscena({ lienzo, nivelInicial, nivelElegido = false, alInfo
 
     estrellas.actualizar(segundos, dpr, medida.velocidadNormalizada, explosion);
     nebulosa.actualizar(segundos, medida.velocidadNormalizada, nacimiento);
-    galaxias.actualizar(medida.velocidadNormalizada, nacimiento);
+    galaxias.actualizar(medida.velocidadNormalizada, nacimiento, delta);
+    cielo.actualizar(camara.camara, nacimiento);
     polvo.actualizar(segundos, dpr, nacimiento);
     bigbang?.actualizar(explosion, segundos, dpr, 1);
 
@@ -809,6 +812,7 @@ export function crearEscena({ lienzo, nivelInicial, nivelElegido = false, alInfo
       estrellas.liberar();
       nebulosa.liberar();
       galaxias.liberar();
+      cielo.liberar();
       polvo.liberar();
       bigbang?.liberar();
       liberarGeometrias();

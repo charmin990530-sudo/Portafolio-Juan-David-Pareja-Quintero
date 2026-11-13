@@ -125,9 +125,9 @@ export function crearNebulosa({ nivel, radio, paleta }) {
   // menos de un 12 % de luz, que es lo que se ve como gas sin estropear el
   // negro del espacio ni el contraste del texto.
   const capas = [
-    { clave: 'cian', escala: 1.0, opacidad: 0.28 },
-    { clave: 'violeta', escala: 0.78, opacidad: 0.22 },
-    { clave: 'solar', escala: 0.5, opacidad: 0.12 },
+    { clave: 'cian', escala: 1.0, opacidad: 0.07 },
+    { clave: 'violeta', escala: 0.78, opacidad: 0.055 },
+    { clave: 'solar', escala: 0.5, opacidad: 0.025 },
   ];
 
   const grupo = [];

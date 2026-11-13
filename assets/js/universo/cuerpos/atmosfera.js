@@ -26,7 +26,8 @@ const VERTEX = /* glsl */ `
   varying vec3 vMundo;
 
   void main() {
-    vNormal = normalize(normalMatrix * normal);
+    // Luz, vista y normales en espacio de mundo (escalas uniformes).
+    vNormal = normalize(mat3(modelMatrix) * normal);
     vec4 mundo = modelMatrix * vec4(position, 1.0);
     vMundo = mundo.xyz;
     gl_Position = projectionMatrix * viewMatrix * mundo;
@@ -47,8 +48,8 @@ const FRAGMENT = /* glsl */ `
   ${LUZ}
 
   void main() {
-    // La normal apunta hacia dentro porque la cara visible es la interior.
-    vec3 normal = normalize(-vNormal);
+    // La cascara se ve por dentro, pero luz y normales siguen en mundo.
+    vec3 normal = normalize(vNormal);
     vec3 vision = normalize(cameraPosition - vMundo);
 
     /* El borde se ilumina y el centro se transparente. En el nivel ALTO se
@@ -56,8 +57,8 @@ const FRAGMENT = /* glsl */ `
        Rayleigh en la capa alta. Con dos términos se obtiene el degradado
        doble —borde nítido, halo difuso— que hace que una atmósfera parezca
        atmósfera y no un contorno. */
-    float borde = pow(1.0 - clamp(dot(normal, vision), 0.0, 1.0), 3.0);
-    float alto = pow(1.0 - clamp(dot(normal, vision), 0.0, 1.0), 1.4);
+    float borde = pow(1.0 - clamp(abs(dot(normal, vision)), 0.0, 1.0), 3.0);
+    float alto = pow(1.0 - clamp(abs(dot(normal, vision)), 0.0, 1.0), 1.4);
 
     // La atmósfera solo existe en la mitad iluminada, con un margen suave
     // sobre el terminador. Sin esto, el lado nocturno del planeta tendría
@@ -74,14 +75,13 @@ float alfa = (borde + alto * 0.34) * (uFuerza * 0.85) * margen * uEntrada;
 // Efecto glow suave alrededor del terminador: cuando el sol está en el horizonte
 // (luz ~0.3-0.5), la luz atraviesa más atmosfera y se crea un halo suave.
 float glow = 0.0;
-float l = smoothstep(0.3, 0.5, luz);
-glow = l * (1.0 - smoothstep(0.0, 0.3, luz)) * 0.15;
+glow = smoothstep(0.05, 0.22, luz) * (1.0 - smoothstep(0.22, 0.5, luz)) * 0.15;
 
 if (alfa < 0.004) discard;
 
 // Hacia el terminador la luz atraviesa más atmosfera y se vuelve cálida:
 // es el mismo efecto del atardecer en la Tierra.
-vec3 color = mix(uColor, uColor * vec3(1.25, 0.86, 0.72), smoothstep(0.62, 0.2, luz));
+vec3 color = mix(uColor, uColor * vec3(1.25, 0.86, 0.72), (1.0 - smoothstep(0.2, 0.62, luz)));
 // Añadir el glow: las longitudes de onda rojas se dispersan más, añadiendo un
 // halo cálido alrededor del terminador (efecto "sunset ring").
 color = color + uColor * vec3(1.0, 0.65, 0.3) * glow;

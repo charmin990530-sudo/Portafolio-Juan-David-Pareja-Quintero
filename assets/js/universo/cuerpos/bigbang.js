@@ -26,8 +26,8 @@
  *                interior tiene que quedar transparente o la onda se
  *                convierte en una bola gris.
  *   4. `materia` Los escombros. Puntos PEQUEÑOS —de 2 a 14 píxeles— con un
- *                frente nítido y una rampa de color de blanco a cian a
- *                violeta. Es lo que se enfría y de ahí sale el primer mundo.
+ *                frente nítido y una rampa de color de blanco a ámbar a
+ *                óxido. Es lo que se enfría y de ahí sale el primer mundo.
  *
  * ── UN SOLO NÚMERO ────────────────────────────────────────────────────
  *
@@ -88,7 +88,8 @@ const VERT_SOL = /* glsl */ `
 
   void main() {
     vLocal = position;
-    vNormal = normalize(normalMatrix * normal);
+    // Luz, vista y normales en espacio de mundo (escalas uniformes).
+    vNormal = normalize(mat3(modelMatrix) * normal);
     vec4 mundo = modelMatrix * vec4(position, 1.0);
     vMundo = mundo.xyz;
     gl_Position = projectionMatrix * viewMatrix * mundo;
@@ -128,20 +129,26 @@ const FRAG_SOL = /* glsl */ `
     float fino = fbm(p * 26.0 - vec3(uTiempo * 0.09, 0.0, 0.0), 3) * 0.5 + 0.5;
     float textura = mix(grano, fino, 0.35);
 
-    /* Rampa de temperatura. El centro es blanco, el medio naranja y el limbo
-       rojo: es como se ve una estrella de verdad, y hace que la esfera tenga
-       volumen sin necesidad de luces. */
-    /* El peso de mu sube y el de la textura se queda: antes el centro del
-       disco era blanco puro porque el ángulo de visión se comía el ruido, y
-       la superficie parecía un círculo liso. Ahora las células se leen
-       también en el centro, que es donde más se ven en una estrella. */
-    float calor = clamp(textura * 0.78 + mu * 0.34, 0.0, 1.0);
-    vec3 color = mix(uFrio, uMedio, smoothstep(0.02, 0.5, calor));
-    color = mix(color, uCaliente, smoothstep(0.62, 1.0, calor));
+    /* Rampa de temperatura, la de una supergigante: corazón blanco, capa
+       dorada y limbo naranja-rojo profundo. Nada de cianes: una estrella
+       real no lleva los colores de la marca. */
+    float calor = clamp(textura * 0.64 + mu * 0.34, 0.0, 1.0);
+    vec3 color = mix(uFrio, uMedio, smoothstep(0.05, 0.48, calor));
+    color = mix(color, uCaliente, smoothstep(0.55, 0.92, calor));
 
-    /* Oscurecimiento del limbo: la fotosfera se ve más brillante en el centro
-       del disco porque ahí se mira a través de menos capas de gas. */
-    color *= 0.42 + 0.58 * pow(mu, 0.42);
+    /* Fáculas: manchas de gas caliente más brillantes que el entorno. Sin
+       ellas el disco es un degradado; con ellas es una fotosfera. */
+    float facula = smoothstep(
+      0.72, 0.97,
+      fbm(p * 12.5 + vec3(uTiempo * 0.04, 0.0, 0.0), 3) * 0.5 + 0.5
+    );
+    color += uCaliente * facula * 0.26;
+
+    /* Oscurecimiento del limbo, fuerte: la fotosfera se ve más brillante en
+       el centro del disco porque ahí se mira a través de menos capas de gas.
+       Con un coeficiente suave el borde quedaba casi tan brillante como el
+       centro y la estrella se leía como un balón naranja. */
+    color *= 0.30 + 0.70 * pow(mu, 0.58);
 
     /* El borde se calienta. En el último instante antes de la detonación la
        estrellas se hincha y el borde se pone blanco: es la señal de que va a
@@ -171,7 +178,8 @@ const VERT_CORONA = /* glsl */ `
   varying vec3 vMundo;
 
   void main() {
-    vNormal = normalize(normalMatrix * normal);
+    // Luz, vista y normales en espacio de mundo (escalas uniformes).
+    vNormal = normalize(mat3(modelMatrix) * normal);
     vec4 mundo = modelMatrix * vec4(position, 1.0);
     vMundo = mundo.xyz;
     gl_Position = projectionMatrix * viewMatrix * mundo;
@@ -194,16 +202,13 @@ const FRAG_CORONA = /* glsl */ `
     /* Se ve la CARA INTERIOR (BackSide), así que el valor va con valor
        absoluto: sin él el halo se invertiría.
 
-       Y el halo tiene que ser MÁS BRILLOTO HACIA DENTRO, no hacia fuera:
-       |dot| vale 1 en el centro del disco y 0 en la silueta, así que
-       pow(|dot|, k) da un resplandor que se apaga al alejarse de la
-       estrella. Al revés —con 1 - |dot|, que es lo que hacía la primera
-       versión— la corona se dibujaba más brillante en su BORDE exterior y
-       salía como una esfera naranja con un aro duro alrededor, que es
-       justo lo contrario de una corona. */
+       El halo es MÁS BRILLANTE HACIA DENTRO, no hacia fuera: |dot| vale 1
+       en el centro del disco y 0 en la silueta. Más concentrado (3,1 en vez
+       de 2,4) para que el resplandor nazca de la estrella y no de una
+       campana uniforme que la abraza. */
     float centro = abs(dot(normalize(vNormal), vision));
-    float halo = pow(centro, 2.4);
-    vec3 color = mix(uMedio, uCaliente, pow(centro, 1.3));
+    float halo = pow(centro, 3.1);
+    vec3 color = mix(uMedio, uCaliente, pow(centro, 1.5));
 
     float alfa = halo * uBrillo;
     if (alfa < 0.004) discard;
@@ -223,7 +228,8 @@ const VERT_ONDA = /* glsl */ `
 
   void main() {
     vLocal = position;
-    vNormal = normalize(normalMatrix * normal);
+    // Luz, vista y normales en espacio de mundo (escalas uniformes).
+    vNormal = normalize(mat3(modelMatrix) * normal);
     vec4 mundo = modelMatrix * vec4(position, 1.0);
     vMundo = mundo.xyz;
     gl_Position = projectionMatrix * viewMatrix * mundo;
@@ -234,6 +240,7 @@ const FRAG_ONDA = /* glsl */ `
   precision highp float;
 
   uniform vec3 uCaliente;
+  uniform vec3 uMedio;
   uniform vec3 uFrio;
   uniform float uExpansion;
   uniform float uBrillo;
@@ -248,27 +255,24 @@ const FRAG_ONDA = /* glsl */ `
     vec3 vision = normalize(cameraPosition - vMundo);
     float borde = 1.0 - abs(dot(normalize(vNormal), vision));
 
-    /* El frente no es una superficie lisa. El ruido lo vuelve irregular, que
-       es lo que separa "detonación" de "esfera que crece".
-
-       El umbral empieza en 0,18 y no en 0,22, y el rango es corto a
-       propósito: con un rango ancho, smoothstep devuelve 0 para media esfera
-       y la onda salía dibujada a trozos. Ahora la superficie es continua y
-       lo irregular es la MODULACIÓN, no la visibilidad. */
+    /* El frente no es una superficie lisa. El ruido lo vuelve irregular y
+       FILAMENTOSO —la estela de una detonación son filamentos de gas, no un
+       borde perfecto— y el umbral más alto deja huecos por los que se ve
+       pasar el espacio: una supernova real se expande a trompicones. */
     vec3 p = normalize(vLocal);
-    float ruido = fbm(p * 3.1 + uExpansion * 1.4, 3) * 0.5 + 0.5;
-    float frente = 0.42 + 0.58 * smoothstep(0.18, 0.78, ruido);
+    float ruido = fbm(p * 4.4 + uExpansion * 1.9, 4) * 0.5 + 0.5;
+    float frente = 0.30 + 0.70 * smoothstep(0.34, 0.78, ruido);
 
     /* SOLO EL LIMBO. El interior tiene que quedar transparente: con la
        silueta entera dibujada, la onda era una bola gris plana que tapaba
        la estrella y todo lo demás. */
     float anillo = pow(borde, 5.0);
-    float difusion = pow(borde, 1.5) * 0.16;
+    float difusion = pow(borde, 1.5) * 0.18;
 
-    /* La onda se enfría: blanco al salir, violeta al llegar al borde del
-       sistema. Son los dos colores de la marca, para que la apertura no sea
-       un cambio de tonos ajenos. */
-    vec3 color = mix(uCaliente, uFrio, clamp(uExpansion * 1.2, 0.0, 1.0));
+    /* La onda se enfría: blanco al salir, ámbar a media carrera y óxido
+       profundo al llegar al borde del sistema. Tres paradas, no dos. */
+    vec3 color = mix(uCaliente, uMedio, smoothstep(0.0, 0.45, uExpansion));
+    color = mix(color, uFrio, smoothstep(0.4, 1.0, uExpansion));
 
     float alfa = (anillo * frente * 3.2 + difusion * frente) * uBrillo;
     if (alfa < 0.004) discard;
@@ -353,11 +357,11 @@ const FRAG_MATERIA = /* glsl */ `
        ser una nube que crece. */
     float enElFrente = smoothstep(0.0, 0.1, vAvance) * (1.0 - smoothstep(0.55, 1.05, vAvance));
 
-    /* TRES TRAMOS. Todo blanco al principio es lo que hacía que esto se
-       leyera como nieve: lo que sale del núcleo es blanco, lo que va por
-       delante ya se enfría a cian y la cola se va a violeta. */
-    vec3 color = mix(uCaliente, uMedio, clamp(vAvance * 2.6, 0.0, 1.0));
-    color = mix(color, uFrio, clamp((vAvance - 0.4) * 1.7, 0.0, 1.0));
+    /* TRES TRAMOS. Lo que sale del núcleo es blanco, lo que va por delante
+       ya se enfría a ámbar y la cola se va a óxido. Nada de cianes: la
+       materia de una explosión estelar es incandescente, no de neón. */
+    vec3 color = mix(uCaliente, uMedio, clamp(vAvance * 2.2, 0.0, 1.0));
+    color = mix(color, uFrio, clamp((vAvance - 0.45) * 1.9, 0.0, 1.0));
 
     gl_FragColor = vec4(color * forma * (1.15 + vFase * 0.9), forma * enElFrente * uOpacidad);
   }
@@ -392,24 +396,23 @@ function azar(semilla) {
 /** Curva de subida y bajada, no lineal, para el fogonazo. */
 const suave = (t) => (t < 0.5 ? 4 * t ** 3 : 1 - (-2 * t + 2) ** 3 / 2);
 
-export function crearBigBang({ nivel, origen, radioMax, paleta }) {
+export function crearBigBang({ nivel, origen, radioMax }) {
   const conf = perfil(nivel);
   const total = Math.max(900, Math.round(conf.puntosPolvo * 9));
   const random = azar(90210);
   const centro = origen ?? new Vector3();
 
-  /* Colores de la estrella. El rojo del limbo no está en la paleta del
-     sitio a propósito: una estrella no es cian, y el naranja-rojo es lo que
-     la hace legible como sol contra el espacio. */
-  const rojo = new Color('#ff4d16');
-  const naranja = new Color('#ff9a2e');
+  /* Colores físicos: corazón blanco, capa dorada y limbo naranja-rojo. Una
+     estrella no lleva los colores de la marca, y la supernova mucho menos. */
+  const rojo = new Color('#c23a0e');
+  const dorado = new Color('#ffc57a');
 
   /* --- Sol ------------------------------------------------------- */
   const geoSol = new IcosahedronGeometry(1, conf.detallePlaneta > 2 ? 3 : 2);
   const matSol = new ShaderMaterial({
     uniforms: {
-      uCaliente: { value: new Color('#fff6e0') },
-      uMedio: { value: naranja.clone() },
+      uCaliente: { value: new Color('#fffdf4') },
+      uMedio: { value: dorado.clone() },
       uFrio: { value: rojo.clone() },
       uTiempo: { value: 0 },
       uBrillo: { value: 0 },
@@ -431,8 +434,8 @@ export function crearBigBang({ nivel, origen, radioMax, paleta }) {
   const geoCorona = new SphereGeometry(1, 32, 24);
   const matCorona = new ShaderMaterial({
     uniforms: {
-      uCaliente: { value: new Color('#ffe9c4') },
-      uMedio: { value: naranja.clone() },
+      uCaliente: { value: new Color('#fffdf0') },
+      uMedio: { value: new Color('#ffcf9a') },
       uBrillo: { value: 0 },
     },
     vertexShader: VERT_CORONA,
@@ -453,7 +456,8 @@ export function crearBigBang({ nivel, origen, radioMax, paleta }) {
   const matOnda = new ShaderMaterial({
     uniforms: {
       uCaliente: { value: new Color('#ffffff') },
-      uFrio: { value: paleta.violeta.clone() },
+      uMedio: { value: new Color('#ffb066') },
+      uFrio: { value: new Color('#8a3a12') },
       uExpansion: { value: 0 },
       uBrillo: { value: 0 },
     },
@@ -502,9 +506,9 @@ export function crearBigBang({ nivel, origen, radioMax, paleta }) {
 
   const matMateria = new ShaderMaterial({
     uniforms: {
-      uCaliente: { value: new Color('#fff2d8') },
-      uMedio: { value: paleta.cian.clone() },
-      uFrio: { value: paleta.violeta.clone() },
+      uCaliente: { value: new Color('#fffbe8') },
+      uMedio: { value: new Color('#ffc06a') },
+      uFrio: { value: new Color('#93350f') },
       uRadio: { value: radioMax },
       uExpansion: { value: 0 },
       uPixelRatio: { value: 1 },

@@ -17,16 +17,6 @@ export function on(elemento, evento, manejador, opciones) {
 }
 
 /**
- * Delegación de eventos: en lugar de un listener por nodo, uno solo en el contenedor.
- */
-export function delegar(contenedor, evento, selector, manejador) {
-  return on(contenedor, evento, (e) => {
-    const destino = e.target instanceof Element ? e.target.closest(selector) : null;
-    if (destino && contenedor.contains(destino)) manejador(e, destino);
-  });
-}
-
-/**
  * Crea un elemento con propiedades y descendientes.
  * @param {string} etiqueta
  * @param {Object} [propiedades] atributos, dataset, style, class, text, html, on
@@ -58,20 +48,4 @@ export function crear(etiqueta, propiedades = {}, hijos = []) {
   }
 
   return nodo;
-}
-
-/** SVG necesita su espacio de nombres explícito. */
-export function svg(markup) {
-  const contenedor = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
-  contenedor.innerHTML = markup;
-  return contenedor.firstElementChild;
-}
-
-/** Comprueba si un elemento está painted en pantalla. */
-export function elementoVisible(elemento) {
-  return !!elemento && getComputedStyle(elemento).display !== 'none';
-}
-
-export function enRango(valor, min, max) {
-  return valor >= min && valor <= max;
 }

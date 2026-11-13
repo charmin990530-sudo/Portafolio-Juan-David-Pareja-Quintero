@@ -47,6 +47,8 @@ const FRAGMENT = /* glsl */ `
   uniform vec3 uLuz;
   uniform vec3 uCentro;   // centro del planeta, en espacio de mundo
   uniform float uRadioPlaneta;
+  uniform float uRadioInterior;
+  uniform float uRadioExterior;
   uniform float uEntrada;
   uniform float uSemilla;
   uniform float uOpacidadBase;
@@ -59,8 +61,10 @@ const FRAGMENT = /* glsl */ `
   ${RUIDO}
 
   void main() {
-    // vUv.x recorre el radio de la geometría de anillo, de dentro a fuera.
-    float radio = vUv.x;
+    // RingGeometry tiene UV cartesianas: el radio sale de la posicion local.
+    // Asi las franjas son concentricas desde cualquier punto de vista.
+    float radio = clamp((length(vLocal.xy) - uRadioInterior)
+                 / max(uRadioExterior - uRadioInterior, 0.001), 0.0, 1.0);
 
     /* Franjas.
        Un anillo real no es liso: tiene huecos. Se generan con dos escalas de
@@ -149,6 +153,8 @@ export function crearAnillos({ nivel, colorA, colorB, radioInterno, radioExterno
         uLuz: { value: direccionLuz.clone() },
         uCentro: { value: new Vector3() },
         uRadioPlaneta: { value: 0 },
+        uRadioInterior: { value: def.interior },
+        uRadioExterior: { value: def.exterior },
         uEntrada: { value: 0 },
         uSemilla: { value: def.semilla },
         uOpacidadBase: { value: def.opacidad },

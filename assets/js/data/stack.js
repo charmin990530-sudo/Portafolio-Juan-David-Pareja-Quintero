@@ -60,5 +60,3 @@ export const STACK = [
     ],
   },
 ];
-
-export const TOTAL_HABILIDADES = STACK.reduce((total, grupo) => total + grupo.habilidades.length, 0);

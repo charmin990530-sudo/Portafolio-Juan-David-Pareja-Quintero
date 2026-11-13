@@ -495,14 +495,6 @@ textarea.campo__control {
   box-shadow: 0 0 14px var(--accent);
 }
 
-/* Con el recorrido guiado activo la cabecera se apaga, y la barra es su
-   hija: si no, la línea seguiría cruzando la parte de arriba de la pantalla
-   con la barra negra de cine debajo. La reemplaza la del panel, que va en
-   la parte de abajo. */
-:root[data-viaje='activo'] .progreso {
-  opacity: 0;
-}
-
 /* ---------- Botón volver arriba ---------- */
 .subir {
   position: fixed;

@@ -32,6 +32,9 @@ import {
   Sprite,
   SpriteMaterial,
   Vector3,
+  TextureLoader,
+  SRGBColorSpace,
+  RepeatWrapping,
 } from '../../../vendor/three/0.186.1/three.module.js';
 import { RUIDO, LUZ } from '../shaders/comunes.js';
 import { perfil } from '../calidad.js';
@@ -75,10 +78,35 @@ const VERTEX = /* glsl */ `
 
   void main() {
     vLocal = position;
-    vNormal = normalize(normalMatrix * normal);
+    // Luz, vista y normales en espacio de mundo (escalas uniformes).
+    vNormal = normalize(mat3(modelMatrix) * normal);
     vec4 mundo = modelMatrix * vec4(position, 1.0);
     vMundo = mundo.xyz;
     gl_Position = projectionMatrix * viewMatrix * mundo;
+  }
+`;
+
+const NUBES = /* glsl */ `
+  precision highp float;
+  uniform sampler2D uMapaNubes;
+  uniform float uNubeLista;
+  uniform float uEntradaNube;
+  uniform vec3 uLuzNube;
+  varying vec3 vNormal;
+  varying vec3 vLocal;
+  varying vec3 vMundo;
+  void main() {
+    if (uNubeLista < 0.5) discard;
+    vec3 p = normalize(vLocal);
+    vec2 uv = vec2(fract(atan(p.z, -p.x) / 6.2831853),
+                   1.0 - acos(clamp(p.y, -1.0, 1.0)) / 3.14159265);
+    float densidad = texture2D(uMapaNubes, uv).r;
+    float dia = max(dot(normalize(vNormal), normalize(uLuzNube)), 0.0);
+    float alfa = smoothstep(0.16, 0.85, densidad) * 0.88 * uEntradaNube;
+    if (alfa < 0.005) discard;
+    gl_FragColor = vec4(vec3(0.014 + dia * 1.08), alfa);
+    #include <tonemapping_fragment>
+    #include <colorspace_fragment>
   }
 `;
 
@@ -102,6 +130,10 @@ const FRAGMENT = /* glsl */ `
   uniform float uDeriva;
   uniform float uEntrada;
   uniform float uFormacion;
+  uniform sampler2D uMapaDia;
+  uniform sampler2D uMapaNoche;
+  uniform float uTieneMapa;
+  uniform float uTieneNoche;
 
   varying vec3 vNormal;
   varying vec3 vLocal;
@@ -120,6 +152,38 @@ const FRAGMENT = /* glsl */ `
 
   void main() {
     vec3 p = normalize(vLocal);
+    // Camino fotografico: mapas equirectangulares en espacio local.
+    // Sin ruido encima de los continentes ni luces inventadas.
+    if (uTieneMapa > 0.5) {
+      vec2 uv = vec2(fract(atan(p.z, -p.x) / 6.2831853),
+                     1.0 - acos(clamp(p.y, -1.0, 1.0)) / 3.14159265);
+      vec3 albedo = texture2D(uMapaDia, uv).rgb;
+      vec3 n = normalize(vNormal);
+      vec3 v = normalize(cameraPosition - vMundo);
+      vec3 l = normalize(uLuz);
+      float ndl = dot(n, l);
+      float dia = max(ndl, 0.0);
+      vec3 resultado = albedo * (dia * 1.12 + 0.012);
+      // Reflejo solar del oceano, no brillo de plastico sobre toda la esfera.
+      if (uNivelMar > 0.15) {
+        float agua = smoothstep(0.015, 0.12, albedo.b - max(albedo.r, albedo.g));
+        float especular = pow(max(dot(n, normalize(l + v)), 0.0), 110.0);
+        resultado += vec3(0.9, 0.95, 1.0) * agua * especular * dia * 0.42;
+      }
+      if (uTieneNoche > 0.5) {
+        vec3 ciudades = texture2D(uMapaNoche, uv).rgb;
+        resultado += ciudades * (1.0 - smoothstep(-0.12, 0.12, ndl)) * 0.65;
+      }
+      float limbo = pow(1.0 - abs(dot(n, v)), 5.0);
+      resultado += uAcento * limbo * smoothstep(-0.1, 0.5, ndl) * 0.06;
+      float formado = clamp(uFormacion, 0.0, 1.0);
+      vec3 lava = vec3(1.0, 0.24, 0.035) * (0.2 + albedo.r);
+      resultado = mix(lava, resultado, smoothstep(0.25, 1.0, formado));
+      gl_FragColor = vec4(resultado * uEntrada, 1.0);
+      #include <tonemapping_fragment>
+      #include <colorspace_fragment>
+      return;
+    }
 
     /* Formacion: lo que hace que este cuerpo venga de la explosion.
 
@@ -159,7 +223,8 @@ float detalleBandas = uBandas > 0.5 ? fbm(p * 8.0 + uSemilla * 0.7, 2) * 0.2 : 0
 
 /* altura base con el detalle de bandas incorporado */
 float altura = fbm(q + derivaRelieve, octavas) + detalleBandas;
-altura = altura * 0.5 + 0.5;
+// fbm ya devuelve valores positivos: centrar de nuevo eliminaba los oceanos.
+altura = clamp(altura * 1.55 - 0.18, 0.0, 1.0);
 altura = pow(altura, 1.0 + uRugosidad * 0.7);
 
     /* Mientras se forma, el relieve esta revuelto: la superficie es un
@@ -173,6 +238,14 @@ altura = pow(altura, 1.0 + uRugosidad * 0.7);
     vec3 luz = normalize(uLuz);
 
     vec3 base = rampaClave(altura);
+    // Costas suaves y casquetes por latitud, no nieve aleatoria en el ecuador.
+    if (uBandas < 0.5 && uNivelMar > 0.15) {
+      float costa = smoothstep(uNivelMar - 0.035, uNivelMar, altura)
+                  * (1.0 - smoothstep(uNivelMar, uNivelMar + 0.035, altura));
+      base = mix(base, uTierra * vec3(1.24, 1.12, 0.83), costa * 0.28);
+      float polo = smoothstep(0.78, 0.96, abs(p.y) + (altura - 0.5) * 0.1);
+      base = mix(base, uHielo, polo * formacion);
+    }
 
     if (uBandas > 0.5) {
       float franja = sin(p.y * 9.0 + fbm(q * 1.4, 3) * 3.2) * 0.5 + 0.5;
@@ -180,8 +253,9 @@ altura = pow(altura, 1.0 + uRugosidad * 0.7);
     }
 
     if (uNubes > 0.5) {
-      float nube = fbm(p * 3.1 + derivaNubes + uSemilla, 4) * 0.5 + 0.5;
-      base = mix(base, uHielo * 1.12, smoothstep(0.52, 0.86, nube) * 0.72);
+      float nube = fbm(p * 5.1 + derivaNubes + uSemilla, 4);
+      float cobertura = smoothstep(0.43, 0.65, nube);
+      base = mix(base * (1.0 - cobertura * 0.10), uHielo, cobertura * 0.85);
     }
 
 /* Iluminacion.
@@ -215,7 +289,7 @@ altura = pow(altura, 1.0 + uRugosidad * 0.7);
       float ciudad = smoothstep(0.63, 0.79, manchas) * tierra;
       /* Se apagan del todo en el crepúsculo para que no haya un corte
          visible en la frontera: de 0.30 (encendidas) a 0.05 (apagadas). */
-      color += uAcento * ciudad * smoothstep(0.30, 0.05, d) * 1.5;
+      color += uAcento * ciudad * (1.0 - smoothstep(0.05, 0.30, d)) * 1.5;
     }
 
     /* Brillo del agua: solo bajo el nivel del mar y solo con la luz de
@@ -332,11 +406,62 @@ export function crearPlaneta({ nivel, def, semillaBase = 0 }) {
       uDeriva: { value: def.deriva ?? 0 },
       uEntrada: { value: 0 },
       uFormacion: { value: 1 },
+      uMapaDia: { value: null },
+      uMapaNoche: { value: null },
+      uTieneMapa: { value: 0 },
+      uTieneNoche: { value: 0 },
     },
     vertexShader: VERTEX,
     fragmentShader: FRAGMENT,
   });
 
+  let destruido = false;
+  const mapas = [];
+  const tamano = nivel === 'alto' ? '2k' : '1k';
+  const cargador = new TextureLoader();
+  function cargar(nombre, alCargar, color = true) {
+    const textura = cargador.load(`assets/img/texturas/${nombre}-${tamano}.jpg`, (t) => {
+      if (destruido) { t.dispose(); return; }
+      alCargar(t);
+    }, undefined, () => {
+      if (!destruido) console.warn('[universo] textura no disponible:', nombre);
+    });
+    textura.wrapS = RepeatWrapping;
+    if (color) textura.colorSpace = SRGBColorSpace;
+    textura.anisotropy = nivel === 'alto' ? 4 : 1;
+    mapas.push(textura);
+  }
+  if (def.mapaDia) cargar(def.mapaDia, (t) => {
+    material.uniforms.uMapaDia.value = t;
+    material.uniforms.uTieneMapa.value = 1;
+  });
+  if (def.mapaNoche && conf.lucesCiudad) cargar(def.mapaNoche, (t) => {
+    material.uniforms.uMapaNoche.value = t;
+    material.uniforms.uTieneNoche.value = 1;
+  });
+
+  let nubes = null;
+  if (def.mapaNubes && conf.nubes) {
+    const materialNubes = new ShaderMaterial({
+      vertexShader: VERTEX,
+      fragmentShader: NUBES,
+      transparent: true,
+      depthWrite: false,
+      uniforms: {
+        uMapaNubes: { value: null },
+        uNubeLista: { value: 0 },
+        uEntradaNube: { value: 0 },
+        uLuzNube: { value: direccionLuz.clone() },
+      },
+    });
+    nubes = new Mesh(geometriaPlaneta(conf.resolucionPlaneta ?? conf.detallePlaneta), materialNubes);
+    nubes.renderOrder = 1;
+    grupo.add(nubes);
+    cargar(def.mapaNubes, (t) => {
+      materialNubes.uniforms.uMapaNubes.value = t;
+      materialNubes.uniforms.uNubeLista.value = 1;
+    }, false);
+  }
   const malla = new Mesh(geometriaPlaneta(conf.resolucionPlaneta ?? conf.detallePlaneta), material);
   malla.scale.setScalar(def.radio);
   grupo.add(malla);
@@ -398,11 +523,17 @@ export function crearPlaneta({ nivel, def, semillaBase = 0 }) {
         malla.rotation.x = Math.sin(segundos * def.rotacion * 0.21) * (def.inclinacion ?? 0.12);
       }
 
+      if (nubes) {
+        nubes.scale.setScalar(escala * 1.012);
+        nubes.rotation.copy(malla.rotation);
+        nubes.rotation.y += segundos * 0.002;
+        nubes.material.uniforms.uEntradaNube.value = entrada * formacion;
+      }
       if (halo) {
         if (camara) halo.quaternion.copy(camara.quaternion);
         // A distancia, un halo del tamaño del planeta se lee como una mancha
         // fija pegada al cuerpo. Se estrecha al alejarse.
-        halo.material.opacity = 0.5 * entrada * formacion;
+        halo.material.opacity = 0.14 * entrada * formacion;
         halo.scale.setScalar(escala * (def.escalaHalo ?? 4.6) * (0.35 + 0.65 * entrada));
       }
     },
@@ -411,6 +542,9 @@ export function crearPlaneta({ nivel, def, semillaBase = 0 }) {
     liberar() {
       // La geometría es compartida: NO se destruye aquí. La destruye
       // `liberarGeometrias()` una sola vez al desmontar todo el universo.
+      destruido = true;
+      for (const textura of mapas) textura.dispose();
+      nubes?.material.dispose();
       material.dispose();
       halo?.material.dispose();
     },

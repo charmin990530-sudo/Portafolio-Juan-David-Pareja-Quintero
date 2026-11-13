@@ -16,13 +16,9 @@ export function mapear(valor, entradaMin, entradaMax, salidaMin, salidaMax) {
 
 export const easeOutExpo = (t) => (t >= 1 ? 1 : 1 - 2 ** (-10 * t));
 export const easeInOutCubic = (t) => (t < 0.5 ? 4 * t ** 3 : 1 - (-2 * t + 2) ** 3 / 2);
-export const easeOutCubic = (t) => 1 - (1 - t) ** 3;
 
 /** Número aleatorio dentro de un rango. */
 export const aleatorio = (min, max) => min + Math.random() * (max - min);
-
-/** Elige un elemento al azar de una lista. */
-export const elegir = (lista) => lista[Math.floor(Math.random() * lista.length)];
 
 /** Interpolación exponencial independiente del framerate. */
 export function suavizar(actual, objetivo, factor, delta = 16.67) {
@@ -67,19 +63,12 @@ export const movimientoReducido = () => consultaMovimiento.matches;
    regla, y las reglas se prueban. En `desplazar.js` dentro de una función
    que necesita el DOM no se puede comprobar en node; aquí sí.
 
-   El defecto que motiva esto: `desplazarAposicion()` documentaba
-   milisegundos y los pasaba tal cual a Lenis. El recorrido guiado pedía
-   entre 1 500 y 3 600, así que cada parada se animaba en 25 o 60 minutos. La
-   página se movía unos píxeles por segundo y el contador del panel no
-   cambiaba de sistema. Ninguna comprobación lo veía: en un DOM de prueba no
-   hay Lenis, así que `scrollTo` se ejecutaba y la prueba pasaba. */
+    El defecto que motiva esto: `desplazarAposicion()` documentaba
+    milisegundos y los pasaba tal cual a Lenis. Un llamador que pedía
+    entre 1 500 y 3 600 milisegundos veía cada salto animado en 25 o 60 minutos. La
+    página se movía unos píxeles por segundo y nada lo delataba: en un DOM de
+    prueba no hay Lenis, así que `scrollTo` se ejecutaba y la prueba pasaba. */
 export const milisegundosASegundos = (ms) => (ms === undefined ? undefined : Math.max(0, ms / 1000));
-
-export function alCambiarMovimiento(callback) {
-  const evento = () => callback(consultaMovimiento.matches);
-  consultaMovimiento.addEventListener('change', evento);
-  return () => consultaMovimiento.removeEventListener('change', evento);
-}
 
 /** Formatea números con separador de miles Colombian. */
 const formateador = new Intl.NumberFormat('es-CO');

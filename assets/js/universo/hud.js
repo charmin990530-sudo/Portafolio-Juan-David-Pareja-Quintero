@@ -20,6 +20,7 @@
 
 import { crear } from '../core/dom.js';
 import { numero } from '../core/util.js';
+import { altoDesplazable, desplazarAposicion } from '../core/desplazar.js';
 
 export function crearHud({ sistemas }) {
   const raiz = crear('div', {
@@ -141,6 +142,11 @@ export function crearHud({ sistemas }) {
   const alPulsarPunto = (indice) => () => {
     const sistema = sistemas[indice];
     if (!escena || !sistema) return;
+    const ancla = escena.ruta.anclas.find((a) => a.seccion === sistema.seccion);
+    if (!ancla) return;
+    // Camara y documento deben saltar juntos; solo mover la camara se
+    // deshacia en el fotograma siguiente al volver a leer scrollY.
+    desplazarAposicion(ancla.desplazamiento * altoDesplazable(), { inmediato: true });
     escena.irAPunto(sistema.seccion, { instantaneo: true });
   };
 
