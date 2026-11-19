@@ -1,0 +1,311 @@
+.ui {
+  z-index: 20;
+  pointer-events: none;
+}
+.ui button,
+.ui a {
+  pointer-events: auto;
+}
+.tag {
+  position: absolute;
+  top: max(7 * var(--n), env(safe-area-inset-top));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: calc(37 * var(--n));
+  padding: 0 calc(18 * var(--n));
+  background: #fbfbf5;
+  color: var(--ink);
+  border-radius: 1px;
+  white-space: nowrap;
+  font-size: calc(16.5 * var(--n));
+  font-weight: 650;
+  letter-spacing: -0.02em;
+  box-shadow:
+    0 calc(3 * var(--n)) 0 #0003,
+    0 calc(6 * var(--n)) calc(14 * var(--n)) #0003;
+  transition:
+    transform 0.25s var(--ease),
+    box-shadow 0.25s var(--ease);
+}
+.tag:hover {
+  transform: translateY(-2px) rotate(-1.5deg);
+  box-shadow:
+    0 5px 0 #0003,
+    0 10px 18px #0003;
+}
+.tag:active {
+  transform: translateY(1px);
+  box-shadow: 0 1px 0 #0003;
+}
+.t1 {
+  left: calc(30 * var(--n));
+}
+.t2 {
+  left: calc(233 * var(--n));
+}
+.t3 {
+  right: calc(269 * var(--n));
+}
+.t4 {
+  right: calc(32 * var(--n));
+}
+.logo {
+  position: absolute;
+  left: 50%;
+  top: calc(12 * var(--n));
+  transform: translateX(-50%);
+  font-weight: 700;
+  font-size: calc(19 * var(--n));
+  letter-spacing: 0.14em;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.4s;
+}
+.is-case .logo {
+  opacity: 1;
+  visibility: visible;
+}
+.hint {
+  position: absolute;
+  bottom: max(22px, env(safe-area-inset-bottom));
+  left: 50%;
+  translate: -50% 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 9px;
+  font-size: max(10px, calc(12 * var(--n)));
+  letter-spacing: 0.17em;
+  font-weight: 650;
+  text-transform: uppercase;
+  white-space: nowrap;
+  text-shadow: 0 1px 6px #000;
+}
+.hint i {
+  position: relative;
+  width: 2px;
+  height: 22px;
+  background: #fff5;
+  overflow: hidden;
+}
+.hint i::after {
+  content: "";
+  position: absolute;
+  inset: -40% 0 auto;
+  height: 40%;
+  background: white;
+  animation: drip 1.6s cubic-bezier(0.6, 0, 0.4, 1) infinite;
+}
+@keyframes drip {
+  to {
+    top: 100%;
+  }
+}
+.is-case .hint,
+.busy .hint {
+  visibility: hidden;
+}
+.ticket {
+  position: absolute;
+  right: calc(32 * var(--n));
+  top: calc(98 * var(--n));
+  width: calc(348 * var(--n));
+  padding: calc(24 * var(--n)) calc(34 * var(--n)) calc(24 * var(--n))
+    calc(44 * var(--n));
+  color: var(--ink);
+  background: #f8f8f0;
+  border-radius: 3px;
+  box-shadow: 0 calc(18 * var(--n)) calc(40 * var(--n)) #0004;
+  transform-origin: 50% 0;
+}
+.ticket h2 {
+  font:
+    400 calc(47 * var(--n))/1.06 Anton,
+    sans-serif;
+  letter-spacing: -0.015em;
+  text-transform: uppercase;
+  overflow-wrap: anywhere;
+  text-wrap: balance;
+}
+.holes {
+  position: absolute;
+  inset: calc(12 * var(--n));
+  background: radial-gradient(
+      circle closest-side,
+      #1b402f 72%,
+      #0b281b 97%,
+      transparent 100%
+    )
+    0 0 / var(--hole) var(--hole);
+  --hole: calc(19 * var(--n));
+  mask: conic-gradient(at var(--hole) var(--hole), transparent 25%, black 0) 0
+    0 / calc(100% - var(--hole)) calc(100% - var(--hole));
+  pointer-events: none;
+}
+.holes {
+  background:
+    radial-gradient(closest-side, #214e38 73%, #0d2d20 99%, transparent) 0 0 /
+      var(--hole) var(--hole) no-repeat,
+    radial-gradient(closest-side, #214e38 73%, #0d2d20 99%, transparent) 100%
+      0 / var(--hole) var(--hole) no-repeat,
+    radial-gradient(closest-side, #214e38 73%, #0d2d20 99%, transparent) 0
+      100% / var(--hole) var(--hole) no-repeat,
+    radial-gradient(closest-side, #214e38 73%, #0d2d20 99%, transparent) 100%
+      100% / var(--hole) var(--hole) no-repeat;
+  mask: none;
+}
+.rows {
+  margin-top: calc(8 * var(--n));
+  text-align: right;
+}
+.rows div {
+  font-size: calc(12 * var(--n));
+  font-weight: 700;
+  letter-spacing: 0.025em;
+  text-transform: uppercase;
+  padding: calc(4 * var(--n)) 0 calc(3 * var(--n));
+  border-bottom: 1px dotted #444;
+}
+.desc {
+  position: absolute;
+  left: calc(28 * var(--n));
+  top: calc(326 * var(--n));
+  width: calc(185 * var(--n));
+  text-shadow: 0 1px 5px #0b302876;
+}
+.desc strong {
+  display: block;
+  font-size: calc(17 * var(--n));
+  letter-spacing: -0.02em;
+}
+.desc p {
+  margin-top: calc(14 * var(--n));
+  font-size: calc(15 * var(--n));
+  line-height: 1.36;
+  color: #fffffff0;
+}
+.num {
+  display: block;
+  margin-top: calc(20 * var(--n));
+  font-size: calc(12 * var(--n));
+  letter-spacing: 0.16em;
+  font-weight: 700;
+  color: #ffffffbd;
+}
+.links {
+  display: flex;
+  gap: 0.9em;
+  flex-wrap: wrap;
+  margin-top: 1em;
+}
+.links a,
+.contact a {
+  font-size: max(12px, calc(14 * var(--n)));
+  font-weight: 700;
+  text-decoration: underline;
+  text-underline-offset: 4px;
+}
+.nav-case {
+  position: absolute;
+  bottom: calc(150 * var(--n));
+  display: flex;
+  align-items: center;
+  flex-direction: column;
+  gap: calc(9 * var(--n));
+  font-size: calc(15 * var(--n));
+  font-weight: 600;
+  line-height: 1.05;
+}
+.prev {
+  left: calc(95 * var(--n));
+}
+.next {
+  right: calc(95 * var(--n));
+}
+.prev.dim .circle {
+  background: #173d2b;
+}
+.circle {
+  display: grid;
+  place-items: center;
+  width: calc(50 * var(--n));
+  height: calc(50 * var(--n));
+  border: 1.6px solid #fffe;
+  border-radius: 50%;
+  transition:
+    transform 0.25s,
+    background 0.25s;
+}
+.circle svg {
+  width: 48%;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+}
+.next .circle {
+  background: white;
+  color: var(--green-800);
+}
+.next:hover .circle {
+  background: var(--mint);
+}
+.nav-case:hover .circle {
+  transform: scale(1.08);
+}
+.case-ui {
+  visibility: hidden;
+}
+.is-case .case-ui {
+  visibility: visible;
+}
+.m-only {
+  display: none;
+}
+.js:not([data-in]) .pre {
+  opacity: 0;
+}
+.contact {
+  color: var(--ink);
+  background: #fbfbf3;
+  border: 0;
+  border-radius: 4px;
+  padding: 38px;
+  width: min(410px, calc(100% - 32px));
+  box-shadow: 0 18px 70px #02160ea6;
+}
+.contact::backdrop {
+  background: #04190fb3;
+  backdrop-filter: blur(6px);
+}
+.contact h2 {
+  font:
+    400 47px/1.1 Anton,
+    sans-serif;
+  text-transform: uppercase;
+  padding-right: 26px;
+}
+.contact p {
+  margin: 14px 0 20px;
+}
+.contact a {
+  font-size: 16px;
+  display: block;
+  width: fit-content;
+  margin-top: 12px;
+}
+.close {
+  position: absolute;
+  right: 14px;
+  top: 10px;
+  font-size: 27px;
+  padding: 4px 8px;
+}
+.sr {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}

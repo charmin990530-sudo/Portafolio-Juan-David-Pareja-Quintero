@@ -1,0 +1,37 @@
+{
+  "JAPH": {
+    "poster": "japh.jpg",
+    "video": "japh.mp4",
+    "description": "Estudio digital que reúne desarrollo web, aplicaciones, automatización, marketing, video y branding.",
+    "source": "Frontend público del repositorio",
+    "duration": 3.0
+  },
+  "Jers": {
+    "poster": "jers.jpg",
+    "video": "jers.mp4",
+    "description": "Tienda de belleza full stack con un recorrido 3D, un catálogo adaptable y un avatar interactivo.",
+    "source": "Demo pública",
+    "duration": 3.0
+  },
+  "Construmax": {
+    "poster": "construmax.jpg",
+    "video": "construmax.mp4",
+    "description": "Sitio de una constructora bogotana con proyectos residenciales y comerciales y una animación del proceso constructivo.",
+    "source": "Demo pública",
+    "duration": 3.0
+  },
+  "portafolio-maquillaje-paula": {
+    "poster": "paula.jpg",
+    "video": "paula.mp4",
+    "description": "Galería de trabajos de maquillaje y selección de productos de Jers Beauty Lab.",
+    "source": "Frontend del checkout local correspondiente al repositorio público",
+    "duration": 3.0
+  },
+  "Portafolio-Juan-David-Pareja-Quintero": {
+    "poster": "personal.jpg",
+    "video": "personal.mp4",
+    "description": "Mi portafolio anterior: una experiencia espacial para explorar mi perfil, proceso y tecnologías de desarrollo web.",
+    "source": "Demo pública de la versión anterior",
+    "duration": 3.0
+  }
+}
