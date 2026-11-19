@@ -4,15 +4,15 @@
 
 El rediseño personaliza el brief Haldoren con la identidad de Juan David Pareja Quintero. El perfil de GitHub es charmin990530-sudo. La portada incorpora el rostro de assets/img/perfil.jpg, la gorra, la chaqueta negra, la camisa blanca, la corbata vinotinto, el teléfono y la laptop.
 
-El borrador del nuevo index, el estudio fotográfico, el personaje transparente, las tres tipografías WOFF2, la respuesta pública de GitHub y los cinco pares de póster y video están guardados en .laptop-work. El archivo media/manifest.json documenta el origen de las capturas.
+El borrador del nuevo index, el estudio fotográfico, el personaje transparente, las tres tipografías WOFF2, la respuesta pública de GitHub y las tres parejas de póster y video están guardados en .laptop-work. El archivo media/manifest.json documenta el origen de las capturas.
 
-Los cinco repositorios verificados son JAPH, Jers (By Jers), Construmax, portafolio-maquillaje-paula y Portafolio-Juan-David-Pareja-Quintero. La URL de la demo de Paula devuelve 404. Se capturó su frontend local y se conserva el enlace a GitHub. JAPH tampoco declara una demo.
+Los repositorios verificados son Jers (By Jers), Construmax y portafolio-maquillaje-paula. La URL de la demo de Paula devuelve 404. Se capturó su frontend local y se conserva el enlace a GitHub.
 
 ## Versión local verificada · 18 de noviembre de 2026
 
-La entrada del portafolio es `index.html`. Incluye el retrato, la credencial, las fuentes, la transición y los cinco pares de póster y video. El clip de la laptop comienza en el segundo 2,75 del original y la vista de proyectos usa su último fotograma como fondo. El borrador de esa versión se conserva en `.laptop-work/index.template.html`.
+La entrada del portafolio es `index.html`. Incluye el retrato, la credencial, las fuentes, la transición y las tres parejas de póster y video. El clip de la laptop comienza en el segundo 2,75 del original y la vista de proyectos usa su último fotograma como fondo. El borrador de esa versión se conserva en `.laptop-work/index.template.html`.
 
-Se comprobó en Chromium la ida y vuelta entre el estudio y los cinco proyectos, la navegación con teclado, rueda y gesto táctil, y el diálogo de contacto. Con movimiento reducido se muestran los pósteres. Se verificó la disposición a 320 × 568, 390 × 844, 844 × 390 y 1440 × 900, y el catálogo integrado con la consulta a GitHub bloqueada.
+Se comprobó en Chromium la ida y vuelta entre el estudio y los tres proyectos, la navegación con teclado, rueda y gesto táctil, y el diálogo de contacto. Con movimiento reducido se muestran los pósteres. Se verificó la disposición a 320 × 568, 390 × 844, 844 × 390 y 1440 × 900, y el catálogo integrado con la consulta a GitHub bloqueada.
 
 ## Edición del portafolio modular
 

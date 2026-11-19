@@ -1,28 +1,11 @@
-import japhPoster from "../../../.laptop-work/media/japh.jpg";
-import japhVideo from "../../../.laptop-work/media/japh.mp4";
 import jersPoster from "../../../.laptop-work/media/jers.jpg";
 import jersVideo from "../../../.laptop-work/media/jers.mp4";
 import construmaxPoster from "../../../.laptop-work/media/construmax.jpg";
 import construmaxVideo from "../../../.laptop-work/media/construmax.mp4";
 import paulaPoster from "../../../.laptop-work/media/paula.jpg";
 import paulaVideo from "../../../.laptop-work/media/paula.mp4";
-import personalPoster from "../../../.laptop-work/media/personal.jpg";
-import personalVideo from "../../../.laptop-work/media/personal.mp4";
 
 export const saved = [
-  {
-    slug: "JAPH",
-    title: "JAPH",
-    category: "Ecosistema digital",
-    description:
-      "Estudio digital que reúne desarrollo web, aplicaciones, automatización, marketing, video y branding.",
-    language: "HTML",
-    year: "2026",
-    url: "https://github.com/charmin990530-sudo/JAPH",
-    demo: "",
-    poster: japhPoster,
-    video: japhVideo,
-  },
   {
     slug: "Jers",
     title: "By Jers",
@@ -61,18 +44,5 @@ export const saved = [
     demo: "",
     poster: paulaPoster,
     video: paulaVideo,
-  },
-  {
-    slug: "Portafolio-Juan-David-Pareja-Quintero",
-    title: "Mi universo",
-    category: "Portafolio personal",
-    description:
-      "Mi portafolio anterior: una experiencia espacial para explorar mi perfil, proceso y tecnologías de desarrollo web.",
-    language: "JavaScript",
-    year: "2026",
-    url: "https://github.com/charmin990530-sudo/Portafolio-Juan-David-Pareja-Quintero",
-    demo: "https://portafolio-juan-david-pareja-quinte.vercel.app",
-    poster: personalPoster,
-    video: personalVideo,
   },
 ];

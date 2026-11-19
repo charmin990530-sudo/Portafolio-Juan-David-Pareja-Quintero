@@ -1,11 +1,4 @@
 {
-  "JAPH": {
-    "poster": "japh.jpg",
-    "video": "japh.mp4",
-    "description": "Estudio digital que reúne desarrollo web, aplicaciones, automatización, marketing, video y branding.",
-    "source": "Frontend público del repositorio",
-    "duration": 3.0
-  },
   "Jers": {
     "poster": "jers.jpg",
     "video": "jers.mp4",
@@ -25,13 +18,6 @@
     "video": "paula.mp4",
     "description": "Galería de trabajos de maquillaje y selección de productos de Jers Beauty Lab.",
     "source": "Frontend del checkout local correspondiente al repositorio público",
-    "duration": 3.0
-  },
-  "Portafolio-Juan-David-Pareja-Quintero": {
-    "poster": "personal.jpg",
-    "video": "personal.mp4",
-    "description": "Mi portafolio anterior: una experiencia espacial para explorar mi perfil, proceso y tecnologías de desarrollo web.",
-    "source": "Demo pública de la versión anterior",
     "duration": 3.0
   }
 }
