@@ -1,35 +1,26 @@
-# Portafolio de Juan David — Laptop Dive
+# Portafolio de Juan David Pareja
 
-Experiencia web personal de Juan David Pareja Quintero, desarrollador web full stack en Bogotá. El portafolio es una **laptop** interactiva construida con HTML, CSS y JavaScript puro: una laptop que presenta el estudio y recorre los proyectos publicados en GitHub.
+Portafolio personal de desarrollo web. Aquí reúno proyectos propios, experimentos y trabajos que he ido construyendo mientras sigo formándome como desarrollador full stack.
 
-## Stack
+## Tecnologías
 
-- HTML, CSS y JavaScript moderno (ES modules).
-- Sin frameworks ni bundlers de aplicación; el empaquetado se hace con esbuild.
-- El catálogo de proyectos se consulta en tiempo real contra la API pública de GitHub (`GET /users/<usuario>/repos`).
-- Fuentes, imágenes y videos se incrustan como data-URLs durante el build.
+HTML, CSS, JavaScript, TypeScript, Angular, Node.js, Express, MongoDB, Git y Vercel.
 
-## Desarrollo local
+## Proyectos destacados
+
+- **By Jers:** tienda de belleza con catálogo y recorrido visual.
+- **JAPH:** sitio y API para una agencia digital.
+- **Construmax:** sitio estático para una constructora.
+
+## Ejecutar localmente
+
+Este repositorio contiene la fuente del portafolio y el build publicado. Para trabajar con la fuente:
 
 ```bash
 npm --prefix src/laptop ci
 npm --prefix src/laptop run build
 ```
 
-El comando de build regenera el `index.html` de la raíz a partir de:
+## Demo
 
-- `src/laptop/index.template.html`
-- `src/laptop/js/*.js`
-- `src/laptop/styles/*.css`
-- `.laptop-work/**` (fuentes, fotos, videos y plantillas)
-
-## Estructura
-
-- `index.html`: build final generado (se commitea).
-- `src/laptop/`: fuente del portafolio.
-- `.laptop-work/`: recursos originales del estudio fotográfico y catálogo.
-
-## Despliegue
-
-- Configuración de despliegue: `vercel.json`, proyecto enlazado en `.vercel/`.
-- El sitio se publica como sitio estático.
+[Ver el portafolio en Vercel](https://portafolio-juan-david-pareja-quinte.vercel.app/)
